@@ -62,7 +62,7 @@ html,body{
   box-sizing:border-box;
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:4px;
   padding:0 16px;
   border-right:1px solid var(--line);
   border-bottom:1px solid var(--line);
@@ -71,12 +71,12 @@ html,body{
   z-index:15;
   background:var(--surface);
 }
-.app-logo{ width:32px; height:32px; flex:0 0 32px; display:block; }
+.app-logo{ width:40px; height:40px; flex:0 0 40px; display:block; }
 .app-logo-text{
   font-family:'Inter', system-ui, sans-serif;
   font-weight:700;
   font-style:italic;
-  font-size:22px;
+  font-size:26px;
   line-height:1;
   letter-spacing:-0.01em;
   color:var(--ink);
@@ -471,19 +471,23 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   .app-header-left, .app-header-right{ display:none; }
 
   .mobile-topbar{
-    display:flex; align-items:center; justify-content:space-between;
-    height:52px; padding:0 12px;
+    display:flex; align-items:center;
+    height:56px; padding:0 12px;
     border-bottom:1px solid var(--line);
     background:var(--surface);
     position:sticky; top:0; z-index:20;
   }
   .mobile-topbar-brand{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
     display:flex;
     align-items:center;
-    gap:6px;
+    gap:3px;
   }
-  .mobile-topbar-brand .app-logo{ width:24px; height:24px; flex:0 0 24px; }
-  .mobile-topbar-brand .app-logo-text{ font-size:17px; }
+  .mobile-topbar-brand .app-logo{ width:28px; height:28px; flex:0 0 28px; }
+  .mobile-topbar-brand .app-logo-text{ font-size:19px; }
   .menu-btn{
     width:34px; height:34px;
     border:1px solid var(--line); border-radius:8px;
@@ -557,7 +561,6 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
       </svg>
       <span class="app-logo-text">mantis</span>
     </div>
-    <div style="width:34px;"></div>
   </div>
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
