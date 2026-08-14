@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mantis — Maintenance Dashboard</title>
+<meta name="description" content="Mantis maintenance management dashboard" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+:root{
+  --canvas:      #F5F5F3;
+  --surface:     #FFFFFF;
+  --line:        #EFEFED;
+  --line-soft:   #F5F5F4;
+  --ink:         #1C1C1C;
+  --ink-2:       #6B7280;
+  --ink-3:       #A1A1AA;
+  --accent:      #F5A623;
+  --accent-soft: #FEF6E7;
+  --violet:      #6366F1;
+  --blue:        #2E7CF6;
+  --green:       #16A34A;
+  --red:         #DC2626;
+}
+
+*{ box-sizing:border-box; }
+
+html,body{
+  margin:0;
+  padding:0;
+  height:100%;
+  background:var(--surface);
+  color:var(--ink);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  font-size:12px;
+}
+
+.hairline{ border-color:var(--line); }
+
+/* ---------- App shell ---------- */
+.app-shell{
+  background:var(--surface);
+  display:flex;
+  min-height:100vh;
+  overflow:hidden;
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  width:200px;
+  flex:0 0 200px;
+  background:var(--surface);
+  border-right:1px solid var(--line);
+  display:flex;
+  flex-direction:column;
+  padding:16px 12px;
+}
+.sb-header{ padding:0 4px 14px 4px; }
+.sb-avatar{ width:34px; height:34px; border-radius:999px; object-fit:cover; }
+.sb-divider-full{
+  margin:0 -12px 12px -12px;
+  border-top:1px solid var(--line);
+}
+.nav-item{
+  height:34px;
+  display:flex; align-items:center; gap:10px;
+  padding:0 10px;
+  border-radius:8px;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+  transition:background 150ms;
+}
+.nav-item:hover{ background:#FAFAF9; }
+.nav-item.active{
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-weight:500;
+}
+.nav-item.active svg{ stroke:var(--accent); }
+.nav-item svg{ stroke:var(--ink-2); flex:0 0 16px; }
+.nav-item.active .nav-label{ color:var(--accent); }
+.group-label{
+  height:34px;
+  display:flex; align-items:center; gap:10px;
+  padding:0 10px;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+}
+.group-label svg.chev{ margin-left:auto; stroke:var(--ink-3); transition:transform 150ms; }
+.group-label:hover{ background:#FAFAF9; border-radius:8px; }
+.nav-group.collapsed .chev{ transform:rotate(-90deg); }
+.nav-group .sub-items{ display:flex; flex-direction:column; overflow:hidden; }
+.nav-group.collapsed .sub-items{ display:none; }
+.sub-item{
+  height:30px;
+  display:flex; align-items:center;
+  padding-left:24px;
+  font-size:13px;
+  color:var(--ink-2);
+  border-radius:8px;
+  cursor:pointer;
+  transition:background 150ms;
+}
+.sub-item:hover{ background:#FAFAF9; color:var(--ink); }
+.sb-divider{ margin:6px 4px; border-top:1px solid var(--line); }
+.promo-card{
+  margin-top:auto;
+  background:#FAFAF9;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+}
+
+/* ---------- Main content ---------- */
+.main{
+  flex:1 1 auto;
+  padding:16px;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.page{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.sheet-loading{ padding:32px 20px; font-size:12px; color:var(--ink-3); }
+.sheet-error{ padding:32px 20px; font-size:12px; color:var(--red); }
+
+/* ---------- Banner ---------- */
+.banner{
+  height:40px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:0 14px;
+  display:flex; align-items:center; gap:8px;
+}
+
+/* ---------- Cards ---------- */
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:20px;
+}
+.card-title{ font-size:15px; font-weight:600; }
+.card-sub{ font-size:12px; color:var(--ink-3); }
+
+.pill-btn{
+  height:32px;
+  padding:0 12px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:12px; font-weight:500;
+  color:var(--ink);
+  cursor:pointer;
+  transition:background 150ms;
+}
+.pill-btn:hover{ background:#FAFAF9; }
+.pill-btn svg{ stroke:var(--ink-2); }
+
+.btn-primary{
+  height:36px;
+  padding:0 14px;
+  background:var(--blue);
+  color:#fff;
+  border-radius:8px;
+  font-size:12px; font-weight:500;
+  display:inline-flex; align-items:center; gap:6px;
+  border:none;
+  cursor:pointer;
+  transition:opacity 150ms;
+}
+.btn-primary:hover{ opacity:.92; }
+
+.full-bleed-divider{
+  margin:0 -20px;
+  border-top:1px solid var(--line);
+}
+
+/* ---------- Metric row ---------- */
+.metric-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+}
+.metric-col{
+  padding:0 20px;
+}
+.metric-col:first-child{ padding-left:0; }
+.metric-col:not(:first-child){ border-left:1px solid var(--line); }
+.metric-label-row{ display:flex; align-items:center; justify-content:space-between; }
+.metric-label{ font-size:12px; color:var(--ink-2); }
+.metric-value{ font-size:28px; font-weight:600; letter-spacing:-0.02em; margin:6px 0; }
+.metric-delta{ display:flex; align-items:center; gap:4px; }
+.metric-delta .pct{ font-size:11px; font-weight:600; color:var(--green); }
+.metric-delta .cap{ font-size:11px; color:var(--ink-3); }
+
+/* ---------- Chart legend ---------- */
+.legend-item{ display:flex; align-items:center; gap:6px; }
+.legend-line{ width:12px; height:2px; border-radius:1px; }
+.legend-dot{ width:6px; height:6px; border-radius:999px; margin-left:-4px; }
+.legend-label{ font-size:11px; font-weight:500; color:var(--ink-2); }
+
+/* ---------- Automation cards ---------- */
+.intro-card{
+  background:#FAFAFA;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px;
+}
+.auto-card{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px;
+  display:flex; flex-direction:column; gap:12px;
+}
+.asset-icon{ width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:0 0 32px; }
+.btn-execute{
+  height:30px; flex:1;
+  background:var(--blue); color:#fff;
+  border:none; border-radius:8px;
+  font-size:11px; font-weight:500;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  cursor:pointer;
+  transition:opacity 150ms;
+}
+.btn-execute:hover{ opacity:.92; }
+.btn-pause{
+  height:30px; flex:1;
+  background:#fff; color:var(--ink-2);
+  border:1px solid var(--line); border-radius:8px;
+  font-size:11px; font-weight:500;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  cursor:pointer;
+  transition:background 150ms;
+}
+.btn-pause:hover{ background:#FAFAF9; }
+
+/* ---------- Table ---------- */
+.table-wrap{ overflow-x:auto; }
+table{ width:100%; border-collapse:collapse; }
+thead tr{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+th{
+  padding:16px 20px;
+  text-align:left;
+  font-size:12px; font-weight:500;
+  color:var(--ink-2);
+  white-space:nowrap;
+}
+th:first-child, td:first-child{ padding-left:20px; }
+th:last-child, td:last-child{ padding-right:20px; }
+tbody tr{ border-bottom:1px solid var(--line-soft); transition:background 150ms; }
+tbody tr:last-child{ border-bottom:none; }
+tbody tr:hover{ background:#FCFCFB; }
+td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
+.row-icon{ width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:0 0 30px; }
+.badge{ display:inline-flex; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:500; }
+.badge-overdue{ background:#FEF2F2; color:var(--red); }
+.badge-progress{ background:#F4F4F5; color:var(--ink-2); }
+.badge-completed{ background:#F0FDF4; color:var(--green); }
+
+/* ---------- Responsive ---------- */
+@media (max-width:1100px){
+  .content-grid{ grid-template-columns:1fr !important; }
+}
+
+.mobile-topbar{ display:none; }
+.sidebar-overlay{ display:none; }
+
+@media (max-width:768px){
+  .app-shell{ flex-direction:column; min-height:100vh; }
+
+  .mobile-topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    height:52px; padding:0 12px;
+    border-bottom:1px solid var(--line);
+    background:var(--surface);
+    position:sticky; top:0; z-index:20;
+  }
+  .menu-btn{
+    width:34px; height:34px;
+    border:1px solid var(--line); border-radius:8px;
+    background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+
+  .sidebar{
+    position:fixed; top:0; left:0; height:100vh; width:240px; flex:0 0 240px;
+    z-index:30;
+    transform:translateX(-100%);
+    transition:transform 200ms ease;
+  }
+  .sidebar.open{
+    transform:translateX(0);
+    box-shadow:8px 0 24px rgba(0,0,0,0.15);
+  }
+
+  .sidebar-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.35);
+    z-index:25;
+    opacity:0; pointer-events:none;
+    transition:opacity 200ms ease;
+  }
+  .sidebar-overlay.show{
+    display:block;
+    opacity:1; pointer-events:auto;
+  }
+
+  .main{ padding:12px; gap:12px; }
+
+  .banner{ height:auto; flex-wrap:wrap; padding:10px 14px; border-radius:12px; }
+
+  .metric-grid{ grid-template-columns:repeat(2,1fr); row-gap:16px; }
+  .metric-col{ padding:0 12px; }
+  .metric-col:nth-child(odd){ padding-left:0; border-left:none; }
+  .metric-col:nth-child(even){ border-left:1px solid var(--line); }
+  .metric-col:nth-child(n+3){ border-top:1px solid var(--line); padding-top:14px; }
+
+  .card{ padding:14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ============ MOBILE TOPBAR ============ -->
+  <div class="mobile-topbar">
+    <button class="menu-btn" onclick="toggleSidebar()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span style="font-size:13px;font-weight:600;">Mantis</span>
+    <div style="width:34px;"></div>
+  </div>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- ============ SIDEBAR ============ -->
+  <div class="sidebar" id="sidebar">
+    <div class="sb-header">
+      <div class="flex items-center gap-2">
+        <svg class="sb-avatar" viewBox="0 0 34 34"><rect width="34" height="34" rx="17" fill="#E4E4E7"/><text x="17" y="21" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6B7280">DA</text></svg>
+        <div>
+          <div style="font-size:13px;font-weight:600;">Dimas Aditya</div>
+          <div style="font-size:11px;color:var(--ink-3);">dimas@mantis.io</div>
+        </div>
+      </div>
+    </div>
+    <div class="sb-divider-full"></div>
+
+    <!-- Main nav -->
+    <div class="nav-item active" data-page="overview" onclick="showPage('overview')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      <span class="nav-label">Overview</span>
+    </div>
+    <div class="nav-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Activities</span>
+    </div>
+
+    <div class="nav-item" data-page="parts" onclick="showPage('parts')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73Z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <span>Parts &amp; Inventory</span>
+    </div>
+    <div class="nav-item" data-page="meters" onclick="showPage('meters')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14 16 10"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+      <span>Meters</span>
+    </div>
+    <div class="nav-item" data-page="po" onclick="showPage('po')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+      <span>Purchase Orders</span>
+    </div>
+
+    <!-- Promo card -->
+    <div class="promo-card">
+      <div style="font-size:12px;font-weight:600;">Mantis Pro-Tips ✨</div>
+      <div style="font-size:11px;color:var(--ink-3);margin-top:4px;">Customize your asset list to focus what matters most.</div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN CONTENT ============ -->
+  <div class="main">
+
+  <div class="page" id="page-overview">
+
+    <!-- Banner -->
+    <div class="banner">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span style="font-size:12px;color:var(--ink-3);">Preventive maintenance can reduce unplanned downtime by up to 30%.</span>
+      <a href="#" style="font-size:12px;font-weight:500;color:var(--ink);text-decoration:underline;text-underline-offset:2px;">Try Mantis Pro</a>
+    </div>
+
+    <!-- Content grid -->
+    <div class="content-grid" style="display:grid;grid-template-columns:2.6fr 1fr;gap:16px;">
+
+      <!-- Left column -->
+      <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+
+        <!-- Maintenance Summary -->
+        <div class="card">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="card-title">Maintenance Summary</div>
+              <div class="card-sub">Facility Performance</div>
+            </div>
+            <div class="flex items-center" style="gap:8px;">
+              <button class="pill-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                Filter
+              </button>
+              <button class="pill-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                This Year
+              </button>
+              <button class="pill-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <div class="full-bleed-divider" style="margin-top:20px;margin-bottom:20px;"></div>
+
+          <div class="metric-grid">
+            <div class="metric-col">
+              <div class="metric-label-row">
+                <span class="metric-label">Total Work Orders</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </div>
+              <div class="metric-value">1,284</div>
+              <div class="metric-delta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 16V8M8 12l4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="pct">+9.4%</span><span class="cap">Than last Month</span>
+              </div>
+            </div>
+            <div class="metric-col">
+              <div class="metric-label-row">
+                <span class="metric-label">Completed On Time</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </div>
+              <div class="metric-value">1,073</div>
+              <div class="metric-delta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 16V8M8 12l4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="pct">+11.2%</span><span class="cap">Than last Month</span>
+              </div>
+            </div>
+            <div class="metric-col">
+              <div class="metric-label-row">
+                <span class="metric-label">Equipment Uptime</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </div>
+              <div class="metric-value">96,8%</div>
+              <div class="metric-delta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 16V8M8 12l4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="pct">+2.1%</span><span class="cap">Than last Month</span>
+              </div>
+            </div>
+            <div class="metric-col">
+              <div class="metric-label-row">
+                <span class="metric-label">Avg Response Time</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </div>
+              <div class="metric-value">2,4h</div>
+              <div class="metric-delta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 16V8M8 12l4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="pct">+14.6%</span><span class="cap">Than last Month</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Maintenance Overview chart -->
+        <div class="card" style="height:360px;display:flex;flex-direction:column;">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="card-title">Maintenance Overview</div>
+              <div class="flex items-center" style="gap:14px;margin-top:8px;">
+                <div class="legend-item">
+                  <span class="legend-line" style="background:var(--accent);"></span>
+                  <span class="legend-dot" style="background:var(--accent);"></span>
+                  <span class="legend-label">Work Orders</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-line" style="background:var(--violet);"></span>
+                  <span class="legend-dot" style="background:var(--violet);"></span>
+                  <span class="legend-label">Completed</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center" style="gap:8px;">
+              <button class="pill-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                Chart
+              </button>
+              <button style="width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="1.5"><circle cx="12" cy="5" r="1.5" fill="var(--ink-2)"/><circle cx="12" cy="12" r="1.5" fill="var(--ink-2)"/><circle cx="12" cy="19" r="1.5" fill="var(--ink-2)"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div style="flex:1;margin-top:12px;min-height:0;">
+            <svg viewBox="0 0 1000 320" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">
+              <defs>
+                <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
+                  <circle cx="2" cy="2" r="0.9" fill="#E7E7E4"/>
+                </pattern>
+                <linearGradient id="gradAmber" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#F5A623" stop-opacity="0.22"/>
+                  <stop offset="100%" stop-color="#F5A623" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="gradViolet" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#6366F1" stop-opacity="0.22"/>
+                  <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+
+              <rect x="0" y="0" width="1000" height="320" fill="url(#dots)"/>
+
+              <!-- tracker line -->
+              <line x1="500" y1="10" x2="500" y2="310" stroke="#D9D9D6" stroke-width="1" stroke-dasharray="3 3"/>
+
+              <!-- Followers/Completed area + line -->
+              <path d="M0,274 L62.5,265 L125,268 L187.5,256 L250,244 L312.5,250 L375,235 L437.5,250 L500,280 L562.5,226 L625,205 L687.5,196 L750,175 L812.5,160 L875,145 L937.5,130 L1000,115 L1000,310 L0,310 Z" fill="url(#gradViolet)"/>
+              <polyline points="0,274 62.5,265 125,268 187.5,256 250,244 312.5,250 375,235 437.5,250 500,280 562.5,226 625,205 687.5,196 750,175 812.5,160 875,145 937.5,130 1000,115" fill="none" stroke="#6366F1" stroke-width="2" stroke-linejoin="round"/>
+
+              <!-- Work Orders area + line -->
+              <path d="M0,205 L62.5,211 L125,196 L187.5,184 L250,190 L312.5,175 L375,160 L437.5,166 L500,145 L562.5,130 L625,136 L687.5,115 L750,100 L812.5,85 L875,70 L937.5,58 L1000,46 L1000,310 L0,310 Z" fill="url(#gradAmber)"/>
+              <polyline points="0,205 62.5,211 125,196 187.5,184 250,190 312.5,175 375,160 437.5,166 500,145 562.5,130 625,136 687.5,115 750,100 812.5,85 875,70 937.5,58 1000,46" fill="none" stroke="#F5A623" stroke-width="2" stroke-linejoin="round"/>
+
+              <!-- tracker dots -->
+              <circle cx="500" cy="145" r="3.5" fill="#fff" stroke="#F5A623" stroke-width="2"/>
+              <circle cx="500" cy="280" r="3.5" fill="#fff" stroke="#6366F1" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="flex justify-between" style="margin-top:8px;">
+            <span style="font-size:11px;color:var(--ink-3);">01 Jan</span>
+            <span style="font-size:11px;color:var(--ink-3);">08 Feb</span>
+            <span style="font-size:11px;color:var(--ink-3);">15 Mar</span>
+            <span style="font-size:11px;color:var(--ink-3);">24 Apr</span>
+            <span style="font-size:11px;color:var(--ink-3);">31 May</span>
+            <span style="font-size:11px;color:var(--ink-3);">01 Jun</span>
+            <span style="font-size:11px;color:var(--ink-3);">08 Jul</span>
+            <span style="font-size:11px;color:var(--ink-3);">15 Aug</span>
+            <span style="font-size:11px;color:var(--ink-3);">24 Aug</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right column: Maintenance Automation -->
+      <div class="card" style="display:flex;flex-direction:column;gap:14px;">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="card-title">Maintenance Automation</div>
+            <div class="card-sub">Manage Automation Prompt</div>
+          </div>
+        </div>
+        <button class="pill-btn" style="align-self:flex-start;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create
+        </button>
+
+        <div class="intro-card">
+          <div style="font-size:12px;font-weight:600;">Reduce Downtime and Delays 🔧</div>
+          <div style="font-size:11px;color:var(--ink-3);margin-top:4px;line-height:1.5;">Automate technician assignment and preventive scheduling to keep operations running.</div>
+        </div>
+
+        <!-- Automation card 1 -->
+        <div class="auto-card">
+          <div class="flex items-center" style="gap:10px;">
+            <div class="asset-icon" style="background:linear-gradient(135deg,#FFD34D,#F5891F);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div style="min-width:0;">
+              <div style="font-size:12px;font-weight:600;">CNC-Machine-04</div>
+              <div style="font-size:11px;color:var(--ink-3);">Building A · Line 2</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)" style="margin-left:auto;flex:0 0 14px;"><circle cx="9" cy="5" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="9" cy="19" r="1.4"/><circle cx="15" cy="5" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="15" cy="19" r="1.4"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;">Auto Assign Technician</div>
+            <div style="font-size:11px;color:var(--ink-3);margin-top:2px;line-height:1.5;">Assign the nearest available technician when a fault is detected.</div>
+          </div>
+          <div class="flex" style="gap:8px;">
+            <button class="btn-execute">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Execute
+            </button>
+            <button class="btn-pause">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              Pause
+            </button>
+          </div>
+        </div>
+
+        <!-- Automation card 2 -->
+        <div class="auto-card">
+          <div class="flex items-center" style="gap:10px;">
+            <div class="asset-icon" style="background:linear-gradient(135deg,#38BDF8,#2563EB);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/><path d="M17.6 8.6A2 2 0 1 1 19 12H2"/></svg>
+            </div>
+            <div style="min-width:0;">
+              <div style="font-size:12px;font-weight:600;">HVAC-Unit-12</div>
+              <div style="font-size:11px;color:var(--ink-3);">Building B · Rooftop</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)" style="margin-left:auto;flex:0 0 14px;"><circle cx="9" cy="5" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="9" cy="19" r="1.4"/><circle cx="15" cy="5" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="15" cy="19" r="1.4"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;">Schedule Preventive Maintenance</div>
+            <div style="font-size:11px;color:var(--ink-3);margin-top:2px;line-height:1.5;">Create a work order every 30 days based on runtime hours.</div>
+          </div>
+          <div class="flex" style="gap:8px;">
+            <button class="btn-execute">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Execute
+            </button>
+            <button class="btn-pause">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              Pause
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Work Order List -->
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="card-title">Work Order List</div>
+          <div class="card-sub">Manage Your Work Orders</div>
+        </div>
+        <div class="flex items-center" style="gap:8px;">
+          <button class="pill-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Filter
+          </button>
+          <button class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Work Order
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>
+              <span class="flex items-center" style="gap:4px;">Work Order
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+              </span>
+            </th>
+            <th>Asset &amp; Issue</th>
+            <th>Request Date</th>
+            <th>Cost</th>
+            <th>
+              <span class="flex items-center" style="gap:4px;">Downtime
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </span>
+            </th>
+            <th>Completion</th>
+            <th>Status</th>
+            <th style="width:48px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="flex items-center" style="gap:10px;">
+                <div class="row-icon" style="background:linear-gradient(135deg,#FFD34D,#F5891F);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:500;">WO-2049</div>
+                  <div style="font-size:11px;color:var(--ink-3);">Building A · Line 2</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:13px;color:var(--ink);">HVAC Unit</div>
+              <div style="font-size:12px;color:var(--ink-3);">Filter Replacement &amp; Inspection</div>
+            </td>
+            <td>13/12/2024</td>
+            <td>$1.240</td>
+            <td>8 hrs</td>
+            <td>92%</td>
+            <td><span class="badge badge-overdue">Overdue</span></td>
+            <td>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center" style="gap:10px;">
+                <div class="row-icon" style="background:#2E7CF6;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:500;">WO-2050</div>
+                  <div style="font-size:11px;color:var(--ink-3);">Building B · Warehouse</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:13px;color:var(--ink);">Conveyor Belt</div>
+              <div style="font-size:12px;color:var(--ink-3);">Motor Bearing Replacement</div>
+            </td>
+            <td>25/12/2024</td>
+            <td>$3.860</td>
+            <td>14 hrs</td>
+            <td>78%</td>
+            <td><span class="badge badge-progress">In Progress</span></td>
+            <td>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center" style="gap:10px;">
+                <div class="row-icon" style="background:linear-gradient(135deg,#38BDF8,#2563EB);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/><path d="M17.6 8.6A2 2 0 1 1 19 12H2"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:500;">WO-2051</div>
+                  <div style="font-size:11px;color:var(--ink-3);">Building C · Line 5</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:13px;color:var(--ink);">CNC Machine</div>
+              <div style="font-size:12px;color:var(--ink-3);">Calibration &amp; Lubrication</div>
+            </td>
+            <td>01/01/2025</td>
+            <td>$980</td>
+            <td>3 hrs</td>
+            <td>100%</td>
+            <td><span class="badge badge-completed">Completed</span></td>
+            <td>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center" style="gap:10px;">
+                <div class="row-icon" style="background:#0F0F0F;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:500;">WO-2052</div>
+                  <div style="font-size:11px;color:var(--ink-3);">Building A · Rooftop</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:13px;color:var(--ink);">Generator</div>
+              <div style="font-size:12px;color:var(--ink-3);">Fuel System Check</div>
+            </td>
+            <td>11/01/2024</td>
+            <td>$2.150</td>
+            <td>6 hrs</td>
+            <td>95%</td>
+            <td><span class="badge badge-completed">Completed</span></td>
+            <td>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+  </div>
+  <!-- /page-overview -->
+
+  <!-- ============ PARTS & INVENTORY (Sparepart) ============ -->
+  <div class="page" id="page-parts" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="card-title">Parts &amp; Inventory</div>
+          <div class="card-sub">Data Sparepart &middot; live dari Google Sheet</div>
+        </div>
+        <button class="pill-btn" onclick="loadSheetTable('Sparepart','parts-table-container','mantisHandleSparepart')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
+      <div id="parts-table-container"></div>
+    </div>
+  </div>
+
+  <!-- ============ METERS (Running Hour) ============ -->
+  <div class="page" id="page-meters" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="card-title">Meters</div>
+          <div class="card-sub">Data Running Hour &middot; live dari Google Sheet</div>
+        </div>
+        <button class="pill-btn" onclick="loadSheetTable('Running Hour','meters-table-container','mantisHandleRunningHour')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
+      <div id="meters-table-container"></div>
+    </div>
+  </div>
+
+  <!-- ============ PURCHASE ORDERS (PRPO) ============ -->
+  <div class="page" id="page-po" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="card-title">Purchase Orders</div>
+          <div class="card-sub">Data PRPO &middot; live dari Google Sheet</div>
+        </div>
+        <button class="pill-btn" onclick="loadSheetTable('PRPO','po-table-container','mantisHandlePRPO')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
+      <div id="po-table-container"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleGroup(el){
+  el.parentElement.classList.toggle('collapsed');
+}
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+
+/* ---------- Google Sheet integration (read-only) ---------- */
+const MANTIS_SHEET_ID = '11-sqiV3BYqx738Rhr3Y9SF4Q7FnAGKNqMn-Gvoq6rFs';
+const mantisLoadedPages = {};
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById('page-' + name).style.display = '';
+
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(el){ el.classList.remove('active'); });
+  const activeNav = document.querySelector('.nav-item[data-page="' + name + '"]');
+  if(activeNav) activeNav.classList.add('active');
+
+  if(name === 'parts' && !mantisLoadedPages.parts){
+    mantisLoadedPages.parts = true;
+    loadSheetTable('Sparepart', 'parts-table-container', 'mantisHandleSparepart');
+  }
+  if(name === 'meters' && !mantisLoadedPages.meters){
+    mantisLoadedPages.meters = true;
+    loadSheetTable('Running Hour', 'meters-table-container', 'mantisHandleRunningHour');
+  }
+  if(name === 'po' && !mantisLoadedPages.po){
+    mantisLoadedPages.po = true;
+    loadSheetTable('PRPO', 'po-table-container', 'mantisHandlePRPO');
+  }
+
+  if(document.getElementById('sidebar').classList.contains('open')){
+    toggleSidebar();
+  }
+}
+
+function mantisEscapeHtml(str){
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderGvizTable(container, table){
+  if(!table || !table.cols || !table.rows){
+    container.innerHTML = '<div class="sheet-error">Data tidak ditemukan pada sheet.</div>';
+    return;
+  }
+  let html = '<div class="table-wrap"><table><thead><tr>';
+  table.cols.forEach(function(c){
+    html += '<th>' + mantisEscapeHtml(c.label || c.id || '') + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  table.rows.forEach(function(r){
+    html += '<tr>';
+    (r.c || []).forEach(function(cell){
+      let val = '';
+      if(cell){
+        val = (cell.f !== undefined && cell.f !== null) ? cell.f : (cell.v !== undefined && cell.v !== null ? cell.v : '');
+      }
+      html += '<td>' + mantisEscapeHtml(val) + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+function loadSheetTable(sheetName, containerId, handlerName){
+  const container = document.getElementById(containerId);
+  container.innerHTML = '<div class="sheet-loading">Memuat data dari Google Sheet...</div>';
+
+  window[handlerName] = function(res){
+    if(!res || res.status === 'error'){
+      container.innerHTML = '<div class="sheet-error">Gagal memuat data dari sheet' + (res && res.errors && res.errors[0] ? ': ' + mantisEscapeHtml(res.errors[0].detailed_message || res.errors[0].message) : '.') + '</div>';
+      return;
+    }
+    renderGvizTable(container, res.table);
+  };
+
+  const tqx = 'out:json;responseHandler:' + handlerName;
+  const url = 'https://docs.google.com/spreadsheets/d/' + MANTIS_SHEET_ID + '/gviz/tq?sheet=' + encodeURIComponent(sheetName) + '&tqx=' + encodeURIComponent(tqx) + '&_=' + Date.now();
+
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = function(){
+    container.innerHTML = '<div class="sheet-error">Gagal memuat data. Periksa koneksi internet atau akses sheet.</div>';
+  };
+  script.onload = function(){ script.remove(); };
+  document.body.appendChild(script);
+}
+</script>
+</body>
+</html>
