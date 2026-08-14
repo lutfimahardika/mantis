@@ -260,6 +260,7 @@ html,body{
   transition:background 150ms,color 150ms;
   display:inline-flex;
   align-items:center;
+  justify-content:center;
   gap:6px;
 }
 .table-pagination button:hover:not(:disabled){ background:#FAFAF9; color:var(--ink); }
@@ -557,6 +558,18 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 
   .flex.items-center.justify-between{ flex-wrap:wrap; row-gap:10px; }
   .table-search input{ width:120px; }
+
+  .table-rows-control{ flex-wrap:nowrap; gap:8px; }
+  .table-rows-label-text{ display:none; }
+  .table-rows-control > label{ order:2; flex:0 0 auto; }
+  .table-rows-control > label select{ width:56px; }
+  .table-pagination{ display:contents; }
+  .table-pagination .table-page-btn,
+  .table-pagination .table-page-ellipsis,
+  .table-pagination .table-pg-divider{ display:none; }
+  .table-pg-nav{ flex:1 1 0; justify-content:center; }
+  .table-pg-nav:first-of-type{ order:1; }
+  .table-pg-nav:last-of-type{ order:3; }
 }
 </style>
 </head>
@@ -1336,14 +1349,14 @@ function renderGvizTableRows(containerId){
   html += '</tbody></table></div>';
 
   html += '<div class="table-rows-control">';
-  html += '<label>Tampilkan';
+  html += '<label><span class="table-rows-label-text">Tampilkan</span>';
   html += '<select onchange="mantisChangeRowLimit(\'' + containerId + '\', this.value)">';
   MANTIS_ROW_OPTIONS.forEach(function(n){
     const selected = (String(limit) === String(n)) ? ' selected' : '';
     html += '<option value="' + n + '"' + selected + '>' + n + '</option>';
   });
   html += '<option value="all"' + (limit === 'all' ? ' selected' : '') + '>Semua</option>';
-  html += '</select>dari ' + totalRows + ' data</label>';
+  html += '</select><span class="table-rows-label-text">dari ' + totalRows + ' data</span></label>';
 
   if(limit !== 'all' && totalPages > 1){
     html += '<div class="table-pagination">';
