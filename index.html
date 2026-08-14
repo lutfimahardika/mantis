@@ -46,27 +46,53 @@ html,body{
 /* ---------- App shell ---------- */
 .app-shell{
   background:var(--surface);
-  display:flex;
+  display:grid;
+  grid-template-columns:200px 1fr;
+  grid-template-rows:60px 1fr;
   min-height:100vh;
-  overflow:hidden;
+}
+
+/* ---------- Header (grid row 1) ---------- */
+.app-header-left{
+  grid-column:1;
+  grid-row:1;
+  height:60px;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 16px;
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+.app-header-right{
+  grid-column:2;
+  grid-row:1;
+  height:60px;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  padding:0 24px;
+  font-size:18px;
+  font-weight:700;
+  letter-spacing:-0.01em;
+  color:var(--ink);
+  border-bottom:1px solid var(--line);
 }
 
 /* ---------- Sidebar ---------- */
 .sidebar{
+  grid-column:1;
+  grid-row:2;
   width:200px;
-  flex:0 0 200px;
   background:var(--surface);
   border-right:1px solid var(--line);
   display:flex;
   flex-direction:column;
   padding:16px 12px;
 }
-.sb-header{ padding:0 4px 14px 4px; }
+.sb-header{ padding:0 4px 14px 4px; display:none; }
 .sb-avatar{ width:34px; height:34px; border-radius:999px; object-fit:cover; }
-.sb-divider-full{
-  margin:0 -12px 12px -12px;
-  border-top:1px solid var(--line);
-}
 .nav-item{
   height:34px;
   display:flex; align-items:center; gap:10px;
@@ -121,7 +147,8 @@ html,body{
 
 /* ---------- Main content ---------- */
 .main{
-  flex:1 1 auto;
+  grid-column:2;
+  grid-row:2;
   padding:16px;
   min-width:0;
   display:flex;
@@ -135,6 +162,63 @@ html,body{
 }
 .sheet-loading{ padding:32px 20px; font-size:12px; color:var(--ink-3); }
 .sheet-error{ padding:32px 20px; font-size:12px; color:var(--red); }
+.table-rows-control{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:14px;
+  padding:16px 20px;
+  border-top:1px solid var(--line);
+  font-size:13px;
+  color:var(--ink-2);
+}
+.table-rows-control label{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.table-rows-control select{
+  height:34px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+}
+.table-pagination{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.table-pagination button{
+  height:34px;
+  min-width:34px;
+  padding:0 12px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+  transition:background 150ms;
+}
+.table-pagination button:hover:not(:disabled){ background:#FAFAF9; }
+.table-pagination button:disabled{ opacity:.4; cursor:not-allowed; }
+.table-page-btn.active{
+  background:var(--accent-soft);
+  border-color:var(--accent-soft);
+  color:var(--accent);
+  font-weight:600;
+}
+.table-page-ellipsis{
+  padding:0 6px;
+  font-size:13px;
+  color:var(--ink-3);
+}
 
 /* ---------- Tabs (Activities) ---------- */
 .tab-row{ display:flex; align-items:center; gap:6px; padding:12px 20px 0 20px; }
@@ -266,6 +350,7 @@ html,body{
 
 /* ---------- Table ---------- */
 .table-wrap{ overflow-x:auto; }
+.table-fixed th, .table-fixed td{ overflow:hidden; text-overflow:ellipsis; }
 table{ width:100%; border-collapse:collapse; }
 thead tr{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 th{
@@ -296,7 +381,16 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 .sidebar-overlay{ display:none; }
 
 @media (max-width:768px){
-  .app-shell{ flex-direction:column; min-height:100vh; }
+  .app-shell{ display:flex; flex-direction:column; min-height:100vh; }
+
+  .app-header-left, .app-header-right{ display:none; }
+
+  .sidebar .sb-header{
+    display:block;
+    margin:0 -12px 12px -12px;
+    padding:0 12px 14px 12px;
+    border-bottom:1px solid var(--line);
+  }
 
   .mobile-topbar{
     display:flex; align-items:center; justify-content:space-between;
@@ -354,6 +448,16 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 
 <div class="app-shell">
 
+  <!-- ============ HEADER (grid row 1) ============ -->
+  <div class="app-header-left">
+    <svg class="sb-avatar" viewBox="0 0 34 34"><rect width="34" height="34" rx="17" fill="#E4E4E7"/><text x="17" y="21" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6B7280">DA</text></svg>
+    <div>
+      <div style="font-size:13px;font-weight:600;">Dimas Aditya</div>
+      <div style="font-size:11px;color:var(--ink-3);">dimas@mantis.io</div>
+    </div>
+  </div>
+  <div class="app-header-right" id="page-topbar-title">Overview</div>
+
   <!-- ============ MOBILE TOPBAR ============ -->
   <div class="mobile-topbar">
     <button class="menu-btn" onclick="toggleSidebar()">
@@ -375,7 +479,6 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
         </div>
       </div>
     </div>
-    <div class="sb-divider-full"></div>
 
     <!-- Main nav -->
     <div class="nav-item active" data-page="overview" onclick="showPage('overview')">
@@ -411,13 +514,6 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   <div class="main">
 
   <div class="page" id="page-overview">
-
-    <!-- Banner -->
-    <div class="banner">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      <span style="font-size:12px;color:var(--ink-3);">Preventive maintenance can reduce unplanned downtime by up to 30%.</span>
-      <a href="#" style="font-size:12px;font-weight:500;color:var(--ink);text-decoration:underline;text-underline-offset:2px;">Try Mantis Pro</a>
-    </div>
 
     <!-- Content grid -->
     <div class="content-grid" style="display:grid;grid-template-columns:2.6fr 1fr;gap:16px;">
@@ -885,7 +981,11 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
     </div>
   </div>
 
+  </div>
+  <!-- /main -->
+
 </div>
+<!-- /app-shell -->
 
 <script>
 function toggleGroup(el){
@@ -899,6 +999,13 @@ function toggleSidebar(){
 /* ---------- Google Sheet integration (read-only) ---------- */
 const MANTIS_SHEET_ID = '11-sqiV3BYqx738Rhr3Y9SF4Q7FnAGKNqMn-Gvoq6rFs';
 const mantisLoadedPages = {};
+const mantisPageTitles = {
+  overview: 'Overview',
+  activities: 'Activities',
+  parts: 'Parts & Inventory',
+  meters: 'Meters',
+  po: 'Purchase Orders'
+};
 
 function showPage(name){
   document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
@@ -907,6 +1014,8 @@ function showPage(name){
   document.querySelectorAll('.nav-item[data-page]').forEach(function(el){ el.classList.remove('active'); });
   const activeNav = document.querySelector('.nav-item[data-page="' + name + '"]');
   if(activeNav) activeNav.classList.add('active');
+
+  document.getElementById('page-topbar-title').textContent = mantisPageTitles[name] || name;
 
   if(name === 'parts' && !mantisLoadedPages.parts){
     mantisLoadedPages.parts = true;
@@ -949,17 +1058,58 @@ function mantisEscapeHtml(str){
     .replace(/"/g, '&quot;');
 }
 
-function renderGvizTable(container, table){
+const MANTIS_ROW_OPTIONS = [10, 25, 50, 100];
+const mantisTableCache = {};
+const mantisRowLimits = {};
+const mantisCurrentPage = {};
+const mantisColumnWidths = {};
+
+function renderGvizTable(container, table, containerId){
+  mantisTableCache[containerId] = table;
+  if(!(containerId in mantisRowLimits)) mantisRowLimits[containerId] = 10;
+  if(!(containerId in mantisCurrentPage)) mantisCurrentPage[containerId] = 1;
+  delete mantisColumnWidths[containerId];
+  renderGvizTableRows(containerId);
+}
+
+function renderGvizTableRows(containerId){
+  const container = document.getElementById(containerId);
+  const table = mantisTableCache[containerId];
+  const limit = mantisRowLimits[containerId];
+
   if(!table || !table.cols || !table.rows){
     container.innerHTML = '<div class="sheet-error">Data tidak ditemukan pada sheet.</div>';
     return;
   }
-  let html = '<div class="table-wrap"><table><thead><tr>';
+
+  const totalRows = table.rows.length;
+  const totalPages = (limit === 'all') ? 1 : Math.max(1, Math.ceil(totalRows / limit));
+  const page = Math.min(Math.max(1, mantisCurrentPage[containerId] || 1), totalPages);
+  mantisCurrentPage[containerId] = page;
+
+  let rowsToShow;
+  if(limit === 'all'){
+    rowsToShow = table.rows;
+  } else {
+    const start = (page - 1) * limit;
+    rowsToShow = table.rows.slice(start, start + limit);
+  }
+
+  const lockedWidths = mantisColumnWidths[containerId];
+  let tableOpenTag = '<table>';
+  let colgroupHtml = '';
+  if(lockedWidths){
+    const totalWidth = lockedWidths.reduce(function(sum, w){ return sum + w; }, 0);
+    tableOpenTag = '<table class="table-fixed" style="table-layout:fixed;width:' + totalWidth + 'px;">';
+    colgroupHtml = '<colgroup>' + lockedWidths.map(function(w){ return '<col style="width:' + w + 'px;">'; }).join('') + '</colgroup>';
+  }
+
+  let html = '<div class="table-wrap">' + tableOpenTag + colgroupHtml + '<thead><tr>';
   table.cols.forEach(function(c){
     html += '<th>' + mantisEscapeHtml(c.label || c.id || '') + '</th>';
   });
   html += '</tr></thead><tbody>';
-  table.rows.forEach(function(r){
+  rowsToShow.forEach(function(r){
     html += '<tr>';
     (r.c || []).forEach(function(cell){
       let val = '';
@@ -971,7 +1121,80 @@ function renderGvizTable(container, table){
     html += '</tr>';
   });
   html += '</tbody></table></div>';
+
+  html += '<div class="table-rows-control">';
+  html += '<label>Tampilkan per halaman:';
+  html += '<select onchange="mantisChangeRowLimit(\'' + containerId + '\', this.value)">';
+  MANTIS_ROW_OPTIONS.forEach(function(n){
+    const selected = (String(limit) === String(n)) ? ' selected' : '';
+    html += '<option value="' + n + '"' + selected + '>' + n + '</option>';
+  });
+  html += '<option value="all"' + (limit === 'all' ? ' selected' : '') + '>Semua</option>';
+  html += '</select></label>';
+
+  if(limit !== 'all' && totalPages > 1){
+    html += '<div class="table-pagination">';
+    html += '<button type="button"' + (page <= 1 ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page - 1) + ')">Prev</button>';
+    mantisGetPageNumbers(page, totalPages).forEach(function(p){
+      if(p === '...'){
+        html += '<span class="table-page-ellipsis">&hellip;</span>';
+      } else {
+        html += '<button type="button" class="table-page-btn' + (p === page ? ' active' : '') + '" onclick="mantisChangePage(\'' + containerId + '\', ' + p + ')">' + p + '</button>';
+      }
+    });
+    html += '<button type="button"' + (page >= totalPages ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page + 1) + ')">Next</button>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+
   container.innerHTML = html;
+
+  if(!lockedWidths){
+    const ths = container.querySelectorAll('table thead th');
+    if(ths.length){
+      mantisColumnWidths[containerId] = Array.prototype.map.call(ths, function(th){ return th.offsetWidth; });
+    }
+  }
+}
+
+function mantisGetPageNumbers(current, total){
+  const delta = 1;
+  const range = [];
+  const result = [];
+  let last;
+
+  for(let i = 1; i <= total; i++){
+    if(i === 1 || i === total || (i >= current - delta && i <= current + delta)){
+      range.push(i);
+    }
+  }
+
+  range.forEach(function(i){
+    if(last !== undefined){
+      if(i - last === 2){
+        result.push(last + 1);
+      } else if(i - last > 1){
+        result.push('...');
+      }
+    }
+    result.push(i);
+    last = i;
+  });
+
+  return result;
+}
+
+function mantisChangeRowLimit(containerId, value){
+  mantisRowLimits[containerId] = (value === 'all') ? 'all' : parseInt(value, 10);
+  mantisCurrentPage[containerId] = 1;
+  delete mantisColumnWidths[containerId];
+  renderGvizTableRows(containerId);
+}
+
+function mantisChangePage(containerId, page){
+  mantisCurrentPage[containerId] = page;
+  renderGvizTableRows(containerId);
 }
 
 function loadSheetTable(sheetName, containerId, handlerName){
@@ -983,7 +1206,7 @@ function loadSheetTable(sheetName, containerId, handlerName){
       container.innerHTML = '<div class="sheet-error">Gagal memuat data dari sheet' + (res && res.errors && res.errors[0] ? ': ' + mantisEscapeHtml(res.errors[0].detailed_message || res.errors[0].message) : '.') + '</div>';
       return;
     }
-    renderGvizTable(container, res.table);
+    renderGvizTable(container, res.table, containerId);
   };
 
   const tqx = 'out:json;responseHandler:' + handlerName;
