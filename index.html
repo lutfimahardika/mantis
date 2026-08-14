@@ -554,6 +554,9 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   .metric-col:nth-child(n+3){ border-top:1px solid var(--line); padding-top:14px; }
 
   .card{ padding:14px; }
+
+  .flex.items-center.justify-between{ flex-wrap:wrap; row-gap:10px; }
+  .table-search input{ width:120px; }
 }
 </style>
 </head>
@@ -1161,8 +1164,9 @@ function toggleGroup(el){
   el.parentElement.classList.toggle('collapsed');
 }
 function toggleSidebar(){
-  document.getElementById('sidebar').classList.toggle('open');
+  const isOpen = document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('show');
+  document.body.style.overflow = isOpen ? 'hidden' : '';
 }
 
 /* ---------- Google Sheet integration (read-only) ---------- */
