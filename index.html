@@ -8,7 +8,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;1,700&family=Manrope:wght@600;700;800&display=swap">
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
@@ -26,6 +26,7 @@
   --blue:        #2E7CF6;
   --green:       #16A34A;
   --red:         #DC2626;
+  --logo-color:  #FF7034;
   --font-heading: 'Manrope', 'Inter', system-ui, sans-serif;
 }
 
@@ -65,6 +66,22 @@ html,body{
   padding:0 16px;
   border-right:1px solid var(--line);
   border-bottom:1px solid var(--line);
+  position:sticky;
+  top:0;
+  z-index:15;
+  background:var(--surface);
+}
+.app-logo{ width:32px; height:32px; flex:0 0 32px; display:block; }
+.app-logo-text{
+  font-family:'Inter', system-ui, sans-serif;
+  font-weight:700;
+  font-style:italic;
+  font-size:22px;
+  line-height:1;
+  letter-spacing:-0.01em;
+  color:var(--ink);
+  display:flex;
+  align-items:center;
 }
 .app-header-right{
   grid-column:2;
@@ -80,6 +97,10 @@ html,body{
   letter-spacing:-0.01em;
   color:var(--ink);
   border-bottom:1px solid var(--line);
+  position:sticky;
+  top:0;
+  z-index:15;
+  background:var(--surface);
 }
 
 /* ---------- Sidebar ---------- */
@@ -92,8 +113,12 @@ html,body{
   display:flex;
   flex-direction:column;
   padding:16px 12px;
+  position:sticky;
+  top:60px;
+  align-self:start;
+  height:calc(100vh - 60px);
+  overflow-y:auto;
 }
-.sb-header{ padding:0 4px 14px 4px; display:none; }
 .sb-avatar{ width:34px; height:34px; border-radius:999px; object-fit:cover; }
 .nav-item{
   height:34px;
@@ -139,12 +164,12 @@ html,body{
 }
 .sub-item:hover{ background:#FAFAF9; color:var(--ink); }
 .sb-divider{ margin:6px 4px; border-top:1px solid var(--line); }
-.promo-card{
-  margin-top:auto;
-  background:#FAFAF9;
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:12px;
+.sb-bottom-group{ margin-top:auto; }
+.sb-account{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 4px 4px 4px;
 }
 
 /* ---------- Main content ---------- */
@@ -191,30 +216,46 @@ html,body{
   cursor:pointer;
 }
 .table-pagination{
-  display:flex;
+  display:inline-flex;
   align-items:center;
-  gap:6px;
+  gap:2px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  padding:4px;
   flex-wrap:wrap;
 }
 .table-pagination button{
   height:34px;
   min-width:34px;
-  padding:0 12px;
-  border:1px solid var(--line);
-  border-radius:8px;
-  background:#fff;
+  padding:0 10px;
+  border:none;
+  border-radius:7px;
+  background:transparent;
   font-size:13px;
-  color:var(--ink);
+  color:var(--ink-2);
   cursor:pointer;
-  transition:background 150ms;
+  transition:background 150ms,color 150ms;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
 }
-.table-pagination button:hover:not(:disabled){ background:#FAFAF9; }
-.table-pagination button:disabled{ opacity:.4; cursor:not-allowed; }
+.table-pagination button:hover:not(:disabled){ background:#FAFAF9; color:var(--ink); }
+.table-pagination button:disabled{ opacity:.35; cursor:not-allowed; }
+.table-pg-nav{ font-weight:600; color:var(--ink); padding:0 14px; }
+.table-pg-nav svg{ flex:0 0 auto; }
 .table-page-btn.active{
+  border:1.5px solid var(--accent);
   background:var(--accent-soft);
-  border-color:var(--accent-soft);
   color:var(--accent);
-  font-weight:600;
+  font-weight:700;
+}
+.table-pg-divider{
+  width:1px;
+  height:22px;
+  background:var(--line);
+  margin:0 4px;
+  flex:0 0 1px;
 }
 .table-page-ellipsis{
   padding:0 6px;
@@ -373,6 +414,48 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 .badge-overdue{ background:#FEF2F2; color:var(--red); }
 .badge-progress{ background:#F4F4F5; color:var(--ink-2); }
 .badge-completed{ background:#F0FDF4; color:var(--green); }
+.table-row-clickable{ cursor:pointer; }
+
+/* ---------- Row detail page ---------- */
+.row-detail-header-grid{
+  display:flex;
+  align-items:stretch;
+  border-bottom:1px solid var(--line);
+}
+.row-detail-back-cell{
+  width:64px;
+  flex:0 0 64px;
+  border:none;
+  border-right:1px solid var(--line);
+  background:transparent;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  color:var(--ink-2);
+  transition:background 150ms,color 150ms;
+}
+.row-detail-back-cell:hover{ background:#FAFAF9; color:var(--ink); }
+.row-detail-title-cell{
+  flex:1;
+  min-width:0;
+  padding:14px 20px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.row-detail-body{ padding:4px 20px 20px 20px; }
+.row-detail-item{
+  display:flex;
+  align-items:flex-start;
+  gap:24px;
+  padding:12px 0;
+  border-bottom:1px solid var(--line-soft);
+  font-size:13px;
+}
+.row-detail-item:last-child{ border-bottom:none; }
+.row-detail-label{ color:var(--ink-2); flex:0 0 160px; }
+.row-detail-value{ color:var(--ink); font-weight:500; text-align:left; flex:1; word-break:break-word; }
 
 /* ---------- Responsive ---------- */
 @media (max-width:1100px){
@@ -387,13 +470,6 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 
   .app-header-left, .app-header-right{ display:none; }
 
-  .sidebar .sb-header{
-    display:block;
-    margin:0 -12px 12px -12px;
-    padding:0 12px 14px 12px;
-    border-bottom:1px solid var(--line);
-  }
-
   .mobile-topbar{
     display:flex; align-items:center; justify-content:space-between;
     height:52px; padding:0 12px;
@@ -401,6 +477,13 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
     background:var(--surface);
     position:sticky; top:0; z-index:20;
   }
+  .mobile-topbar-brand{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .mobile-topbar-brand .app-logo{ width:24px; height:24px; flex:0 0 24px; }
+  .mobile-topbar-brand .app-logo-text{ font-size:17px; }
   .menu-btn{
     width:34px; height:34px;
     border:1px solid var(--line); border-radius:8px;
@@ -452,11 +535,12 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 
   <!-- ============ HEADER (grid row 1) ============ -->
   <div class="app-header-left">
-    <svg class="sb-avatar" viewBox="0 0 34 34"><rect width="34" height="34" rx="17" fill="#E4E4E7"/><text x="17" y="21" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6B7280">DA</text></svg>
-    <div>
-      <div style="font-size:13px;font-weight:600;">Dimas Aditya</div>
-      <div style="font-size:11px;color:var(--ink-3);">dimas@mantis.io</div>
-    </div>
+    <svg class="app-logo" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+      <g transform="matrix(0.470588,0,0,0.470588,-194.766095,-722.788328)">
+        <path d="M472.441,2598.425L826.772,2598.425L826.772,2007.874L946.979,2007.874C1206.743,2007.874 1417.323,2218.454 1417.323,2478.218L1417.323,2539.074C1417.323,2571.261 1443.234,2597.448 1475.419,2597.789C1475.644,2597.792 1475.868,2597.794 1476.093,2597.796C1491.773,2597.963 1506.868,2591.85 1518.014,2580.821C1529.161,2569.792 1535.433,2554.762 1535.433,2539.081L1535.433,2007.874L1655.64,2007.874C1915.404,2007.874 2125.984,2218.454 2125.984,2478.218L2125.984,2598.425L2480.315,2598.425L2480.315,3188.976L2360.108,3188.976C2100.344,3188.976 1889.764,2978.396 1889.764,2718.632L1889.764,2657.144C1889.764,2624.714 1863.475,2598.425 1831.045,2598.425L1830.372,2598.425C1797.943,2598.425 1771.654,2624.714 1771.654,2657.144L1771.654,3188.976C1771.654,3188.976 1718.856,3188.234 1644.835,3187.194C1387.675,3183.578 1181.102,2974.081 1181.102,2716.896L1181.102,2655.892C1181.102,2623.463 1154.813,2597.174 1122.384,2597.174L1121.71,2597.174C1089.281,2597.174 1062.992,2623.463 1062.992,2655.892L1062.992,3180.674C1062.992,3180.674 1016.587,3181.329 949.842,3182.271C824.261,3184.043 703.188,3135.516 613.593,3047.502C523.999,2959.487 473.327,2839.296 472.865,2713.704C472.615,2645.795 472.441,2598.425 472.441,2598.425Z" fill="var(--logo-color)"/>
+      </g>
+    </svg>
+    <span class="app-logo-text">mantis</span>
   </div>
   <div class="app-header-right" id="page-topbar-title">Overview</div>
 
@@ -465,23 +549,20 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
     <button class="menu-btn" onclick="toggleSidebar()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <span style="font-size:13px;font-weight:600;">Mantis</span>
+    <div class="mobile-topbar-brand">
+      <svg class="app-logo" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+        <g transform="matrix(0.470588,0,0,0.470588,-194.766095,-722.788328)">
+          <path d="M472.441,2598.425L826.772,2598.425L826.772,2007.874L946.979,2007.874C1206.743,2007.874 1417.323,2218.454 1417.323,2478.218L1417.323,2539.074C1417.323,2571.261 1443.234,2597.448 1475.419,2597.789C1475.644,2597.792 1475.868,2597.794 1476.093,2597.796C1491.773,2597.963 1506.868,2591.85 1518.014,2580.821C1529.161,2569.792 1535.433,2554.762 1535.433,2539.081L1535.433,2007.874L1655.64,2007.874C1915.404,2007.874 2125.984,2218.454 2125.984,2478.218L2125.984,2598.425L2480.315,2598.425L2480.315,3188.976L2360.108,3188.976C2100.344,3188.976 1889.764,2978.396 1889.764,2718.632L1889.764,2657.144C1889.764,2624.714 1863.475,2598.425 1831.045,2598.425L1830.372,2598.425C1797.943,2598.425 1771.654,2624.714 1771.654,2657.144L1771.654,3188.976C1771.654,3188.976 1718.856,3188.234 1644.835,3187.194C1387.675,3183.578 1181.102,2974.081 1181.102,2716.896L1181.102,2655.892C1181.102,2623.463 1154.813,2597.174 1122.384,2597.174L1121.71,2597.174C1089.281,2597.174 1062.992,2623.463 1062.992,2655.892L1062.992,3180.674C1062.992,3180.674 1016.587,3181.329 949.842,3182.271C824.261,3184.043 703.188,3135.516 613.593,3047.502C523.999,2959.487 473.327,2839.296 472.865,2713.704C472.615,2645.795 472.441,2598.425 472.441,2598.425Z" fill="var(--logo-color)"/>
+        </g>
+      </svg>
+      <span class="app-logo-text">mantis</span>
+    </div>
     <div style="width:34px;"></div>
   </div>
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
   <!-- ============ SIDEBAR ============ -->
   <div class="sidebar" id="sidebar">
-    <div class="sb-header">
-      <div class="flex items-center gap-2">
-        <svg class="sb-avatar" viewBox="0 0 34 34"><rect width="34" height="34" rx="17" fill="#E4E4E7"/><text x="17" y="21" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6B7280">DA</text></svg>
-        <div>
-          <div style="font-size:13px;font-weight:600;">Dimas Aditya</div>
-          <div style="font-size:11px;color:var(--ink-3);">dimas@mantis.io</div>
-        </div>
-      </div>
-    </div>
-
     <!-- Main nav -->
     <div class="nav-item active" data-page="overview" onclick="showPage('overview')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
@@ -505,10 +586,26 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
       <span>Purchase Orders</span>
     </div>
 
-    <!-- Promo card -->
-    <div class="promo-card">
-      <div style="font-size:12px;font-weight:600;">Mantis Pro-Tips ✨</div>
-      <div style="font-size:11px;color:var(--ink-3);margin-top:4px;">Customize your asset list to focus what matters most.</div>
+    <!-- Bottom group: Settings, Support, Account -->
+    <div class="sb-bottom-group">
+      <div class="nav-item" data-page="settings" onclick="showPage('settings')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        <span>Settings</span>
+      </div>
+      <div class="nav-item" data-page="support" onclick="showPage('support')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Support</span>
+      </div>
+
+      <div class="sb-divider-full" style="margin-top:8px;"></div>
+
+      <div class="sb-account">
+        <svg class="sb-avatar" viewBox="0 0 34 34"><rect width="34" height="34" rx="17" fill="#E4E4E7"/><text x="17" y="21" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6B7280">DA</text></svg>
+        <div>
+          <div style="font-size:13px;font-weight:600;">Dimas Aditya</div>
+          <div style="font-size:11px;color:var(--ink-3);">dimas@mantis.io</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -983,6 +1080,45 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
     </div>
   </div>
 
+  <!-- ============ SETTINGS ============ -->
+  <div class="page" id="page-settings" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;">
+        <div class="card-title">Settings</div>
+        <div class="card-sub">Pengaturan akun &amp; aplikasi</div>
+      </div>
+      <div class="full-bleed-divider" style="margin:0;"></div>
+      <div class="tab-panel-empty">Coming soon</div>
+    </div>
+  </div>
+
+  <!-- ============ SUPPORT ============ -->
+  <div class="page" id="page-support" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;">
+        <div class="card-title">Support</div>
+        <div class="card-sub">Bantuan &amp; pusat dukungan</div>
+      </div>
+      <div class="full-bleed-divider" style="margin:0;"></div>
+      <div class="tab-panel-empty">Coming soon</div>
+    </div>
+  </div>
+
+  <!-- ============ ROW DETAIL ============ -->
+  <div class="page" id="page-detail" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="row-detail-header-grid">
+        <button type="button" class="row-detail-back-cell" onclick="mantisCloseRowDetail()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        </button>
+        <div class="row-detail-title-cell">
+          <div class="card-title" id="mantisDetailTitle">Detail Item</div>
+        </div>
+      </div>
+      <div class="row-detail-body" id="mantisRowDetailBody"></div>
+    </div>
+  </div>
+
   </div>
   <!-- /main -->
 
@@ -1006,7 +1142,9 @@ const mantisPageTitles = {
   activities: 'Activities',
   parts: 'Parts & Inventory',
   meters: 'Meters',
-  po: 'Purchase Orders'
+  po: 'Purchase Orders',
+  settings: 'Settings',
+  support: 'Support'
 };
 
 function showPage(name){
@@ -1066,8 +1204,32 @@ const mantisRowLimits = {};
 const mantisCurrentPage = {};
 const mantisColumnWidths = {};
 
+function mantisStripEmptyColumns(table){
+  if(!table || !table.cols || !table.rows) return table;
+
+  const keepIndexes = table.cols.map(function(c, i){ return i; }).filter(function(i){
+    const col = table.cols[i];
+    const hasLabel = col.label && col.label.trim() !== '';
+    if(hasLabel) return true;
+    return table.rows.some(function(r){
+      const cell = r.c && r.c[i];
+      const val = cell && (cell.f !== undefined && cell.f !== null ? cell.f : cell.v);
+      return val !== null && val !== undefined && String(val).trim() !== '';
+    });
+  });
+
+  if(keepIndexes.length === table.cols.length) return table;
+
+  return {
+    cols: keepIndexes.map(function(i){ return table.cols[i]; }),
+    rows: table.rows.map(function(r){
+      return { c: keepIndexes.map(function(i){ return (r.c && r.c[i]) || null; }) };
+    })
+  };
+}
+
 function renderGvizTable(container, table, containerId){
-  mantisTableCache[containerId] = table;
+  mantisTableCache[containerId] = mantisStripEmptyColumns(table);
   if(!(containerId in mantisRowLimits)) mantisRowLimits[containerId] = 10;
   if(!(containerId in mantisCurrentPage)) mantisCurrentPage[containerId] = 1;
   delete mantisColumnWidths[containerId];
@@ -1111,8 +1273,9 @@ function renderGvizTableRows(containerId){
     html += '<th>' + mantisEscapeHtml(c.label || c.id || '') + '</th>';
   });
   html += '</tr></thead><tbody>';
-  rowsToShow.forEach(function(r){
-    html += '<tr>';
+  const baseIndex = (limit === 'all') ? 0 : (page - 1) * limit;
+  rowsToShow.forEach(function(r, i){
+    html += '<tr class="table-row-clickable" onclick="mantisShowRowDetail(\'' + containerId + '\', ' + (baseIndex + i) + ')">';
     (r.c || []).forEach(function(cell){
       let val = '';
       if(cell){
@@ -1125,18 +1288,18 @@ function renderGvizTableRows(containerId){
   html += '</tbody></table></div>';
 
   html += '<div class="table-rows-control">';
-  html += '<label>Tampilkan per halaman:';
+  html += '<label>Tampilkan';
   html += '<select onchange="mantisChangeRowLimit(\'' + containerId + '\', this.value)">';
   MANTIS_ROW_OPTIONS.forEach(function(n){
     const selected = (String(limit) === String(n)) ? ' selected' : '';
     html += '<option value="' + n + '"' + selected + '>' + n + '</option>';
   });
   html += '<option value="all"' + (limit === 'all' ? ' selected' : '') + '>Semua</option>';
-  html += '</select></label>';
+  html += '</select>dari ' + totalRows + ' data</label>';
 
   if(limit !== 'all' && totalPages > 1){
     html += '<div class="table-pagination">';
-    html += '<button type="button"' + (page <= 1 ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page - 1) + ')">Prev</button>';
+    html += '<button type="button" class="table-pg-nav"' + (page <= 1 ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page - 1) + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Previous</button>';
     mantisGetPageNumbers(page, totalPages).forEach(function(p){
       if(p === '...'){
         html += '<span class="table-page-ellipsis">&hellip;</span>';
@@ -1144,7 +1307,8 @@ function renderGvizTableRows(containerId){
         html += '<button type="button" class="table-page-btn' + (p === page ? ' active' : '') + '" onclick="mantisChangePage(\'' + containerId + '\', ' + p + ')">' + p + '</button>';
       }
     });
-    html += '<button type="button"' + (page >= totalPages ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page + 1) + ')">Next</button>';
+    html += '<span class="table-pg-divider"></span>';
+    html += '<button type="button" class="table-pg-nav"' + (page >= totalPages ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page + 1) + ')">Next<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>';
     html += '</div>';
   }
 
@@ -1197,6 +1361,66 @@ function mantisChangeRowLimit(containerId, value){
 function mantisChangePage(containerId, page){
   mantisCurrentPage[containerId] = page;
   renderGvizTableRows(containerId);
+}
+
+const MANTIS_DETAIL_RETURN_PAGE = {
+  'parts-table-container': 'parts',
+  'meters-table-container': 'meters',
+  'po-table-container': 'po',
+  'activity-records-container': 'activities'
+};
+let mantisDetailReturnPage = 'overview';
+
+function mantisCellText(cell){
+  if(!cell) return '';
+  const val = (cell.f !== undefined && cell.f !== null) ? cell.f : (cell.v !== undefined && cell.v !== null ? cell.v : '');
+  return (val === null || val === undefined) ? '' : String(val);
+}
+
+const MANTIS_DETAIL_TITLE_COLUMN = {
+  'parts-table-container': 'Nama Material',
+  'meters-table-container': 'Nama Mesin',
+  'po-table-container': 'Deskripsi material'
+};
+function mantisFindColIndex(table, label){
+  if(!label) return -1;
+  return table.cols.findIndex(function(c){ return (c.label || '').trim() === label; });
+}
+
+function mantisShowRowDetail(containerId, rowIndex){
+  const table = mantisTableCache[containerId];
+  const row = table && table.rows[rowIndex];
+  if(!row) return;
+
+  let html = '<div class="row-detail-list">';
+  table.cols.forEach(function(c, i){
+    const val = mantisCellText(row.c && row.c[i]) || '-';
+    html += '<div class="row-detail-item"><span class="row-detail-label">' + mantisEscapeHtml(c.label || c.id || '') + '</span><span class="row-detail-value">' + mantisEscapeHtml(val) + '</span></div>';
+  });
+  html += '</div>';
+
+  document.getElementById('mantisRowDetailBody').innerHTML = html;
+
+  const titleIndex = mantisFindColIndex(table, MANTIS_DETAIL_TITLE_COLUMN[containerId]);
+  const titleVal = titleIndex >= 0 ? mantisCellText(row.c && row.c[titleIndex]) : mantisCellText(row.c && row.c[0]);
+  document.getElementById('mantisDetailTitle').textContent = titleVal || 'Detail Item';
+
+  mantisDetailReturnPage = MANTIS_DETAIL_RETURN_PAGE[containerId] || 'overview';
+
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById('page-detail').style.display = '';
+
+  if(document.getElementById('sidebar').classList.contains('open')){
+    toggleSidebar();
+  }
+  window.scrollTo(0, 0);
+}
+
+function mantisCloseRowDetail(){
+  showPage(mantisDetailReturnPage);
+  if(mantisDetailReturnPage === 'activities'){
+    showActivitiesTab('records');
+  }
 }
 
 function loadSheetTable(sheetName, containerId, handlerName){
