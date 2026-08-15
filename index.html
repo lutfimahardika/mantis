@@ -646,6 +646,56 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 .row-detail-label{ color:var(--ink-2); flex:0 0 160px; }
 .row-detail-value{ color:var(--ink); font-weight:500; text-align:left; flex:1; word-break:break-word; }
 
+.row-detail-item-new{ align-items:center; }
+.row-detail-new-tag{
+  display:inline-block;
+  margin-left:6px;
+  padding:1px 6px;
+  border-radius:999px;
+  background:rgba(245,166,35,0.14);
+  color:var(--accent);
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+}
+.row-detail-value-new{ display:flex; align-items:center; gap:8px; }
+.row-detail-new-input{
+  flex:1;
+  height:34px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--surface);
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  outline:none;
+  box-sizing:border-box;
+  min-width:0;
+}
+.row-detail-new-input:focus{ border-color:var(--accent); }
+.row-detail-new-save{
+  flex:0 0 auto;
+  height:34px;
+  padding:0 14px;
+  background:var(--accent);
+  color:#fff;
+  border-radius:8px;
+  font-size:12px; font-weight:500;
+  border:none;
+  cursor:pointer;
+  transition:opacity 150ms;
+}
+.row-detail-new-save:hover{ opacity:.92; }
+.row-detail-new-save:disabled{ opacity:.6; cursor:default; }
+.mantis-new-reading-error{
+  display:none;
+  margin-top:10px;
+  font-size:12px;
+  color:var(--red);
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width:1100px){
   .content-grid{ grid-template-columns:1fr !important; }
@@ -1462,6 +1512,12 @@ function toggleSidebar(){
 
 /* ---------- Google Sheet integration (read-only) ---------- */
 const MANTIS_SHEET_ID = '11-sqiV3BYqx738Rhr3Y9SF4Q7FnAGKNqMn-Gvoq6rFs';
+
+/* Apps Script Web App yang menulis reading baru ke sheet "Running Hour".
+   Isi kedua nilai ini setelah deploy Apps Script (lihat apps-script/Code.gs). */
+const MANTIS_METER_WRITE_URL = '';
+const MANTIS_METER_WRITE_TOKEN = '';
+
 const mantisLoadedPages = {};
 const mantisPageTitles = {
   overview: 'Dashboard',
@@ -1880,6 +1936,15 @@ function mantisFindColIndex(table, label){
   return table.cols.findIndex(function(c){ return (c.label || '').trim() === label; });
 }
 
+function mantisGetMeterUnit(table, row){
+  const unitIdx = mantisFindColIndex(table, 'Unit') !== -1 ? mantisFindColIndex(table, 'Unit') : mantisFindColIndex(table, 'Satuan');
+  return unitIdx >= 0 ? mantisCellText(row.c && row.c[unitIdx]) : '';
+}
+
+function mantisIsDateUnit(unitVal){
+  return /tanggal|date/i.test((unitVal || '').trim());
+}
+
 function mantisBuildMeterReadingsChartHtml(table, row){
   const weekCols = [];
   table.cols.forEach(function(c, i){
@@ -1927,8 +1992,7 @@ function mantisBuildMeterReadingsChartHtml(table, row){
     return '<span style="font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(p.label) + '</span>';
   }).filter(Boolean).join('');
 
-  const unitIdx = mantisFindColIndex(table, 'Unit') !== -1 ? mantisFindColIndex(table, 'Unit') : mantisFindColIndex(table, 'Satuan');
-  const unitVal = unitIdx >= 0 ? mantisCellText(row.c && row.c[unitIdx]) : '';
+  const unitVal = mantisGetMeterUnit(table, row);
   const lastVal = values[values.length - 1];
 
   return '' +
@@ -1965,10 +2029,16 @@ function mantisBuildMeterReadingsChartHtml(table, row){
     '</div>';
 }
 
+let mantisDetailContainerId = null;
+let mantisDetailRowIndex = null;
+
 function mantisShowRowDetail(containerId, rowIndex){
   const table = mantisTableCache[containerId];
   const row = table && table.rows[rowIndex];
   if(!row) return;
+
+  mantisDetailContainerId = containerId;
+  mantisDetailRowIndex = rowIndex;
 
   let html = '';
   if(containerId === 'meters-table-container'){
@@ -1979,7 +2049,14 @@ function mantisShowRowDetail(containerId, rowIndex){
     const val = mantisCellText(row.c && row.c[i]) || '-';
     html += '<div class="row-detail-item"><span class="row-detail-label">' + mantisEscapeHtml(c.label || c.id || '') + '</span><span class="row-detail-value">' + mantisEscapeHtml(val) + '</span></div>';
   });
+  if(containerId === 'meters-table-container'){
+    html += mantisBuildNewReadingRowHtml(table, row);
+  }
   html += '</div>';
+
+  if(containerId === 'meters-table-container'){
+    html += '<div class="mantis-new-reading-error" id="mantisNewReadingError"></div>';
+  }
 
   document.getElementById('mantisRowDetailBody').innerHTML = html;
 
@@ -2004,6 +2081,124 @@ function mantisCloseRowDetail(){
   } else {
     showPage(mantisDetailReturnPage);
   }
+}
+
+/* ---------- New meter reading (inline row) ---------- */
+function mantisSuggestNextWeekLabel(table){
+  let maxNum = 0;
+  table.cols.forEach(function(c){
+    if(mantisIsWeekLabel(c.label)){
+      const n = parseInt((c.label || '').replace(/\D/g, ''), 10);
+      if(n > maxNum) maxNum = n;
+    }
+  });
+  return 'W' + (maxNum + 1);
+}
+
+function mantisBuildNewReadingRowHtml(table, row){
+  const nextWeek = mantisSuggestNextWeekLabel(table);
+  const unitVal = mantisGetMeterUnit(table, row);
+  const inputHtml = mantisIsDateUnit(unitVal)
+    ? '<input type="date" id="mantisNewReadingInput" class="row-detail-new-input">'
+    : '<input type="number" id="mantisNewReadingInput" class="row-detail-new-input" placeholder="Masukkan nilai" inputmode="decimal">';
+
+  return '' +
+    '<div class="row-detail-item row-detail-item-new">' +
+      '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
+      '<span class="row-detail-value row-detail-value-new">' +
+        inputHtml +
+        '<button type="button" class="row-detail-new-save" onclick="mantisSubmitNewReading()">Simpan</button>' +
+      '</span>' +
+    '</div>';
+}
+
+function mantisShowNewReadingError(message){
+  const errEl = document.getElementById('mantisNewReadingError');
+  if(!errEl) return;
+  errEl.textContent = message;
+  errEl.style.display = '';
+}
+
+function mantisApplyNewReadingLocally(table, row, week, value){
+  let colIndex = mantisFindColIndex(table, week);
+  if(colIndex === -1){
+    table.cols.push({ id: 'col' + table.cols.length, label: week, type: 'number' });
+    colIndex = table.cols.length - 1;
+  }
+  if(!row.c) row.c = [];
+  row.c[colIndex] = { v: value, f: String(value) };
+
+  try{ sessionStorage.removeItem(MANTIS_SHEET_CACHE_PREFIX + 'Running Hour'); }catch(e){ /* storage unavailable - ignore */ }
+
+  if(document.getElementById('meters-table-container') && typeof renderGvizTableRows === 'function'){
+    renderGvizTableRows('meters-table-container');
+  }
+}
+
+function mantisSubmitNewReading(){
+  const table = mantisTableCache[mantisDetailContainerId];
+  const row = table && table.rows[mantisDetailRowIndex];
+  const input = document.getElementById('mantisNewReadingInput');
+  if(!table || !row || !input) return;
+
+  const unitVal = mantisGetMeterUnit(table, row);
+  const isDate = mantisIsDateUnit(unitVal);
+  const raw = input.value.trim();
+
+  let value;
+  if(isDate){
+    if(!raw){
+      mantisShowNewReadingError('Pilih tanggal terlebih dahulu.');
+      return;
+    }
+    value = raw;
+  } else {
+    if(raw === '' || isNaN(Number(raw))){
+      mantisShowNewReadingError('Nilai reading harus berupa angka.');
+      return;
+    }
+    value = Number(raw);
+  }
+
+  if(!MANTIS_METER_WRITE_URL){
+    mantisShowNewReadingError('Apps Script belum dikonfigurasi. Isi MANTIS_METER_WRITE_URL di index.html.');
+    return;
+  }
+
+  const week = mantisSuggestNextWeekLabel(table);
+  const titleIndex = mantisFindColIndex(table, MANTIS_DETAIL_TITLE_COLUMN[mantisDetailContainerId]);
+  const machineName = titleIndex >= 0 ? mantisCellText(row.c && row.c[titleIndex]) : '';
+
+  const saveBtn = document.querySelector('.row-detail-new-save');
+  if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...'; }
+  const errEl = document.getElementById('mantisNewReadingError');
+  if(errEl) errEl.style.display = 'none';
+
+  const containerId = mantisDetailContainerId;
+  const rowIndex = mantisDetailRowIndex;
+
+  fetch(MANTIS_METER_WRITE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      token: MANTIS_METER_WRITE_TOKEN,
+      sheet: 'Running Hour',
+      machine: machineName,
+      week: week,
+      value: value
+    })
+  }).then(function(res){ return res.json(); }).then(function(data){
+    if(!data || !data.success){
+      if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Simpan'; }
+      mantisShowNewReadingError((data && data.error) ? data.error : 'Gagal menyimpan reading.');
+      return;
+    }
+    mantisApplyNewReadingLocally(table, row, week, value);
+    mantisShowRowDetail(containerId, rowIndex);
+  }).catch(function(err){
+    if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Simpan'; }
+    mantisShowNewReadingError('Gagal terhubung ke server: ' + err.message);
+  });
 }
 
 const MANTIS_SHEET_CACHE_PREFIX = 'mantisSheetCache::';
