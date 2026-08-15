@@ -1464,7 +1464,13 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
       </div>
 
       <div class="settings-tab-panel" id="settings-tab-table" style="display:none;padding:20px;">
-        <div class="card-sub" style="margin-bottom:16px;">Atur kolom yang ditampilkan dan urutannya pada tiap tabel. Seret ikon titik untuk mengubah urutan.</div>
+        <div class="flex items-start justify-between" style="gap:16px;margin-bottom:16px;">
+          <div class="card-sub" style="margin-bottom:0;">Atur kolom yang ditampilkan dan urutannya pada tiap tabel. Seret ikon titik untuk mengubah urutan.</div>
+          <button type="button" class="pill-btn" style="flex:0 0 auto;" onclick="mantisResetAllColumnPrefs()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.05 11a8 8 0 1 1 .5 4m-.5 5v-5h5"/></svg>
+            Reset
+          </button>
+        </div>
 
         <div class="settings-table-group">
           <div class="settings-table-group-title">Activities &mdash; Records</div>
@@ -1679,7 +1685,7 @@ const MANTIS_DEFAULT_COLUMN_PREFS = {
   },
   'meters-table-container': {
     order: ['A', 'B', 'C', '__week__'],
-    hidden: []
+    hidden: ['A', 'C']
   },
   'po-table-container': {
     order: ['K', 'L', 'Q', 'R', 'S', 'T', 'X', 'P'],
@@ -1692,7 +1698,8 @@ function mantisGetColumnPrefs(containerId){
     const raw = localStorage.getItem(MANTIS_COLPREFS_PREFIX + containerId);
     if(raw) return JSON.parse(raw);
   }catch(e){ /* storage unavailable - ignore */ }
-  return MANTIS_DEFAULT_COLUMN_PREFS[containerId] || null;
+  const def = MANTIS_DEFAULT_COLUMN_PREFS[containerId];
+  return def ? { order: def.order.slice(), hidden: def.hidden.slice() } : null;
 }
 
 function mantisSaveColumnPrefs(containerId, prefs){
@@ -2495,6 +2502,17 @@ function mantisPersistColumnOrder(listEl, containerId){
   mantisSaveColumnPrefs(containerId, prefs);
   delete mantisColumnWidths[containerId];
   renderGvizTableRows(containerId);
+}
+
+function mantisResetAllColumnPrefs(){
+  Object.keys(MANTIS_SHEET_SOURCES).forEach(function(containerId){
+    try{ localStorage.removeItem(MANTIS_COLPREFS_PREFIX + containerId); }catch(e){ /* storage unavailable - ignore */ }
+    delete mantisColumnWidths[containerId];
+
+    const table = mantisTableCache[containerId];
+    if(table) mantisRenderColumnPrefsList(containerId, table);
+    if(document.getElementById(containerId)) renderGvizTableRows(containerId);
+  });
 }
 </script>
 </body>
