@@ -682,7 +682,7 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   background:var(--accent);
   color:#fff;
   border-radius:8px;
-  font-size:12px; font-weight:500;
+  font-size:13px; font-weight:500;
   border:none;
   cursor:pointer;
   transition:opacity 150ms;
@@ -2733,32 +2733,17 @@ function mantisSuggestNextWeekLabel(table){
 
 function mantisBuildNewReadingRowHtml(table, row){
   const nextWeek = mantisSuggestNextWeekLabel(table);
-  return '' +
-    '<div class="row-detail-item row-detail-item-new" id="mantisNewReadingRow">' +
-      '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
-      '<button type="button" class="row-detail-new-save" onclick="mantisRevealNewReadingInput()">+ Masukkan Nilai</button>' +
-    '</div>';
-}
-
-function mantisRevealNewReadingInput(){
-  const table = mantisTableCache[mantisDetailContainerId];
-  const row = table && table.rows[mantisDetailRowIndex];
-  const rowEl = document.getElementById('mantisNewReadingRow');
-  if(!table || !row || !rowEl) return;
-
-  const nextWeek = mantisSuggestNextWeekLabel(table);
   const unitVal = mantisGetMeterUnit(table, row);
   const inputHtml = mantisIsDateUnit(unitVal)
     ? '<input type="date" id="mantisNewReadingInput" class="row-detail-new-input">'
     : '<input type="number" id="mantisNewReadingInput" class="row-detail-new-input" placeholder="Masukkan nilai" inputmode="decimal">';
 
-  rowEl.innerHTML =
-    '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
-    inputHtml +
-    '<button type="button" class="row-detail-new-save" onclick="mantisSubmitNewReading()">Simpan</button>';
-
-  const input = document.getElementById('mantisNewReadingInput');
-  if(input) input.focus({ preventScroll: true });
+  return '' +
+    '<div class="row-detail-item row-detail-item-new">' +
+      '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
+      inputHtml +
+      '<button type="button" class="row-detail-new-save" onclick="mantisSubmitNewReading()">Simpan</button>' +
+    '</div>';
 }
 
 function mantisShowNewReadingError(message){
