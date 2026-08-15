@@ -732,6 +732,26 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   opacity:0;
   pointer-events:none;
 }
+.mantis-chart-line{ stroke-width:2; }
+
+@media (min-width:769px){
+  .mantis-chart-wrap::before{
+    background-image:radial-gradient(circle, #E7E7E4 0.7px, transparent 0.85px);
+    background-size:11px 11px;
+  }
+  .mantis-chart-dot{
+    width:6px; height:6px;
+    margin:-3px 0 0 -3px;
+    border-width:1.5px;
+  }
+  .mantis-chart-cursor-line{ border-left-width:1px; }
+  .mantis-chart-cursor-dot{
+    width:8px; height:8px;
+    margin:-4px 0 0 -4px;
+    border-width:1.5px;
+  }
+  .mantis-chart-line{ stroke-width:1.5; }
+}
 .mantis-chart-tooltip{
   position:absolute;
   display:none;
@@ -2117,7 +2137,7 @@ function mantisBuildMeterReadingsChartHtml(table, row){
             '</linearGradient>' +
           '</defs>' +
           '<path d="' + areaPath + '" fill="url(#meterGradAmber)"/>' +
-          '<polyline points="' + polylinePts + '" fill="none" stroke="#F5A623" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
+          '<polyline class="mantis-chart-line" points="' + polylinePts + '" fill="none" stroke="#F5A623" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
         '</svg>' +
         '<div class="mantis-chart-markers">' +
           dots +
