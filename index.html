@@ -696,6 +696,195 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   color:var(--red);
 }
 
+/* ---------- Activities: New Entry form ---------- */
+.entry-section{ padding:20px; }
+
+.entry-meta-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+}
+.entry-meta-col{ position:relative; padding:0 20px; }
+.entry-meta-col:first-child{ padding-left:0; }
+.entry-meta-col:not(:first-child){ border-left:1px solid var(--line); }
+.entry-meta-label{ display:block; font-size:12px; font-weight:500; color:var(--ink-2); margin-bottom:6px; }
+
+.entry-meta-edit-btn{
+  flex:0 0 auto;
+  width:22px;
+  height:22px;
+  border:none;
+  border-radius:5px;
+  background:transparent;
+  color:var(--ink-3);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background 150ms,color 150ms;
+}
+.entry-meta-edit-btn:hover{ background:#FAFAF9; color:var(--ink); }
+
+.entry-meta-popover{
+  display:none;
+  position:fixed;
+  z-index:50;
+  min-width:190px;
+  max-width:calc(100vw - 24px);
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,.14);
+  padding:8px;
+}
+.entry-meta-popover.open{ display:block; }
+.entry-meta-popover .entry-input{ margin:0; }
+.entry-meta-popover-list{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  max-height:220px;
+  overflow-y:auto;
+}
+.entry-meta-popover-item{
+  display:block;
+  width:100%;
+  padding:8px 10px;
+  border:none;
+  background:transparent;
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  text-align:left;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background 150ms;
+}
+.entry-meta-popover-item:hover{ background:#FAFAF9; }
+.entry-meta-popover-item.selected{ background:var(--accent-soft); color:var(--accent); font-weight:500; }
+.entry-meta-checkbox-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:6px;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+}
+.entry-meta-checkbox-item:hover{ background:#FAFAF9; }
+.entry-meta-checkbox-item input{ margin:0; }
+
+.entry-form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:16px;
+}
+.entry-field{ display:flex; flex-direction:column; }
+.entry-field-full{ grid-column:1 / -1; }
+.entry-field-label{ font-size:12px; font-weight:500; color:var(--ink-2); margin-bottom:6px; }
+.entry-input{
+  height:36px;
+  padding:0 12px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--surface);
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  outline:none;
+  box-sizing:border-box;
+  width:100%;
+  transition:border-color 150ms;
+}
+.entry-input:focus{ border-color:var(--accent); }
+textarea.entry-input{
+  height:auto;
+  min-height:90px;
+  padding:10px 12px;
+  resize:vertical;
+  line-height:1.5;
+  font-family:inherit;
+}
+.entry-form-footer{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:12px;
+  margin-top:20px;
+  padding-top:16px;
+  border-top:1px solid var(--line);
+}
+.entry-form-message{ flex:1; font-size:12px; }
+.entry-form-message.error{ color:var(--red); }
+.entry-form-message.success{ color:var(--green); }
+
+.entry-row-menu-wrap{ position:relative; display:inline-block; }
+.entry-row-menu-btn{
+  width:28px;
+  height:28px;
+  border:none;
+  border-radius:6px;
+  background:transparent;
+  color:var(--ink-3);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background 150ms,color 150ms;
+}
+.entry-row-menu-btn:hover{ background:#FAFAF9; color:var(--ink); }
+.entry-row-menu{
+  display:none;
+  position:absolute;
+  right:0;
+  top:34px;
+  z-index:10;
+  min-width:130px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,.1);
+  padding:4px;
+}
+.entry-row-menu.open{ display:block; }
+.entry-row-menu-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  padding:8px 10px;
+  border:none;
+  background:transparent;
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  text-align:left;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background 150ms;
+}
+.entry-row-menu-item:hover{ background:#FAFAF9; }
+.entry-row-menu-item.danger{ color:var(--red); }
+.entry-row-menu-item.danger:hover{ background:#FEF2F2; }
+
+@media (max-width:768px){
+  .entry-section{ padding:14px; }
+
+  .entry-meta-grid{ grid-template-columns:repeat(2,1fr); row-gap:14px; }
+  .entry-meta-col{ padding:0 10px; border-left:none; }
+  .entry-meta-col:first-child{ padding-left:0; }
+  .entry-meta-col:nth-child(2){ border-left:1px solid var(--line); }
+  .entry-meta-col-teknisi{ grid-column:1 / -1; padding-left:0; border-top:1px solid var(--line); padding-top:14px; }
+
+  .entry-meta-popover{ min-width:170px; }
+
+  .entry-form-grid{ grid-template-columns:1fr; }
+  .entry-input{ height:44px; font-size:16px; }
+  textarea.entry-input{ height:auto; min-height:100px; font-size:16px; }
+  .entry-form-footer{ flex-direction:column; align-items:stretch; margin-top:14px; padding-top:14px; }
+  .entry-form-footer .btn-primary{ width:100%; justify-content:center; height:44px; }
+}
+
 .mantis-chart-wrap{ position:relative; width:100%; height:260px; cursor:crosshair; }
 .mantis-chart-wrap::before{
   content:'';
@@ -1397,6 +1586,7 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 
   <!-- ============ ACTIVITIES ============ -->
   <div class="page" id="page-activities" style="display:none;">
+
     <div class="card" style="padding:0;overflow:hidden;">
       <div style="padding:20px;" class="flex items-center justify-between">
         <div>
@@ -1417,11 +1607,145 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
       <div class="full-bleed-divider" style="margin:0;"></div>
 
       <div class="activities-tab-panel" id="activities-tab-newlog">
-        <div class="tab-panel-empty">Coming soon</div>
+        <div class="entry-section">
+          <div class="card-sub" style="margin:0 0 16px 0;">Informasi Shift</div>
+
+          <div class="entry-meta-grid">
+            <div class="entry-meta-col">
+              <div class="flex items-center justify-between">
+                <div class="metric-label">Tanggal</div>
+                <button type="button" class="entry-meta-edit-btn" title="Ubah tanggal" onclick="mantisToggleMetaPopover('tanggal', event)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/></svg>
+                </button>
+              </div>
+              <div class="metric-value" id="mantisTanggalView">-</div>
+
+              <div class="entry-meta-popover" id="mantisTanggalPopover" onclick="event.stopPropagation()">
+                <input type="date" id="entryTanggal" class="entry-input" onchange="mantisApplyTanggal()">
+              </div>
+            </div>
+
+            <div class="entry-meta-col">
+              <div class="flex items-center justify-between">
+                <div class="metric-label">Shift</div>
+                <button type="button" class="entry-meta-edit-btn" title="Ubah shift" onclick="mantisToggleMetaPopover('shift', event)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/></svg>
+                </button>
+              </div>
+              <div class="metric-value" id="mantisShiftView">-</div>
+
+              <div class="entry-meta-popover" id="mantisShiftPopover" onclick="event.stopPropagation()">
+                <div class="entry-meta-popover-list">
+                  <button type="button" class="entry-meta-popover-item" data-value="Shift 1" onclick="mantisApplyShift(this.dataset.value)">Shift 1</button>
+                  <button type="button" class="entry-meta-popover-item" data-value="Shift 2" onclick="mantisApplyShift(this.dataset.value)">Shift 2</button>
+                  <button type="button" class="entry-meta-popover-item" data-value="Shift 3" onclick="mantisApplyShift(this.dataset.value)">Shift 3</button>
+                  <button type="button" class="entry-meta-popover-item" data-value="Non-Shift" onclick="mantisApplyShift(this.dataset.value)">Non-Shift</button>
+                  <button type="button" class="entry-meta-popover-item" data-value="Longshift 1" onclick="mantisApplyShift(this.dataset.value)">Longshift 1</button>
+                  <button type="button" class="entry-meta-popover-item" data-value="Longshift 2" onclick="mantisApplyShift(this.dataset.value)">Longshift 2</button>
+                </div>
+                <input type="hidden" id="entryShift">
+              </div>
+            </div>
+
+            <div class="entry-meta-col entry-meta-col-teknisi">
+              <div class="flex items-center justify-between">
+                <div class="metric-label">Teknisi</div>
+                <button type="button" class="entry-meta-edit-btn" title="Ubah teknisi" onclick="mantisToggleMetaPopover('teknisi', event)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/></svg>
+                </button>
+              </div>
+              <div class="metric-value" id="mantisTeknisiView">-</div>
+
+              <div class="entry-meta-popover" id="mantisTeknisiPopover" onclick="event.stopPropagation()">
+                <div class="entry-meta-popover-list" id="mantisTeknisiCheckboxList"></div>
+                <button type="button" class="btn-primary" style="width:100%;justify-content:center;margin-top:8px;" onclick="mantisApplyTeknisi()">Selesai</button>
+                <input type="hidden" id="entryTeknisi">
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="activities-tab-panel" id="activities-tab-records" style="display:none;">
         <div id="activity-records-container"></div>
+      </div>
+    </div>
+
+    <div class="card" id="activities-issue-card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="flex items-center" style="gap:8px;">
+            <div class="card-title">Problem &amp; Action</div>
+            <span class="badge badge-progress" id="mantisPendingBadge" style="display:none;"></span>
+          </div>
+          <div class="card-sub">Belum dipublish ke Google Sheet &mdash; dikumpulkan dulu selama shift</div>
+        </div>
+        <div class="flex items-center" style="gap:8px;">
+          <button type="button" class="pill-btn" id="mantisPublishBtn" onclick="mantisPublishPendingActions()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>
+            Publish to Sheet
+          </button>
+          <button type="button" class="btn-primary" onclick="mantisOpenNewAction()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
+            New Action
+          </button>
+        </div>
+      </div>
+
+      <div id="mantisActionsMessage" class="entry-form-message" style="display:none;padding:0 20px 16px 20px;"></div>
+
+      <div class="full-bleed-divider" style="margin:0;"></div>
+
+      <div id="entry-actions-list-container"></div>
+    </div>
+
+  </div>
+
+  <!-- ============ NEW ACTION (Problem & Action input) ============ -->
+  <div class="page" id="page-new-action" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="row-detail-header-grid">
+        <button type="button" class="row-detail-back-cell" onclick="mantisCloseNewAction()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l6 6"/><path d="M5 12l6 -6"/><path d="M5 12l14 0"/></svg>
+        </button>
+        <div class="row-detail-title-cell">
+          <div class="card-title" id="mantisNewActionTitle">New Action</div>
+        </div>
+      </div>
+
+      <div class="entry-section">
+        <div class="entry-form-grid">
+          <div class="entry-field entry-field-full">
+            <label class="entry-field-label" for="entryArea">Area</label>
+            <input type="text" id="entryArea" class="entry-input" list="entryAreaOptions" placeholder="Pilih atau ketik area" autocomplete="off" required>
+            <datalist id="entryAreaOptions">
+              <option value="Filling">
+              <option value="Packing">
+              <option value="Proses">
+            </datalist>
+          </div>
+          <div class="entry-field entry-field-full">
+            <label class="entry-field-label" for="entryMesin">Mesin</label>
+            <input type="text" id="entryMesin" class="entry-input" list="entryMesinOptions" placeholder="Nama mesin" autocomplete="off" required>
+            <datalist id="entryMesinOptions"></datalist>
+          </div>
+          <div class="entry-field entry-field-full">
+            <label class="entry-field-label" for="entryIssue">Issue</label>
+            <textarea id="entryIssue" class="entry-input" placeholder="Deskripsikan kendala/temuan" required></textarea>
+          </div>
+          <div class="entry-field entry-field-full">
+            <label class="entry-field-label" for="entryAction">Action</label>
+            <textarea id="entryAction" class="entry-input" placeholder="Tindakan perbaikan yang dilakukan" required></textarea>
+          </div>
+        </div>
+
+        <div class="entry-form-footer">
+          <div class="entry-form-message" id="mantisEntryMessage"></div>
+          <button type="button" class="btn-primary" id="mantisEntrySubmitBtn" onclick="mantisSubmitMaintenanceEntry()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
+            <span id="mantisEntrySubmitLabel">Tambahkan ke Daftar</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1672,10 +1996,18 @@ function showActivitiesTab(name){
   document.getElementById('activities-tab-' + name).style.display = '';
 
   document.getElementById('activities-search-box').style.display = (name === 'records') ? '' : 'none';
+  document.getElementById('activities-issue-card').style.display = (name === 'newlog') ? '' : 'none';
 
-  if(name === 'records' && !mantisLoadedPages.activities){
+  if(name === 'newlog'){
+    mantisInitEntryForm();
+    mantisRenderProblemActionTable();
+  }
+
+  if((name === 'records' || name === 'newlog') && !mantisLoadedPages.activities){
     mantisLoadedPages.activities = true;
-    loadSheetTable('Maintenance', 'activity-records-container', 'mantisHandleMaintenance');
+    loadSheetTable('Maintenance', 'activity-records-container', 'mantisHandleMaintenance', false, mantisPopulateEntryFormOptions);
+  } else if(name === 'newlog'){
+    mantisPopulateEntryFormOptions();
   }
 }
 
@@ -2467,6 +2799,482 @@ function mantisRefreshSheet(containerId){
   const source = MANTIS_SHEET_SOURCES[containerId];
   if(!source) return;
   loadSheetTable(source[0], containerId, source[1], true);
+}
+
+/* ---------- Activities: New Entry form ---------- */
+function mantisInitEntryForm(){
+  const dateInput = document.getElementById('entryTanggal');
+  if(dateInput && !dateInput.value){
+    const d = new Date();
+    const pad = function(n){ return String(n).padStart(2, '0'); };
+    dateInput.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  mantisSyncShiftView();
+}
+
+const MANTIS_MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function mantisFormatTanggalDisplay(isoDate){
+  if(!isoDate) return '-';
+  const d = new Date(isoDate + 'T00:00:00');
+  if(isNaN(d.getTime())) return '-';
+  return d.getDate() + ' ' + MANTIS_MONTHS_ID[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function mantisSyncShiftView(){
+  const tanggalView = document.getElementById('mantisTanggalView');
+  const shiftView = document.getElementById('mantisShiftView');
+  const teknisiView = document.getElementById('mantisTeknisiView');
+  if(tanggalView) tanggalView.textContent = mantisFormatTanggalDisplay(document.getElementById('entryTanggal').value);
+  if(shiftView) shiftView.textContent = document.getElementById('entryShift').value.trim() || '-';
+  if(teknisiView) teknisiView.textContent = document.getElementById('entryTeknisi').value.trim() || '-';
+}
+
+function mantisCloseAllMetaPopovers(){
+  document.querySelectorAll('.entry-meta-popover.open').forEach(function(p){ p.classList.remove('open'); });
+}
+
+function mantisPositionPopover(popover, anchorEl){
+  const rect = anchorEl.getBoundingClientRect();
+  const popW = popover.offsetWidth;
+  const popH = popover.offsetHeight;
+
+  let left = rect.right - popW;
+  if(left < 8) left = 8;
+  const maxLeft = window.innerWidth - popW - 8;
+  if(left > maxLeft) left = Math.max(8, maxLeft);
+
+  let top = rect.bottom + 8;
+  if(top + popH > window.innerHeight - 8){
+    top = rect.top - popH - 8;
+    if(top < 8) top = 8;
+  }
+
+  popover.style.left = left + 'px';
+  popover.style.top = top + 'px';
+}
+
+function mantisToggleMetaPopover(which, evt){
+  if(evt) evt.stopPropagation();
+  const id = 'mantis' + which.charAt(0).toUpperCase() + which.slice(1) + 'Popover';
+  const popover = document.getElementById(id);
+  if(!popover) return;
+
+  const isOpen = popover.classList.contains('open');
+  mantisCloseAllMetaPopovers();
+  if(isOpen) return;
+
+  popover.classList.add('open');
+
+  const anchorEl = evt && evt.currentTarget;
+  if(anchorEl) mantisPositionPopover(popover, anchorEl);
+
+  if(which === 'tanggal'){
+    const input = document.getElementById('entryTanggal');
+    if(input){
+      input.focus();
+      if(typeof input.showPicker === 'function'){
+        try{ input.showPicker(); }catch(e){ /* not supported/allowed - native calendar icon still works */ }
+      }
+    }
+  } else if(which === 'shift'){
+    mantisRefreshShiftPopoverSelection();
+  } else if(which === 'teknisi'){
+    mantisPopulateTeknisiCheckboxes();
+  }
+}
+
+function mantisApplyTanggal(){
+  mantisSyncShiftView();
+  mantisCloseAllMetaPopovers();
+}
+
+function mantisRefreshShiftPopoverSelection(){
+  const current = document.getElementById('entryShift').value;
+  document.querySelectorAll('#mantisShiftPopover .entry-meta-popover-item').forEach(function(btn){
+    btn.classList.toggle('selected', btn.dataset.value === current);
+  });
+}
+
+function mantisApplyShift(value){
+  document.getElementById('entryShift').value = value;
+  mantisSyncShiftView();
+  mantisCloseAllMetaPopovers();
+}
+
+let mantisTeknisiListCache = null;
+
+function mantisFetchTeknisiList(callback){
+  if(!MANTIS_METER_WRITE_URL){ callback([]); return; }
+  const url = MANTIS_METER_WRITE_URL + '?action=teknisiList&token=' + encodeURIComponent(MANTIS_METER_WRITE_TOKEN);
+  fetch(url).then(function(res){ return res.json(); }).then(function(data){
+    callback((data && data.success && Array.isArray(data.names)) ? data.names : []);
+  }).catch(function(){ callback([]); });
+}
+
+function mantisRenderTeknisiCheckboxes(names){
+  const container = document.getElementById('mantisTeknisiCheckboxList');
+  if(!container) return;
+
+  if(!names.length){
+    container.innerHTML = '<div style="font-size:12px;color:var(--ink-3);padding:8px;">Belum ada teknisi terdaftar di sheet User (role: Teknisi).</div>';
+    return;
+  }
+
+  const current = (document.getElementById('entryTeknisi').value || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+
+  container.innerHTML = names.slice().sort().map(function(name){
+    const checked = current.indexOf(name) !== -1 ? ' checked' : '';
+    return '<label class="entry-meta-checkbox-item"><input type="checkbox" value="' + mantisEscapeHtml(name) + '"' + checked + '> ' + mantisEscapeHtml(name) + '</label>';
+  }).join('');
+}
+
+function mantisPopulateTeknisiCheckboxes(){
+  const container = document.getElementById('mantisTeknisiCheckboxList');
+  if(!container) return;
+
+  if(mantisTeknisiListCache){
+    mantisRenderTeknisiCheckboxes(mantisTeknisiListCache);
+    return;
+  }
+
+  if(!MANTIS_METER_WRITE_URL){
+    container.innerHTML = '<div style="font-size:12px;color:var(--red);padding:8px;">Apps Script belum dikonfigurasi.</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="sheet-loading" style="padding:8px;">Memuat daftar teknisi...</div>';
+  mantisFetchTeknisiList(function(names){
+    mantisTeknisiListCache = names;
+    mantisRenderTeknisiCheckboxes(names);
+  });
+}
+
+function mantisApplyTeknisi(){
+  const container = document.getElementById('mantisTeknisiCheckboxList');
+  const checked = Array.prototype.slice.call(container.querySelectorAll('input[type="checkbox"]:checked')).map(function(cb){ return cb.value; });
+  document.getElementById('entryTeknisi').value = checked.join(', ');
+  mantisSyncShiftView();
+  mantisCloseAllMetaPopovers();
+}
+
+function mantisFillDatalist(datalistId, table, colIndex){
+  const datalist = document.getElementById(datalistId);
+  if(!datalist || colIndex === -1) return;
+
+  const seen = {};
+  Array.prototype.forEach.call(datalist.options, function(opt){ seen[opt.value] = true; });
+
+  const values = [];
+  table.rows.forEach(function(r){
+    const val = mantisCellText(r.c && r.c[colIndex]).trim();
+    if(val && !seen[val]){ seen[val] = true; values.push(val); }
+  });
+  values.sort();
+  values.forEach(function(v){
+    const opt = document.createElement('option');
+    opt.value = v;
+    datalist.appendChild(opt);
+  });
+}
+
+function mantisPopulateEntryFormOptions(){
+  const table = mantisTableCache['activity-records-container'];
+  if(!table) return;
+
+  mantisFillDatalist('entryShiftOptions', table, mantisFindColIndex(table, 'Shift'));
+  mantisFillDatalist('entryAreaOptions', table, mantisFindColIndex(table, 'Area'));
+  mantisFillDatalist('entryMesinOptions', table, mantisFindColIndex(table, 'Mesin'));
+}
+
+const MANTIS_ACTION_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>';
+const MANTIS_TRASH_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>';
+const MANTIS_MENU_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>';
+const MANTIS_EDIT_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/></svg>';
+
+/* ---------- Problem & Action: local queue (published to the sheet at end of shift) ---------- */
+const MANTIS_PENDING_ACTIONS_KEY = 'mantisPendingActions';
+
+function mantisGetPendingActions(){
+  try{
+    const raw = localStorage.getItem(MANTIS_PENDING_ACTIONS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+
+function mantisSavePendingActions(list){
+  try{ localStorage.setItem(MANTIS_PENDING_ACTIONS_KEY, JSON.stringify(list)); }catch(e){ /* storage unavailable/full - ignore */ }
+}
+
+function mantisAddPendingAction(entry){
+  const list = mantisGetPendingActions();
+  list.push(entry);
+  mantisSavePendingActions(list);
+}
+
+function mantisRemovePendingAction(id){
+  const list = mantisGetPendingActions().filter(function(item){ return item.id !== id; });
+  mantisSavePendingActions(list);
+  mantisRenderProblemActionTable();
+}
+
+function mantisUpdatePendingAction(id, fields){
+  const list = mantisGetPendingActions();
+  const idx = list.findIndex(function(item){ return item.id === id; });
+  if(idx === -1) return;
+  list[idx] = Object.assign({}, list[idx], fields);
+  mantisSavePendingActions(list);
+}
+
+function mantisToggleActionMenu(btn, evt){
+  if(evt) evt.stopPropagation();
+  const menu = btn.nextElementSibling;
+  if(!menu) return;
+  const isOpen = menu.classList.contains('open');
+  document.querySelectorAll('.entry-row-menu.open').forEach(function(m){ m.classList.remove('open'); });
+  if(!isOpen) menu.classList.add('open');
+}
+
+document.addEventListener('click', function(){
+  document.querySelectorAll('.entry-row-menu.open').forEach(function(m){ m.classList.remove('open'); });
+  mantisCloseAllMetaPopovers();
+});
+window.addEventListener('scroll', function(){ mantisCloseAllMetaPopovers(); }, true);
+
+function mantisUpdatePendingBadge(count){
+  const badge = document.getElementById('mantisPendingBadge');
+  if(!badge) return;
+  if(count > 0){
+    badge.style.display = '';
+    badge.textContent = count + ' pending';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function mantisRenderProblemActionTable(){
+  const container = document.getElementById('entry-actions-list-container');
+  if(!container) return;
+
+  const queue = mantisGetPendingActions();
+  mantisUpdatePendingBadge(queue.length);
+
+  if(!queue.length){
+    container.innerHTML = '<div class="tab-panel-empty">Belum ada action yang ditambahkan pada shift ini.</div>';
+    return;
+  }
+
+  const items = queue.slice().sort(function(a, b){ return (b.createdAt || 0) - (a.createdAt || 0); });
+
+  let html = '<div class="table-wrap"><table><thead><tr>';
+  html += '<th>Mesin</th><th>Issue</th><th>Action</th><th style="width:44px;"></th>';
+  html += '</tr></thead><tbody>';
+
+  items.forEach(function(item){
+    html += '<tr>';
+    html += '<td><div class="flex items-center" style="gap:10px;">' +
+      '<div class="row-icon" style="background:var(--accent-soft);">' + MANTIS_ACTION_ICON + '</div>' +
+      '<div><div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.Mesin) + '</div>' +
+      '<div style="font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(item.Area) + '</div></div>' +
+      '</div></td>';
+    html += '<td style="white-space:normal;max-width:260px;color:var(--ink);">' + mantisEscapeHtml(item.Issue) + '</td>';
+    html += '<td style="white-space:normal;max-width:260px;color:var(--ink);">' + mantisEscapeHtml(item.Action) + '</td>';
+    html += '<td><div class="entry-row-menu-wrap">' +
+      '<button type="button" class="entry-row-menu-btn" title="Menu" onclick="mantisToggleActionMenu(this, event)">' + MANTIS_MENU_ICON + '</button>' +
+      '<div class="entry-row-menu">' +
+        '<button type="button" class="entry-row-menu-item" onclick="mantisEditPendingAction(\'' + item.id + '\')">' + MANTIS_EDIT_ICON + 'Edit</button>' +
+        '<button type="button" class="entry-row-menu-item danger" onclick="mantisRemovePendingAction(\'' + item.id + '\')">' + MANTIS_TRASH_ICON + 'Hapus</button>' +
+      '</div>' +
+    '</div></td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+let mantisEditingActionId = null;
+
+function mantisOpenNewAction(){
+  mantisEditingActionId = null;
+
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById('page-new-action').style.display = '';
+
+  document.getElementById('entryArea').value = '';
+  document.getElementById('entryMesin').value = '';
+  document.getElementById('entryIssue').value = '';
+  document.getElementById('entryAction').value = '';
+
+  const titleEl = document.getElementById('mantisNewActionTitle');
+  if(titleEl) titleEl.textContent = 'New Action';
+  const submitLabelEl = document.getElementById('mantisEntrySubmitLabel');
+  if(submitLabelEl) submitLabelEl.textContent = 'Tambahkan ke Daftar';
+
+  const messageEl = document.getElementById('mantisEntryMessage');
+  if(messageEl){ messageEl.className = 'entry-form-message'; messageEl.textContent = ''; }
+
+  if(document.getElementById('sidebar').classList.contains('open')){
+    toggleSidebar();
+  }
+  window.scrollTo(0, 0);
+
+  const areaInput = document.getElementById('entryArea');
+  if(areaInput) areaInput.focus({ preventScroll: true });
+}
+
+function mantisEditPendingAction(id){
+  const item = mantisGetPendingActions().find(function(i){ return i.id === id; });
+  if(!item) return;
+
+  mantisEditingActionId = id;
+
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById('page-new-action').style.display = '';
+
+  document.getElementById('entryArea').value = item.Area || '';
+  document.getElementById('entryMesin').value = item.Mesin || '';
+  document.getElementById('entryIssue').value = item.Issue || '';
+  document.getElementById('entryAction').value = item.Action || '';
+
+  const titleEl = document.getElementById('mantisNewActionTitle');
+  if(titleEl) titleEl.textContent = 'Edit Action';
+  const submitLabelEl = document.getElementById('mantisEntrySubmitLabel');
+  if(submitLabelEl) submitLabelEl.textContent = 'Simpan Perubahan';
+
+  const messageEl = document.getElementById('mantisEntryMessage');
+  if(messageEl){ messageEl.className = 'entry-form-message'; messageEl.textContent = ''; }
+
+  if(document.getElementById('sidebar').classList.contains('open')){
+    toggleSidebar();
+  }
+  window.scrollTo(0, 0);
+
+  const areaInput = document.getElementById('entryArea');
+  if(areaInput) areaInput.focus({ preventScroll: true });
+}
+
+function mantisCloseNewAction(){
+  mantisEditingActionId = null;
+  showActivitiesPage('newlog');
+}
+
+function mantisSubmitMaintenanceEntry(){
+  const messageEl = document.getElementById('mantisEntryMessage');
+  messageEl.className = 'entry-form-message';
+  messageEl.textContent = '';
+
+  const fields = {
+    Area: document.getElementById('entryArea').value.trim(),
+    Mesin: document.getElementById('entryMesin').value.trim(),
+    Issue: document.getElementById('entryIssue').value.trim(),
+    Action: document.getElementById('entryAction').value.trim()
+  };
+
+  for(const key in fields){
+    if(!fields[key]){
+      messageEl.className = 'entry-form-message error';
+      messageEl.textContent = 'Semua kolom wajib diisi.';
+      return;
+    }
+  }
+
+  if(mantisEditingActionId){
+    mantisUpdatePendingAction(mantisEditingActionId, fields);
+  } else {
+    fields.id = 'act_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    fields.createdAt = Date.now();
+    mantisAddPendingAction(fields);
+  }
+
+  mantisCloseNewAction();
+}
+
+/* ---------- Problem & Action: publish queued actions to the sheet ---------- */
+const MANTIS_PUBLISH_BTN_HTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>Publish to Sheet';
+
+function mantisRestorePublishBtn(btn){
+  if(!btn) return;
+  btn.disabled = false;
+  btn.innerHTML = MANTIS_PUBLISH_BTN_HTML;
+}
+
+function mantisShowActionsMessage(text, isError){
+  const messageEl = document.getElementById('mantisActionsMessage');
+  if(!messageEl) return;
+  messageEl.style.display = text ? '' : 'none';
+  messageEl.className = 'entry-form-message' + (isError ? ' error' : ' success');
+  messageEl.textContent = text || '';
+}
+
+function mantisPublishPendingActions(){
+  const queue = mantisGetPendingActions();
+
+  if(!queue.length){
+    mantisShowActionsMessage('Belum ada action yang perlu dipublish.', true);
+    return;
+  }
+
+  const meta = {
+    Tanggal: document.getElementById('entryTanggal').value.trim(),
+    Shift: document.getElementById('entryShift').value.trim(),
+    Teknisi: document.getElementById('entryTeknisi').value.trim()
+  };
+
+  for(const key in meta){
+    if(!meta[key]){
+      mantisShowActionsMessage('Isi Tanggal, Shift, dan Teknisi terlebih dahulu sebelum publish.', true);
+      return;
+    }
+  }
+
+  if(!MANTIS_METER_WRITE_URL){
+    mantisShowActionsMessage('Apps Script belum dikonfigurasi. Isi MANTIS_METER_WRITE_URL di index.html.', true);
+    return;
+  }
+
+  const btn = document.getElementById('mantisPublishBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Mempublish...'; }
+  mantisShowActionsMessage('', false);
+
+  const values = queue.map(function(item){
+    return {
+      Tanggal: meta.Tanggal,
+      Shift: meta.Shift,
+      Teknisi: meta.Teknisi,
+      Area: item.Area,
+      Mesin: item.Mesin,
+      Issue: item.Issue,
+      Action: item.Action
+    };
+  });
+
+  fetch(MANTIS_METER_WRITE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      token: MANTIS_METER_WRITE_TOKEN,
+      action: 'appendRow',
+      sheet: 'Maintenance',
+      values: values
+    })
+  }).then(function(res){ return res.json(); }).then(function(data){
+    mantisRestorePublishBtn(btn);
+    if(!data || !data.success){
+      mantisShowActionsMessage((data && data.error) ? data.error : 'Gagal mempublish data.', true);
+      return;
+    }
+    mantisSavePendingActions([]);
+    mantisRenderProblemActionTable();
+
+    try{ sessionStorage.removeItem(MANTIS_SHEET_CACHE_PREFIX + 'Maintenance'); }catch(e){ /* storage unavailable - ignore */ }
+    mantisLoadedPages.activities = false;
+
+    mantisShowActionsMessage((data.count || values.length) + ' action berhasil dipublish ke Google Sheet.', false);
+  }).catch(function(err){
+    mantisRestorePublishBtn(btn);
+    mantisShowActionsMessage('Gagal terhubung ke server: ' + err.message, true);
+  });
 }
 
 /* ---------- Settings: tabs ---------- */
