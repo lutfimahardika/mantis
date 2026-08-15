@@ -389,6 +389,48 @@ html,body{
 .tab-btn.active{ background:var(--accent-soft); color:var(--accent); }
 .tab-panel-empty{ padding:60px 20px; text-align:center; font-size:12px; color:var(--ink-3); }
 
+/* ---------- Settings ---------- */
+.settings-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  padding:16px 0;
+  border-bottom:1px solid var(--line-soft);
+}
+.settings-row:last-child{ border-bottom:none; }
+.settings-row-label{ font-size:13px; font-weight:600; color:var(--ink); margin-bottom:2px; }
+.settings-row-desc{ font-size:12px; color:var(--ink-3); max-width:420px; line-height:1.5; }
+.settings-row-control{ flex:0 0 auto; padding-top:2px; }
+.settings-select{
+  height:34px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  font-size:13px;
+  color:var(--ink);
+  font-family:inherit;
+  cursor:pointer;
+}
+.settings-table-group{ margin-bottom:24px; }
+.settings-table-group:last-child{ margin-bottom:0; }
+.settings-table-group-title{ font-size:13px; font-weight:600; color:var(--ink); margin-bottom:8px; }
+.col-pref-list{ border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.col-pref-loading{ padding:16px; font-size:12px; color:var(--ink-3); }
+.col-pref-item{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px;
+  background:#fff;
+  border-bottom:1px solid var(--line-soft);
+}
+.col-pref-item:last-child{ border-bottom:none; }
+.col-pref-item.dragging{ opacity:.4; background:var(--accent-soft); }
+.col-pref-drag{ flex:0 0 14px; color:var(--ink-3); cursor:grab; }
+.col-pref-drag:active{ cursor:grabbing; }
+.col-pref-check{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); cursor:pointer; flex:1; }
+.col-pref-check input[type="checkbox"]{ width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+
 /* ---------- Banner ---------- */
 .banner{
   height:40px;
@@ -729,7 +771,7 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
     <div class="sb-divider sidebar-brand-divider"></div>
     <!-- Main nav -->
     <div class="nav-item active" data-page="overview" onclick="showPage('overview')">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4h6v8h-6z"/><path d="M4 16h6v4h-6z"/><path d="M14 12h6v8h-6z"/><path d="M14 4h6v4h-6z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 3a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2zm10 -4a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 -8a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2z"/></svg>
       <span class="nav-label">Dashboard</span>
     </div>
     <div class="nav-group" id="navGroupActivities">
@@ -1280,7 +1322,47 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
         <div class="card-sub">Pengaturan akun &amp; aplikasi</div>
       </div>
       <div class="full-bleed-divider" style="margin:0;"></div>
-      <div class="tab-panel-empty">Coming soon</div>
+
+      <div class="tab-row">
+        <button class="tab-btn active" data-settings-tab="language" onclick="showSettingsTab('language')">Bahasa</button>
+        <button class="tab-btn" data-settings-tab="table" onclick="showSettingsTab('table')">Table</button>
+      </div>
+
+      <div class="settings-tab-panel" id="settings-tab-language" style="padding:20px;">
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Bahasa Aplikasi</div>
+            <div class="settings-row-desc">Pilih bahasa yang digunakan untuk antarmuka Mantis.</div>
+          </div>
+          <div class="settings-row-control">
+            <select class="settings-select" id="mantisLanguageSelect" onchange="mantisSetLanguage(this.value)">
+              <option value="id">Bahasa Indonesia</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-tab-panel" id="settings-tab-table" style="display:none;padding:20px;">
+        <div class="card-sub" style="margin-bottom:16px;">Atur kolom yang ditampilkan dan urutannya pada tiap tabel. Seret ikon titik untuk mengubah urutan.</div>
+
+        <div class="settings-table-group">
+          <div class="settings-table-group-title">Activities &mdash; Records</div>
+          <div class="col-pref-list" id="colprefs-activity-records-container"><div class="col-pref-loading">Memuat kolom...</div></div>
+        </div>
+        <div class="settings-table-group">
+          <div class="settings-table-group-title">Parts</div>
+          <div class="col-pref-list" id="colprefs-parts-table-container"><div class="col-pref-loading">Memuat kolom...</div></div>
+        </div>
+        <div class="settings-table-group">
+          <div class="settings-table-group-title">Meters</div>
+          <div class="col-pref-list" id="colprefs-meters-table-container"><div class="col-pref-loading">Memuat kolom...</div></div>
+        </div>
+        <div class="settings-table-group">
+          <div class="settings-table-group-title">Orders</div>
+          <div class="col-pref-list" id="colprefs-po-table-container"><div class="col-pref-loading">Memuat kolom...</div></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1317,7 +1399,7 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   <!-- ============ MOBILE BOTTOM NAV ============ -->
   <nav class="mobile-bottom-nav">
     <button class="bottom-nav-item active" data-page="overview" onclick="showPage('overview')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4h6v8h-6z"/><path d="M4 16h6v4h-6z"/><path d="M14 12h6v8h-6z"/><path d="M14 4h6v4h-6z"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2zm10 -4a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 -8a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2z"/></svg>
       <span>Dashboard</span>
     </button>
     <button class="bottom-nav-item" data-page="activities" onclick="showActivitiesPage('newlog')">
@@ -1461,6 +1543,53 @@ function mantisStripEmptyColumns(table){
   };
 }
 
+const MANTIS_COLPREFS_PREFIX = 'mantisColPrefs::';
+
+function mantisGetColumnPrefs(containerId){
+  try{
+    const raw = localStorage.getItem(MANTIS_COLPREFS_PREFIX + containerId);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){
+    return null;
+  }
+}
+
+function mantisSaveColumnPrefs(containerId, prefs){
+  try{ localStorage.setItem(MANTIS_COLPREFS_PREFIX + containerId, JSON.stringify(prefs)); }catch(e){ /* storage unavailable - ignore */ }
+}
+
+function mantisOrderedColumnIds(containerId, table){
+  const allIds = table.cols.map(function(c, i){ return c.id || String(i); });
+  const prefs = mantisGetColumnPrefs(containerId);
+  if(!prefs || !prefs.order || !prefs.order.length) return allIds;
+
+  const remaining = {};
+  allIds.forEach(function(id){ remaining[id] = true; });
+  const ordered = [];
+  prefs.order.forEach(function(id){
+    if(remaining[id]){ ordered.push(id); delete remaining[id]; }
+  });
+  allIds.forEach(function(id){
+    if(remaining[id]) ordered.push(id);
+  });
+  return ordered;
+}
+
+function mantisOrderedVisibleColIndexes(containerId, table){
+  const prefs = mantisGetColumnPrefs(containerId);
+  const hiddenSet = {};
+  (prefs && prefs.hidden || []).forEach(function(id){ hiddenSet[id] = true; });
+
+  const idToIndex = {};
+  table.cols.forEach(function(c, i){ idToIndex[c.id || String(i)] = i; });
+
+  const result = [];
+  mantisOrderedColumnIds(containerId, table).forEach(function(id){
+    if(!hiddenSet[id] && idToIndex.hasOwnProperty(id)) result.push(idToIndex[id]);
+  });
+  return result;
+}
+
 function renderGvizTable(container, table, containerId){
   mantisTableCache[containerId] = mantisStripEmptyColumns(table);
   if(!(containerId in mantisRowLimits)) mantisRowLimits[containerId] = 10;
@@ -1511,17 +1640,21 @@ function renderGvizTableRows(containerId){
     colgroupHtml = '<colgroup>' + lockedWidths.map(function(w){ return '<col style="width:' + w + 'px;">'; }).join('') + '</colgroup>';
   }
 
+  const colOrder = mantisOrderedVisibleColIndexes(containerId, table);
+
   let html = '<div class="table-wrap">' + tableOpenTag + colgroupHtml + '<thead><tr>';
-  table.cols.forEach(function(c){
+  colOrder.forEach(function(ci){
+    const c = table.cols[ci];
     html += '<th>' + mantisEscapeHtml(c.label || c.id || '') + '</th>';
   });
   html += '</tr></thead><tbody>';
   if(rowsToShow.length === 0){
-    html += '<tr><td colspan="' + table.cols.length + '" style="text-align:center;color:var(--ink-3);padding:32px 20px;">Tidak ada data yang cocok.</td></tr>';
+    html += '<tr><td colspan="' + colOrder.length + '" style="text-align:center;color:var(--ink-3);padding:32px 20px;">Tidak ada data yang cocok.</td></tr>';
   }
   rowsToShow.forEach(function(item){
     html += '<tr class="table-row-clickable" onclick="mantisShowRowDetail(\'' + containerId + '\', ' + item.index + ')">';
-    (item.row.c || []).forEach(function(cell){
+    colOrder.forEach(function(ci){
+      const cell = (item.row.c || [])[ci];
       let val = '';
       if(cell){
         val = (cell.f !== undefined && cell.f !== null) ? cell.f : (cell.v !== undefined && cell.v !== null ? cell.v : '');
@@ -1692,12 +1825,13 @@ function mantisWriteSheetCache(sheetName, table){
   }catch(e){ /* storage unavailable/full - ignore, cache is best-effort */ }
 }
 
-function loadSheetTable(sheetName, containerId, handlerName, forceRefresh){
+function loadSheetTable(sheetName, containerId, handlerName, forceRefresh, onDone){
   const container = document.getElementById(containerId);
   const cached = forceRefresh ? null : mantisReadSheetCache(sheetName);
 
   if(cached){
     renderGvizTable(container, cached.table, containerId);
+    if(typeof onDone === 'function') onDone();
   } else {
     container.innerHTML = '<div class="sheet-loading">Memuat data dari Google Sheet...</div>';
   }
@@ -1711,6 +1845,7 @@ function loadSheetTable(sheetName, containerId, handlerName, forceRefresh){
     }
     mantisWriteSheetCache(sheetName, res.table);
     renderGvizTable(container, res.table, containerId);
+    if(typeof onDone === 'function') onDone();
   };
 
   const tqx = 'out:json;responseHandler:' + handlerName;
@@ -1738,6 +1873,122 @@ function mantisRefreshSheet(containerId){
   const source = MANTIS_SHEET_SOURCES[containerId];
   if(!source) return;
   loadSheetTable(source[0], containerId, source[1], true);
+}
+
+/* ---------- Settings: tabs ---------- */
+function showSettingsTab(name){
+  document.querySelectorAll('.settings-tab-panel').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById('settings-tab-' + name).style.display = '';
+
+  document.querySelectorAll('.tab-btn[data-settings-tab]').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelector('.tab-btn[data-settings-tab="' + name + '"]').classList.add('active');
+
+  if(name === 'table') mantisInitTableSettingsTab();
+}
+
+/* ---------- Settings: language ---------- */
+function mantisSetLanguage(lang){
+  try{ localStorage.setItem('mantisLanguage', lang); }catch(e){ /* storage unavailable - ignore */ }
+}
+
+(function mantisRestoreLanguage(){
+  try{
+    const lang = localStorage.getItem('mantisLanguage');
+    const sel = document.getElementById('mantisLanguageSelect');
+    if(lang && sel) sel.value = lang;
+  }catch(e){ /* storage unavailable - ignore */ }
+})();
+
+/* ---------- Settings: table columns ---------- */
+let mantisTableSettingsInited = false;
+
+function mantisInitTableSettingsTab(){
+  if(mantisTableSettingsInited) return;
+  mantisTableSettingsInited = true;
+  Object.keys(MANTIS_SHEET_SOURCES).forEach(function(containerId){
+    mantisBuildColumnPrefsSection(containerId);
+  });
+}
+
+function mantisBuildColumnPrefsSection(containerId){
+  const source = MANTIS_SHEET_SOURCES[containerId];
+  if(!source) return;
+
+  const cached = mantisTableCache[containerId];
+  if(cached){
+    mantisRenderColumnPrefsList(containerId, cached);
+    return;
+  }
+  loadSheetTable(source[0], containerId, source[1], false, function(){
+    mantisRenderColumnPrefsList(containerId, mantisTableCache[containerId]);
+  });
+}
+
+function mantisRenderColumnPrefsList(containerId, table){
+  const listEl = document.getElementById('colprefs-' + containerId);
+  if(!listEl || !table || !table.cols) return;
+
+  const prefs = mantisGetColumnPrefs(containerId);
+  const hiddenSet = {};
+  (prefs && prefs.hidden || []).forEach(function(id){ hiddenSet[id] = true; });
+
+  const idToCol = {};
+  table.cols.forEach(function(c, i){ idToCol[c.id || String(i)] = c; });
+
+  let html = '';
+  mantisOrderedColumnIds(containerId, table).forEach(function(id){
+    const col = idToCol[id];
+    if(!col) return;
+    const checked = !hiddenSet[id];
+    html += '<div class="col-pref-item" draggable="true" data-col-id="' + id + '">';
+    html += '<svg class="col-pref-drag" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M8 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M8 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg>';
+    html += '<label class="col-pref-check"><input type="checkbox"' + (checked ? ' checked' : '') + ' onchange="mantisToggleColumn(\'' + containerId + '\', \'' + id + '\', this.checked)"><span>' + mantisEscapeHtml(col.label || col.id || '') + '</span></label>';
+    html += '</div>';
+  });
+  listEl.innerHTML = html;
+  mantisAttachDragHandlers(listEl, containerId);
+}
+
+function mantisToggleColumn(containerId, colId, isChecked){
+  const table = mantisTableCache[containerId];
+  const prefs = mantisGetColumnPrefs(containerId) || { order: table ? mantisOrderedColumnIds(containerId, table) : [], hidden: [] };
+  const hiddenSet = {};
+  (prefs.hidden || []).forEach(function(id){ hiddenSet[id] = true; });
+  if(isChecked){ delete hiddenSet[colId]; } else { hiddenSet[colId] = true; }
+  prefs.hidden = Object.keys(hiddenSet);
+  mantisSaveColumnPrefs(containerId, prefs);
+  delete mantisColumnWidths[containerId];
+  renderGvizTableRows(containerId);
+}
+
+function mantisAttachDragHandlers(listEl, containerId){
+  const items = listEl.querySelectorAll('.col-pref-item');
+  items.forEach(function(item){
+    item.addEventListener('dragstart', function(){
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', function(){
+      item.classList.remove('dragging');
+      mantisPersistColumnOrder(listEl, containerId);
+    });
+    item.addEventListener('dragover', function(e){
+      e.preventDefault();
+      const dragging = listEl.querySelector('.dragging');
+      if(!dragging || dragging === item) return;
+      const rect = item.getBoundingClientRect();
+      const after = (e.clientY - rect.top) > rect.height / 2;
+      listEl.insertBefore(dragging, after ? item.nextSibling : item);
+    });
+  });
+}
+
+function mantisPersistColumnOrder(listEl, containerId){
+  const ids = Array.prototype.map.call(listEl.querySelectorAll('.col-pref-item'), function(item){ return item.getAttribute('data-col-id'); });
+  const prefs = mantisGetColumnPrefs(containerId) || { order: [], hidden: [] };
+  prefs.order = ids;
+  mantisSaveColumnPrefs(containerId, prefs);
+  delete mantisColumnWidths[containerId];
+  renderGvizTableRows(containerId);
 }
 </script>
 </body>
