@@ -724,6 +724,19 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 }
 .entry-meta-edit-btn:hover{ background:#FAFAF9; color:var(--ink); }
 
+.entry-tanggal-hidden-input{
+  position:absolute;
+  bottom:0;
+  left:0;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:0;
+  border:none;
+  opacity:0;
+  pointer-events:none;
+}
+
 .entry-meta-popover{
   display:none;
   position:fixed;
@@ -874,7 +887,7 @@ textarea.entry-input{
   .entry-meta-col{ padding:0 10px; border-left:none; }
   .entry-meta-col:first-child{ padding-left:0; }
   .entry-meta-col:nth-child(2){ border-left:1px solid var(--line); }
-  .entry-meta-col-teknisi{ grid-column:1 / -1; padding-left:0; border-top:1px solid var(--line); padding-top:14px; }
+  .entry-meta-col.entry-meta-col-teknisi{ grid-column:1 / -1; padding-left:0; border-left:none; border-top:1px solid var(--line); padding-top:14px; }
 
   .entry-meta-popover{ min-width:170px; }
 
@@ -1608,21 +1621,17 @@ textarea.entry-input{
 
       <div class="activities-tab-panel" id="activities-tab-newlog">
         <div class="entry-section">
-          <div class="card-sub" style="margin:0 0 16px 0;">Informasi Shift</div>
-
           <div class="entry-meta-grid">
             <div class="entry-meta-col">
               <div class="flex items-center justify-between">
                 <div class="metric-label">Tanggal</div>
-                <button type="button" class="entry-meta-edit-btn" title="Ubah tanggal" onclick="mantisToggleMetaPopover('tanggal', event)">
+                <button type="button" class="entry-meta-edit-btn" title="Ubah tanggal" onclick="mantisOpenTanggalPicker(event)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/></svg>
                 </button>
               </div>
               <div class="metric-value" id="mantisTanggalView">-</div>
 
-              <div class="entry-meta-popover" id="mantisTanggalPopover" onclick="event.stopPropagation()">
-                <input type="date" id="entryTanggal" class="entry-input" onchange="mantisApplyTanggal()">
-              </div>
+              <input type="date" id="entryTanggal" class="entry-tanggal-hidden-input" onchange="mantisApplyTanggal()">
             </div>
 
             <div class="entry-meta-col">
@@ -2818,7 +2827,8 @@ function mantisFormatTanggalDisplay(isoDate){
   if(!isoDate) return '-';
   const d = new Date(isoDate + 'T00:00:00');
   if(isNaN(d.getTime())) return '-';
-  return d.getDate() + ' ' + MANTIS_MONTHS_ID[d.getMonth()] + ' ' + d.getFullYear();
+  const yy = String(d.getFullYear()).slice(-2);
+  return d.getDate() + ' ' + MANTIS_MONTHS_ID[d.getMonth()] + ' ' + yy;
 }
 
 function mantisSyncShiftView(){
@@ -2869,19 +2879,24 @@ function mantisToggleMetaPopover(which, evt){
   const anchorEl = evt && evt.currentTarget;
   if(anchorEl) mantisPositionPopover(popover, anchorEl);
 
-  if(which === 'tanggal'){
-    const input = document.getElementById('entryTanggal');
-    if(input){
-      input.focus();
-      if(typeof input.showPicker === 'function'){
-        try{ input.showPicker(); }catch(e){ /* not supported/allowed - native calendar icon still works */ }
-      }
-    }
-  } else if(which === 'shift'){
+  if(which === 'shift'){
     mantisRefreshShiftPopoverSelection();
   } else if(which === 'teknisi'){
     mantisPopulateTeknisiCheckboxes();
   }
+}
+
+function mantisOpenTanggalPicker(evt){
+  if(evt) evt.stopPropagation();
+  mantisCloseAllMetaPopovers();
+
+  const input = document.getElementById('entryTanggal');
+  if(!input) return;
+  input.focus();
+  if(typeof input.showPicker === 'function'){
+    try{ input.showPicker(); return; }catch(e){ /* fall through to click() below */ }
+  }
+  input.click();
 }
 
 function mantisApplyTanggal(){
