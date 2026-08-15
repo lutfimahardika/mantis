@@ -696,7 +696,7 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   color:var(--red);
 }
 
-.mantis-chart-wrap{ position:relative; width:100%; max-height:280px; cursor:crosshair; }
+.mantis-chart-wrap{ position:relative; width:100%; height:260px; cursor:crosshair; }
 .mantis-chart-tooltip{
   position:absolute;
   display:none;
@@ -838,6 +838,12 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   .row-detail-new-save{ flex:0 0 auto; width:100%; }
   .table-pagination-desktop{ display:none; }
   .table-pagination-mobile{ display:inline-flex; }
+
+  .mantis-chart-wrap{ height:200px; }
+}
+
+@media (max-width:420px){
+  .mantis-chart-wrap{ height:170px; }
 }
 </style>
 </head>
@@ -2057,7 +2063,7 @@ function mantisBuildMeterReadingsChartHtml(table, row){
         '</div>' +
         '<div style="font-size:20px;font-weight:600;color:var(--ink);">' + mantisEscapeHtml(String(lastVal)) + (unitVal ? '<span style="font-size:12px;font-weight:500;color:var(--ink-3);"> ' + mantisEscapeHtml(unitVal) + '</span>' : '') + '</div>' +
       '</div>' +
-      '<div class="mantis-chart-wrap" style="margin-top:12px;aspect-ratio:' + W + '/' + H + ';">' +
+      '<div class="mantis-chart-wrap" style="margin-top:12px;">' +
         '<svg id="mantisMeterChartSvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:100%;display:block;touch-action:none;" ' +
           'onpointerdown="mantisHandleMeterChartPointer(event)" onpointermove="mantisHandleMeterChartPointer(event)" onpointerleave="mantisHideMeterChartCursor()">' +
           '<defs>' +
