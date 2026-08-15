@@ -689,6 +689,29 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 }
 .row-detail-new-save:hover{ opacity:.92; }
 .row-detail-new-save:disabled{ opacity:.6; cursor:default; }
+.row-detail-ocr-btn{
+  flex:0 0 auto;
+  width:34px;
+  height:34px;
+  padding:0;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  color:var(--ink-2);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background 150ms,color 150ms;
+}
+.row-detail-ocr-btn:hover{ background:#FAFAF9; color:var(--ink); }
+.row-detail-ocr-btn:disabled{ opacity:.6; cursor:default; }
+.row-detail-ocr-status{
+  flex:0 0 100%;
+  font-size:12px;
+  color:var(--ink-3);
+  line-height:1.5;
+}
 .mantis-new-reading-error{
   display:none;
   margin-top:10px;
@@ -1184,6 +1207,7 @@ textarea.entry-input{
   .row-detail-item-new{ flex-direction:column; align-items:stretch; }
   .row-detail-item-new .row-detail-label{ flex:0 0 auto; }
   .row-detail-new-input{ flex:0 0 auto; width:100%; height:44px; font-size:16px; }
+  .row-detail-ocr-btn{ align-self:flex-end; width:40px; height:40px; }
   .row-detail-new-save{ flex:0 0 auto; width:100%; height:44px; }
   .table-pagination-desktop{ display:none; }
   .table-pagination-mobile{ display:inline-flex; }
@@ -2734,15 +2758,24 @@ function mantisSuggestNextWeekLabel(table){
 function mantisBuildNewReadingRowHtml(table, row){
   const nextWeek = mantisSuggestNextWeekLabel(table);
   const unitVal = mantisGetMeterUnit(table, row);
-  const inputHtml = mantisIsDateUnit(unitVal)
+  const isDate = mantisIsDateUnit(unitVal);
+  const inputHtml = isDate
     ? '<input type="date" id="mantisNewReadingInput" class="row-detail-new-input">'
     : '<input type="number" id="mantisNewReadingInput" class="row-detail-new-input" placeholder="Masukkan nilai" inputmode="decimal">';
+
+  const ocrHtml = isDate ? '' :
+    '<button type="button" class="row-detail-ocr-btn" title="Scan angka meteran dari foto" onclick="mantisOpenOcrCapture()">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><circle cx="12" cy="13" r="3"/></svg>' +
+    '</button>' +
+    '<input type="file" id="mantisOcrFileInput" accept="image/*" capture="environment" style="display:none;" onchange="mantisHandleOcrFile(event)">';
 
   return '' +
     '<div class="row-detail-item row-detail-item-new">' +
       '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
       inputHtml +
+      ocrHtml +
       '<button type="button" class="row-detail-new-save" onclick="mantisSubmitNewReading()">Simpan</button>' +
+      '<span class="row-detail-ocr-status" id="mantisOcrStatus" style="display:none;"></span>' +
     '</div>';
 }
 
@@ -2751,6 +2784,97 @@ function mantisShowNewReadingError(message){
   if(!errEl) return;
   errEl.textContent = message;
   errEl.style.display = '';
+}
+
+/* ---------- OCR: scan meter reading from a photo (Tesseract.js, loaded on demand) ---------- */
+const MANTIS_TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js';
+let mantisTesseractLoadPromise = null;
+
+function mantisLoadTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  if(mantisTesseractLoadPromise) return mantisTesseractLoadPromise;
+
+  mantisTesseractLoadPromise = new Promise(function(resolve, reject){
+    const script = document.createElement('script');
+    script.src = MANTIS_TESSERACT_URL;
+    script.onload = function(){ resolve(); };
+    script.onerror = function(){
+      mantisTesseractLoadPromise = null;
+      reject(new Error('Gagal memuat OCR engine. Periksa koneksi internet.'));
+    };
+    document.body.appendChild(script);
+  });
+  return mantisTesseractLoadPromise;
+}
+
+function mantisSetOcrStatus(message, isError){
+  const el = document.getElementById('mantisOcrStatus');
+  if(!el) return;
+  el.textContent = message || '';
+  el.style.color = isError ? 'var(--red)' : 'var(--ink-3)';
+  el.style.display = message ? '' : 'none';
+}
+
+function mantisOpenOcrCapture(){
+  const fileInput = document.getElementById('mantisOcrFileInput');
+  if(fileInput) fileInput.click();
+}
+
+/* Meter displays are almost always dominated by one long digit run (the
+   running-hour count, optionally with one decimal point) - picking the
+   longest digit sequence the OCR engine found is a simple, reliable heuristic. */
+function mantisExtractMeterReading(text){
+  const matches = (text || '').match(/\d[\d.,]*\d|\d/g);
+  if(!matches || !matches.length) return null;
+
+  matches.sort(function(a, b){ return b.length - a.length; });
+  let raw = matches[0].replace(/,/g, '.');
+  raw = raw.replace(/^\.+|\.+$/g, '');
+
+  const dotCount = (raw.match(/\./g) || []).length;
+  if(dotCount > 1){
+    const parts = raw.split('.');
+    raw = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+  }
+
+  return raw || null;
+}
+
+function mantisHandleOcrFile(evt){
+  const file = evt.target.files && evt.target.files[0];
+  evt.target.value = '';
+  if(!file) return;
+
+  const ocrBtn = document.querySelector('.row-detail-ocr-btn');
+  if(ocrBtn) ocrBtn.disabled = true;
+  mantisSetOcrStatus('Memuat OCR engine...', false);
+
+  mantisLoadTesseract().then(function(){
+    mantisSetOcrStatus('Memindai angka meteran...', false);
+    return Tesseract.recognize(file, 'eng', {
+      tessedit_char_whitelist: '0123456789.',
+      logger: function(){}
+    });
+  }).then(function(result){
+    if(ocrBtn) ocrBtn.disabled = false;
+    const text = (result && result.data && result.data.text) || '';
+    const value = mantisExtractMeterReading(text);
+
+    if(value === null){
+      mantisSetOcrStatus('Angka tidak terbaca dari foto. Coba foto ulang atau isi manual.', true);
+      return;
+    }
+
+    const input = document.getElementById('mantisNewReadingInput');
+    if(input){
+      input.value = value;
+      input.focus();
+    }
+    mantisSetOcrStatus('Terdeteksi: ' + value + '. Periksa angkanya, lalu tekan Simpan.', false);
+  }).catch(function(err){
+    if(ocrBtn) ocrBtn.disabled = false;
+    mantisSetOcrStatus('Gagal memindai foto: ' + err.message, true);
+  });
 }
 
 function mantisApplyNewReadingLocally(table, row, week, value){
