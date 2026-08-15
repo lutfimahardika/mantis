@@ -767,6 +767,8 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   font-size:13px;
   color:var(--ink);
   text-align:left;
+  white-space:normal;
+  line-height:1.4;
   border-radius:6px;
   cursor:pointer;
   transition:background 150ms;
@@ -889,6 +891,25 @@ textarea.entry-input{
   resize:none;
   line-height:1.5;
 }
+
+.entry-mesin-row{ display:flex; align-items:center; gap:6px; }
+.entry-mesin-row .entry-input{ flex:1; }
+.entry-mesin-toggle{
+  flex:0 0 auto;
+  width:20px;
+  height:20px;
+  padding:0;
+  border:none;
+  background:transparent;
+  color:var(--ink-3);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:color 150ms,transform 150ms;
+}
+.entry-mesin-toggle:hover{ color:var(--ink); }
+.entry-mesin-toggle.open{ transform:rotate(180deg); color:var(--accent); }
 
 .entry-form-footer{
   display:flex;
@@ -1970,13 +1991,27 @@ textarea.entry-input{
 
         <div class="entry-field">
           <label class="entry-field-label" for="entryMesin">Mesin</label>
-          <input type="text" id="entryMesin" class="entry-input" list="entryMesinOptions" placeholder="Nama mesin" autocomplete="off" oninput="mantisSyncAreaFromMesin()">
-          <datalist id="entryMesinOptions"></datalist>
+          <div class="entry-mesin-row">
+            <input type="text" id="entryMesin" class="entry-input" placeholder="Nama mesin" autocomplete="off"
+              oninput="mantisHandleMesinInput()" onfocus="mantisOpenMesinDropdown()">
+            <button type="button" class="entry-mesin-toggle" tabindex="-1" onclick="mantisToggleMesinDropdown(event)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6"/></svg>
+            </button>
+          </div>
+
+          <div class="entry-meta-popover" id="mantisMesinDropdown" onclick="event.stopPropagation()">
+            <div class="entry-meta-popover-list" id="mantisMesinDropdownList"></div>
+          </div>
         </div>
 
         <div class="entry-field">
           <label class="entry-field-label" for="entryIssue">Issue</label>
-          <textarea id="entryIssue" class="entry-input" placeholder="Deskripsikan kendala/temuan"></textarea>
+          <textarea id="entryIssue" class="entry-input" placeholder="Deskripsikan kendala/temuan"
+            oninput="mantisHandleIssueInput()" onfocus="mantisOpenIssueDropdown()"></textarea>
+
+          <div class="entry-meta-popover" id="mantisIssueDropdown" style="min-width:260px;max-width:320px;" onclick="event.stopPropagation()">
+            <div class="entry-meta-popover-list" id="mantisIssueDropdownList"></div>
+          </div>
         </div>
 
         <div class="entry-field">
@@ -2674,11 +2709,6 @@ function mantisShowRowDetail(containerId, rowIndex){
     toggleSidebar();
   }
   window.scrollTo(0, 0);
-
-  if(containerId === 'meters-table-container' && window.matchMedia('(max-width:768px)').matches){
-    const newInput = document.getElementById('mantisNewReadingInput');
-    if(newInput) newInput.focus({ preventScroll: true });
-  }
 }
 
 function mantisCloseRowDetail(){
@@ -2703,17 +2733,32 @@ function mantisSuggestNextWeekLabel(table){
 
 function mantisBuildNewReadingRowHtml(table, row){
   const nextWeek = mantisSuggestNextWeekLabel(table);
+  return '' +
+    '<div class="row-detail-item row-detail-item-new" id="mantisNewReadingRow">' +
+      '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
+      '<button type="button" class="row-detail-new-save" onclick="mantisRevealNewReadingInput()">+ Masukkan Nilai</button>' +
+    '</div>';
+}
+
+function mantisRevealNewReadingInput(){
+  const table = mantisTableCache[mantisDetailContainerId];
+  const row = table && table.rows[mantisDetailRowIndex];
+  const rowEl = document.getElementById('mantisNewReadingRow');
+  if(!table || !row || !rowEl) return;
+
+  const nextWeek = mantisSuggestNextWeekLabel(table);
   const unitVal = mantisGetMeterUnit(table, row);
   const inputHtml = mantisIsDateUnit(unitVal)
     ? '<input type="date" id="mantisNewReadingInput" class="row-detail-new-input">'
     : '<input type="number" id="mantisNewReadingInput" class="row-detail-new-input" placeholder="Masukkan nilai" inputmode="decimal">';
 
-  return '' +
-    '<div class="row-detail-item row-detail-item-new">' +
-      '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
-      inputHtml +
-      '<button type="button" class="row-detail-new-save" onclick="mantisSubmitNewReading()">Simpan</button>' +
-    '</div>';
+  rowEl.innerHTML =
+    '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
+    inputHtml +
+    '<button type="button" class="row-detail-new-save" onclick="mantisSubmitNewReading()">Simpan</button>';
+
+  const input = document.getElementById('mantisNewReadingInput');
+  if(input) input.focus({ preventScroll: true });
 }
 
 function mantisShowNewReadingError(message){
@@ -2904,6 +2949,8 @@ function mantisSyncShiftView(){
 
 function mantisCloseAllMetaPopovers(){
   document.querySelectorAll('.entry-meta-popover.open').forEach(function(p){ p.classList.remove('open'); });
+  const mesinToggle = document.querySelector('.entry-mesin-toggle');
+  if(mesinToggle) mesinToggle.classList.remove('open');
 }
 
 function mantisPositionPopover(popover, anchorEl){
@@ -3138,15 +3185,171 @@ function mantisSyncAreaFromMesin(){
   document.getElementById('entryArea').value = mantisLookupArea(mesin);
 }
 
-(function mantisInitMesinOptions(){
-  const datalist = document.getElementById('entryMesinOptions');
-  if(!datalist) return;
-  MANTIS_MESIN_AREA_LIST.forEach(function(pair){
-    const opt = document.createElement('option');
-    opt.value = pair[0];
-    datalist.appendChild(opt);
+/* ---------- Mesin: custom dropdown (replaces native <input list> datalist) ---------- */
+function mantisRenderMesinDropdownList(filterText){
+  const listEl = document.getElementById('mantisMesinDropdownList');
+  if(!listEl) return;
+
+  const filter = (filterText || '').trim().toLowerCase();
+  const matches = MANTIS_MESIN_AREA_LIST.filter(function(pair){
+    return !filter || pair[0].toLowerCase().indexOf(filter) !== -1;
   });
-})();
+
+  if(!matches.length){
+    listEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--ink-3);">Tidak ditemukan.</div>';
+    return;
+  }
+
+  listEl.innerHTML = matches.map(function(pair){
+    return '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectMesin(\'' + pair[0].replace(/'/g, "\\'") + '\')">' +
+      mantisEscapeHtml(pair[0]) +
+      '<span style="display:block;font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(pair[1]) + '</span>' +
+      '</button>';
+  }).join('');
+}
+
+function mantisSetMesinToggleOpen(isOpen){
+  const toggle = document.querySelector('.entry-mesin-toggle');
+  if(toggle) toggle.classList.toggle('open', isOpen);
+}
+
+function mantisOpenMesinDropdown(){
+  const popover = document.getElementById('mantisMesinDropdown');
+  const input = document.getElementById('entryMesin');
+  if(!popover || !input) return;
+
+  const isOpen = popover.classList.contains('open');
+  mantisCloseAllMetaPopovers();
+  if(isOpen) return;
+
+  popover.classList.add('open');
+  mantisSetMesinToggleOpen(true);
+  mantisRenderMesinDropdownList(input.value);
+  mantisPositionPopover(popover, input);
+}
+
+function mantisToggleMesinDropdown(evt){
+  if(evt) evt.stopPropagation();
+  const popover = document.getElementById('mantisMesinDropdown');
+  if(popover && popover.classList.contains('open')){
+    mantisCloseAllMetaPopovers();
+    return;
+  }
+  document.getElementById('entryMesin').focus();
+  mantisOpenMesinDropdown();
+}
+
+function mantisHandleMesinInput(){
+  mantisSyncAreaFromMesin();
+  const popover = document.getElementById('mantisMesinDropdown');
+  const input = document.getElementById('entryMesin');
+  if(!popover.classList.contains('open')){
+    mantisOpenMesinDropdown();
+  } else {
+    mantisRenderMesinDropdownList(input.value);
+    mantisPositionPopover(popover, input);
+  }
+}
+
+function mantisSelectMesin(name){
+  document.getElementById('entryMesin').value = name;
+  mantisSyncAreaFromMesin();
+  mantisCloseAllMetaPopovers();
+}
+
+/* ---------- Issue: suggestions from Google Sheet history (never blocks free text) ---------- */
+let mantisIssueSuggestionsCache = [];
+
+function mantisGetIssueSuggestions(mesinFilter, textFilter){
+  const table = mantisTableCache['activity-records-container'];
+  if(!table || !table.rows) return [];
+
+  const mesinIdx = mantisFindColIndex(table, 'Mesin');
+  const issueIdx = mantisFindColIndex(table, 'Issue');
+  if(issueIdx === -1) return [];
+
+  const mesinKey = (mesinFilter || '').trim().toLowerCase();
+  const textKey = (textFilter || '').trim().toLowerCase();
+
+  const seen = {};
+  const results = [];
+
+  for(let i = table.rows.length - 1; i >= 0 && results.length < 8; i--){
+    const row = table.rows[i];
+    const issue = mantisCellText(row.c && row.c[issueIdx]).trim();
+    if(!issue) continue;
+
+    const mesin = mesinIdx !== -1 ? mantisCellText(row.c && row.c[mesinIdx]).trim() : '';
+    if(mesinKey && mesin.toLowerCase() !== mesinKey) continue;
+    if(textKey && issue.toLowerCase().indexOf(textKey) === -1) continue;
+
+    const dedupeKey = issue.toLowerCase();
+    if(seen[dedupeKey]) continue;
+    seen[dedupeKey] = true;
+
+    results.push(issue);
+  }
+
+  return results;
+}
+
+function mantisRenderIssueDropdownList(){
+  const listEl = document.getElementById('mantisIssueDropdownList');
+  if(!listEl) return false;
+
+  const mesin = document.getElementById('entryMesin').value;
+  const textValue = document.getElementById('entryIssue').value;
+  mantisIssueSuggestionsCache = mantisGetIssueSuggestions(mesin, textValue);
+
+  if(!mantisIssueSuggestionsCache.length){
+    listEl.innerHTML = '';
+    return false;
+  }
+
+  listEl.innerHTML = mantisIssueSuggestionsCache.map(function(issue, idx){
+    const preview = issue.length > 90 ? issue.slice(0, 90) + '…' : issue;
+    return '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectIssue(' + idx + ')">' + mantisEscapeHtml(preview) + '</button>';
+  }).join('');
+  return true;
+}
+
+function mantisSelectIssue(idx){
+  const issue = mantisIssueSuggestionsCache[idx];
+  if(issue === undefined) return;
+  document.getElementById('entryIssue').value = issue;
+  mantisCloseAllMetaPopovers();
+  document.getElementById('entryIssue').focus();
+}
+
+function mantisOpenIssueDropdown(){
+  const popover = document.getElementById('mantisIssueDropdown');
+  const textarea = document.getElementById('entryIssue');
+  if(!popover || !textarea) return;
+
+  const isOpen = popover.classList.contains('open');
+  mantisCloseAllMetaPopovers();
+  if(isOpen) return;
+
+  const hasSuggestions = mantisRenderIssueDropdownList();
+  if(!hasSuggestions) return;
+
+  popover.classList.add('open');
+  mantisPositionPopover(popover, textarea);
+}
+
+function mantisHandleIssueInput(){
+  const popover = document.getElementById('mantisIssueDropdown');
+  const textarea = document.getElementById('entryIssue');
+  const hasSuggestions = mantisRenderIssueDropdownList();
+
+  if(!hasSuggestions){
+    popover.classList.remove('open');
+    return;
+  }
+
+  popover.classList.add('open');
+  mantisPositionPopover(popover, textarea);
+}
 
 const MANTIS_ACTION_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>';
 const MANTIS_TRASH_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>';
@@ -3319,6 +3522,23 @@ document.addEventListener('keydown', function(evt){
   if(evt.key === 'Escape' && document.getElementById('mantisActionModalOverlay').classList.contains('open')){
     mantisCloseNewAction();
   }
+});
+
+/* Keyboard-safe UX for every input/textarea/select: on mobile, the on-screen
+   keyboard covers roughly the bottom half of the viewport. Whenever any real
+   (non-hidden) field gets focus, scroll it to the vertical center of the
+   visible area once the keyboard has finished animating in, so the field and
+   any nearby save button stay visible above it. */
+document.addEventListener('focusin', function(evt){
+  const el = evt.target;
+  if(!el || typeof el.matches !== 'function') return;
+  if(!el.matches('input, textarea, select')) return;
+  if(el.type === 'hidden' || el.classList.contains('entry-tanggal-hidden-input')) return;
+  if(!window.matchMedia('(max-width:768px)').matches) return;
+
+  setTimeout(function(){
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 300);
 });
 
 function mantisSubmitMaintenanceEntry(){
