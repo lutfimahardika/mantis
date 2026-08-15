@@ -1880,12 +1880,101 @@ function mantisFindColIndex(table, label){
   return table.cols.findIndex(function(c){ return (c.label || '').trim() === label; });
 }
 
+function mantisBuildMeterReadingsChartHtml(table, row){
+  const weekCols = [];
+  table.cols.forEach(function(c, i){
+    if(mantisIsWeekLabel(c.label)) weekCols.push({ index: i, label: c.label });
+  });
+  weekCols.sort(function(a, b){
+    return parseInt((a.label || '').replace(/\D/g, ''), 10) - parseInt((b.label || '').replace(/\D/g, ''), 10);
+  });
+
+  const points = weekCols.map(function(wc){
+    const cell = row.c && row.c[wc.index];
+    const num = cell && typeof cell.v === 'number' ? cell.v : parseFloat(mantisCellText(cell));
+    return { label: wc.label, value: isNaN(num) ? null : num };
+  }).filter(function(p){ return p.value !== null; });
+
+  if(points.length < 2) return '';
+
+  const values = points.map(function(p){ return p.value; });
+  let min = Math.min.apply(null, values);
+  let max = Math.max.apply(null, values);
+  if(min === max){ min -= 1; max += 1; }
+  const padY = (max - min) * 0.1;
+  min -= padY; max += padY;
+
+  const W = 1000, H = 260;
+  const n = points.length;
+  const stepX = n > 1 ? (W / (n - 1)) : 0;
+  const coords = points.map(function(p, i){
+    return {
+      x: i * stepX,
+      y: 10 + (H - 20) * (1 - (p.value - min) / (max - min))
+    };
+  });
+
+  const polylinePts = coords.map(function(c){ return c.x.toFixed(1) + ',' + c.y.toFixed(1); }).join(' ');
+  const areaPath = 'M' + coords.map(function(c, i){ return (i === 0 ? '' : 'L') + c.x.toFixed(1) + ',' + c.y.toFixed(1); }).join(' ') + ' L' + W + ',' + H + ' L0,' + H + ' Z';
+  const dots = coords.map(function(c){
+    return '<circle cx="' + c.x.toFixed(1) + '" cy="' + c.y.toFixed(1) + '" r="3.5" fill="#fff" stroke="#F5A623" stroke-width="2"/>';
+  }).join('');
+
+  const maxLabels = 8;
+  const labelStep = Math.max(1, Math.ceil(n / maxLabels));
+  const labelsHtml = points.map(function(p, i){
+    if(i % labelStep !== 0 && i !== n - 1) return '';
+    return '<span style="font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(p.label) + '</span>';
+  }).filter(Boolean).join('');
+
+  const unitIdx = mantisFindColIndex(table, 'Unit') !== -1 ? mantisFindColIndex(table, 'Unit') : mantisFindColIndex(table, 'Satuan');
+  const unitVal = unitIdx >= 0 ? mantisCellText(row.c && row.c[unitIdx]) : '';
+  const lastVal = values[values.length - 1];
+
+  return '' +
+    '<div style="padding:16px 0 20px 0;border-bottom:1px solid var(--line-soft);display:flex;flex-direction:column;">' +
+      '<div class="flex items-start justify-between">' +
+        '<div>' +
+          '<div class="card-title">Meter Readings</div>' +
+          '<div class="flex items-center" style="gap:14px;margin-top:8px;">' +
+            '<div class="legend-item">' +
+              '<span class="legend-line" style="background:var(--accent);"></span>' +
+              '<span class="legend-dot" style="background:var(--accent);"></span>' +
+              '<span class="legend-label">Reading' + (unitVal ? ' (' + mantisEscapeHtml(unitVal) + ')' : '') + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:20px;font-weight:600;color:var(--ink);">' + mantisEscapeHtml(String(lastVal)) + (unitVal ? '<span style="font-size:12px;font-weight:500;color:var(--ink-3);"> ' + mantisEscapeHtml(unitVal) + '</span>' : '') + '</div>' +
+      '</div>' +
+      '<div style="height:200px;margin-top:12px;">' +
+        '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">' +
+          '<defs>' +
+            '<pattern id="meterDots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="0.9" fill="#E7E7E4"/></pattern>' +
+            '<linearGradient id="meterGradAmber" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0%" stop-color="#F5A623" stop-opacity="0.22"/>' +
+              '<stop offset="100%" stop-color="#F5A623" stop-opacity="0"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#meterDots)"/>' +
+          '<path d="' + areaPath + '" fill="url(#meterGradAmber)"/>' +
+          '<polyline points="' + polylinePts + '" fill="none" stroke="#F5A623" stroke-width="2" stroke-linejoin="round"/>' +
+          dots +
+        '</svg>' +
+      '</div>' +
+      '<div class="flex justify-between" style="margin-top:8px;">' + labelsHtml + '</div>' +
+    '</div>';
+}
+
 function mantisShowRowDetail(containerId, rowIndex){
   const table = mantisTableCache[containerId];
   const row = table && table.rows[rowIndex];
   if(!row) return;
 
-  let html = '<div class="row-detail-list">';
+  let html = '';
+  if(containerId === 'meters-table-container'){
+    html += mantisBuildMeterReadingsChartHtml(table, row);
+  }
+  html += '<div class="row-detail-list">';
   table.cols.forEach(function(c, i){
     const val = mantisCellText(row.c && row.c[i]) || '-';
     html += '<div class="row-detail-item"><span class="row-detail-label">' + mantisEscapeHtml(c.label || c.id || '') + '</span><span class="row-detail-value">' + mantisEscapeHtml(val) + '</span></div>';
