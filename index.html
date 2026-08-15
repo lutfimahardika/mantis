@@ -1966,19 +1966,11 @@ textarea.entry-input{
       </div>
 
       <div class="entry-modal-body">
-        <div class="entry-field">
-          <label class="entry-field-label" for="entryArea">Area</label>
-          <input type="text" id="entryArea" class="entry-input" list="entryAreaOptions" placeholder="Pilih atau ketik area" autocomplete="off">
-          <datalist id="entryAreaOptions">
-            <option value="Proses">
-            <option value="Filling">
-            <option value="Packing">
-          </datalist>
-        </div>
+        <input type="hidden" id="entryArea">
 
         <div class="entry-field">
           <label class="entry-field-label" for="entryMesin">Mesin</label>
-          <input type="text" id="entryMesin" class="entry-input" list="entryMesinOptions" placeholder="Nama mesin" autocomplete="off">
+          <input type="text" id="entryMesin" class="entry-input" list="entryMesinOptions" placeholder="Nama mesin" autocomplete="off" oninput="mantisSyncAreaFromMesin()">
           <datalist id="entryMesinOptions"></datalist>
         </div>
 
@@ -3068,9 +3060,93 @@ function mantisPopulateEntryFormOptions(){
   if(!table) return;
 
   mantisFillDatalist('entryShiftOptions', table, mantisFindColIndex(table, 'Shift'));
-  mantisFillDatalist('entryAreaOptions', table, mantisFindColIndex(table, 'Area'));
-  mantisFillDatalist('entryMesinOptions', table, mantisFindColIndex(table, 'Mesin'));
 }
+
+/* Mesin -> Area is a fixed mapping (not user-entered): the Area field follows
+   whichever machine is selected, based on the plant's machine registry. */
+const MANTIS_MESIN_AREA_LIST = [
+  ['Dumping Area', 'Proses'],
+  ['Powder Tank', 'Proses'],
+  ['Sugar Tank', 'Proses'],
+  ['High Shear Mixer', 'Proses'],
+  ['Choco Slurry 1', 'Proses'],
+  ['Choco Slurry 2', 'Proses'],
+  ['Reception Tank 1', 'Proses'],
+  ['Reception Tank 2', 'Proses'],
+  ['Pasteurizer', 'Proses'],
+  ['Homogenizer GEA', 'Proses'],
+  ['Pasteurize Tank 1', 'Proses'],
+  ['Pasteurize Tank 2', 'Proses'],
+  ['Mixing Tank 1', 'Proses'],
+  ['Mixing Tank 2', 'Proses'],
+  ['Storage Tank 1', 'Proses'],
+  ['Storage Tank 2', 'Proses'],
+  ['Storage Tank 3', 'Proses'],
+  ['Storage Tank 4', 'Proses'],
+  ['Sterilizer', 'Proses'],
+  ['Homogenizer Tetra', 'Proses'],
+  ['Aseptic Flex Dosing', 'Proses'],
+  ['Aseptic Tank 1', 'Proses'],
+  ['Aseptic Tank 2', 'Proses'],
+  ['CIP Aseptic', 'Proses'],
+  ['CIP Non-Aseptic Line 1', 'Proses'],
+  ['CIP Non-Aseptic Line 2', 'Proses'],
+  ['CIP Non-Aseptic Line 3', 'Proses'],
+  ['Linemaker 1', 'Proses'],
+  ['Linemaker 2', 'Proses'],
+  ['Linemaker 3', 'Proses'],
+  ['Combibloc 1', 'Filling'],
+  ['Combibloc 2', 'Filling'],
+  ['Combibloc 3', 'Filling'],
+  ['Tetra A3 Flex', 'Filling'],
+  ['Domino for C1', 'Filling'],
+  ['Domino for C2', 'Filling'],
+  ['Domino for C3', 'Filling'],
+  ['Domino for Tetra', 'Filling'],
+  ['Tetra Cap 30 Flex', 'Packing'],
+  ['Carton Sealer', 'Packing'],
+  ['Conveyor System 1', 'Packing'],
+  ['Conveyor System 2', 'Packing'],
+  ['Conveyor System 3', 'Packing'],
+  ['Conveyor Buffer 1', 'Packing'],
+  ['Conveyor Buffer 2', 'Packing'],
+  ['Conveyor Buffer 3', 'Packing'],
+  ['Straw Applicator 1', 'Packing'],
+  ['Straw Applicator 2', 'Packing'],
+  ['Straw Applicator 3', 'Packing'],
+  ['Traypacker 1', 'Packing'],
+  ['Traypacker 2', 'Packing'],
+  ['Traypacker 3', 'Packing'],
+  ['Videojet for TP1', 'Packing'],
+  ['Videojet for TP2', 'Packing'],
+  ['Videojet for TP3', 'Packing'],
+  ['Videojet for Cap 30', 'Packing']
+];
+
+const MANTIS_MESIN_AREA_MAP = {};
+MANTIS_MESIN_AREA_LIST.forEach(function(pair){
+  MANTIS_MESIN_AREA_MAP[pair[0].toLowerCase()] = pair[1];
+});
+
+function mantisLookupArea(mesinName){
+  const key = (mesinName || '').trim().toLowerCase();
+  return MANTIS_MESIN_AREA_MAP[key] || '';
+}
+
+function mantisSyncAreaFromMesin(){
+  const mesin = document.getElementById('entryMesin').value;
+  document.getElementById('entryArea').value = mantisLookupArea(mesin);
+}
+
+(function mantisInitMesinOptions(){
+  const datalist = document.getElementById('entryMesinOptions');
+  if(!datalist) return;
+  MANTIS_MESIN_AREA_LIST.forEach(function(pair){
+    const opt = document.createElement('option');
+    opt.value = pair[0];
+    datalist.appendChild(opt);
+  });
+})();
 
 const MANTIS_ACTION_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>';
 const MANTIS_TRASH_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>';
@@ -3250,19 +3326,27 @@ function mantisSubmitMaintenanceEntry(){
   messageEl.className = 'entry-form-message';
   messageEl.textContent = '';
 
+  const mesinValue = document.getElementById('entryMesin').value.trim();
+  const areaValue = mantisLookupArea(mesinValue);
+  document.getElementById('entryArea').value = areaValue;
+
   const fields = {
-    Area: document.getElementById('entryArea').value.trim(),
-    Mesin: document.getElementById('entryMesin').value.trim(),
+    Area: areaValue,
+    Mesin: mesinValue,
     Issue: document.getElementById('entryIssue').value.trim(),
     Action: document.getElementById('entryAction').value.trim()
   };
 
-  for(const key in fields){
-    if(!fields[key]){
-      messageEl.className = 'entry-form-message error';
-      messageEl.textContent = 'Semua kolom wajib diisi.';
-      return;
-    }
+  if(!fields.Mesin || !fields.Issue || !fields.Action){
+    messageEl.className = 'entry-form-message error';
+    messageEl.textContent = 'Semua kolom wajib diisi.';
+    return;
+  }
+
+  if(!fields.Area){
+    messageEl.className = 'entry-form-message error';
+    messageEl.textContent = 'Mesin tidak dikenali. Pilih dari daftar yang tersedia.';
+    return;
   }
 
   if(mantisEditingActionId){
