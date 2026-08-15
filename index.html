@@ -786,7 +786,7 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 .entry-meta-checkbox-item:hover{ background:#FAFAF9; }
 .entry-meta-checkbox-item input{ margin:0; }
 
-.entry-field-label{ display:block; font-size:11px; font-weight:700; color:var(--ink); margin-bottom:6px; }
+.entry-field-label{ display:block; font-size:11px; font-weight:700; color:var(--ink-2); }
 
 /* ---------- New Action modal ---------- */
 .mantis-modal-overlay{
@@ -842,76 +842,59 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   .mantis-modal{ max-width:100%; max-height:92vh; border-radius:16px 16px 0 0; }
 }
 
-.entry-area-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-}
-.entry-area-col{
+.entry-modal-body{
   display:flex;
   flex-direction:column;
-  align-items:center;
-  gap:8px;
-  padding:14px 8px;
-  border:none;
-  background:var(--surface);
-  font-family:inherit;
-  cursor:pointer;
-  transition:background 150ms;
+  gap:16px;
+  padding:20px;
 }
-.entry-area-col:not(:first-child){ border-left:1px solid var(--line); }
-.entry-area-col:hover{ background:#FAFAF9; }
-.entry-area-col.selected{ background:var(--accent-soft); }
-.entry-area-icon{
-  width:44px;
-  height:44px;
-  border-radius:12px;
+.entry-field{
   display:flex;
-  align-items:center;
-  justify-content:center;
-  transition:transform 150ms;
+  flex-direction:column;
+  gap:2px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#FAFAFA;
+  padding:8px 14px;
+  transition:border-color 150ms,background 150ms;
 }
-.entry-area-icon-emoji{
-  font-size:32px;
-  line-height:1;
-}
-.entry-area-col.selected .entry-area-icon{ transform:translateY(-2px) scale(1.08); }
-.entry-area-name{ font-size:13px; font-weight:500; color:var(--ink); }
-.entry-area-col.selected .entry-area-name{ color:var(--accent); font-weight:600; }
-
-.entry-input-seamless{
+.entry-field:focus-within{ border-color:var(--accent); background:var(--surface); }
+.entry-input{
   display:block;
   width:100%;
+  height:22px;
+  padding:0;
   border:none;
   background:transparent;
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
   outline:none;
   box-shadow:none;
   appearance:none;
   -webkit-appearance:none;
-  font-family:inherit;
-  font-size:13px;
-  color:var(--ink);
-  padding:0;
   box-sizing:border-box;
 }
-.entry-input-seamless:hover,
-.entry-input-seamless:focus,
-.entry-input-seamless:focus-visible{
+.entry-input:hover,
+.entry-input:focus,
+.entry-input:focus-visible{
   border:none;
   outline:none;
   box-shadow:none;
 }
-.entry-input-seamless::placeholder{ color:var(--ink-3); }
-.entry-textarea-seamless{
+textarea.entry-input{
+  height:auto;
+  min-height:64px;
+  padding:0;
   resize:none;
-  min-height:90px;
   line-height:1.5;
 }
+
 .entry-form-footer{
   display:flex;
   align-items:center;
   justify-content:flex-end;
   gap:12px;
-  margin-top:20px;
   padding-top:16px;
   border-top:1px solid var(--line);
 }
@@ -979,9 +962,10 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 
   .entry-meta-popover{ min-width:170px; }
 
-  .entry-input-seamless{ font-size:16px; }
-  .entry-textarea-seamless{ min-height:100px; }
-  .entry-form-footer{ flex-direction:column; align-items:stretch; margin-top:14px; padding-top:14px; }
+  .entry-modal-body{ padding:14px; }
+  .entry-input{ font-size:16px; }
+  textarea.entry-input{ min-height:100px; }
+  .entry-form-footer{ flex-direction:column; align-items:stretch; padding-top:14px; }
   .entry-form-footer .btn-primary{ width:100%; justify-content:center; height:44px; }
 }
 
@@ -1981,42 +1965,32 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
         </button>
       </div>
 
-      <div class="entry-area-grid">
-        <button type="button" class="entry-area-col" data-value="Proses" onclick="mantisSelectArea(this)">
-          <div class="entry-area-icon entry-area-icon-emoji">💧</div>
-          <div class="entry-area-name">Proses</div>
-        </button>
-        <button type="button" class="entry-area-col" data-value="Filling" onclick="mantisSelectArea(this)">
-          <div class="entry-area-icon entry-area-icon-emoji">🧃</div>
-          <div class="entry-area-name">Filling</div>
-        </button>
-        <button type="button" class="entry-area-col" data-value="Packing" onclick="mantisSelectArea(this)">
-          <div class="entry-area-icon entry-area-icon-emoji">📦</div>
-          <div class="entry-area-name">Packing</div>
-        </button>
-      </div>
-      <input type="hidden" id="entryArea">
+      <div class="entry-modal-body">
+        <div class="entry-field">
+          <label class="entry-field-label" for="entryArea">Area</label>
+          <input type="text" id="entryArea" class="entry-input" list="entryAreaOptions" placeholder="Pilih atau ketik area" autocomplete="off">
+          <datalist id="entryAreaOptions">
+            <option value="Proses">
+            <option value="Filling">
+            <option value="Packing">
+          </datalist>
+        </div>
 
-      <div class="full-bleed-divider" style="margin:0;"></div>
+        <div class="entry-field">
+          <label class="entry-field-label" for="entryMesin">Mesin</label>
+          <input type="text" id="entryMesin" class="entry-input" list="entryMesinOptions" placeholder="Nama mesin" autocomplete="off">
+          <datalist id="entryMesinOptions"></datalist>
+        </div>
 
-      <div class="entry-section">
-        <label class="entry-field-label" for="entryMesin">Mesin</label>
-        <input type="text" id="entryMesin" class="entry-input-seamless" list="entryMesinOptions" placeholder="Nama mesin" autocomplete="off">
-        <datalist id="entryMesinOptions"></datalist>
-      </div>
+        <div class="entry-field">
+          <label class="entry-field-label" for="entryIssue">Issue</label>
+          <textarea id="entryIssue" class="entry-input" placeholder="Deskripsikan kendala/temuan"></textarea>
+        </div>
 
-      <div class="full-bleed-divider" style="margin:0;"></div>
-
-      <div class="entry-section">
-        <label class="entry-field-label" for="entryIssue">Issue</label>
-        <textarea id="entryIssue" class="entry-input-seamless entry-textarea-seamless" placeholder="Deskripsikan kendala/temuan"></textarea>
-      </div>
-
-      <div class="full-bleed-divider" style="margin:0;"></div>
-
-      <div class="entry-section">
-        <label class="entry-field-label" for="entryAction">Action</label>
-        <textarea id="entryAction" class="entry-input-seamless entry-textarea-seamless" placeholder="Tindakan perbaikan yang dilakukan"></textarea>
+        <div class="entry-field">
+          <label class="entry-field-label" for="entryAction">Action</label>
+          <textarea id="entryAction" class="entry-input" placeholder="Tindakan perbaikan yang dilakukan"></textarea>
+        </div>
 
         <div class="entry-form-footer">
           <div class="entry-form-message" id="mantisEntryMessage"></div>
@@ -2047,8 +2021,8 @@ const MANTIS_SHEET_ID = '11-sqiV3BYqx738Rhr3Y9SF4Q7FnAGKNqMn-Gvoq6rFs';
 
 /* Apps Script Web App yang menulis reading baru ke sheet "Running Hour".
    Isi kedua nilai ini setelah deploy Apps Script (lihat apps-script/Code.gs). */
-const MANTIS_METER_WRITE_URL = '';
-const MANTIS_METER_WRITE_TOKEN = '';
+const MANTIS_METER_WRITE_URL = 'https://script.google.com/macros/s/AKfycbxFTyoLRLPO_PvyPOVYoGXlKpZXCknYWiRlubdh8Gyq4P8n63hhg26Bo4rg8ceu9uMT/exec';
+const MANTIS_METER_WRITE_TOKEN = '0502f1eebcf46081d755f09ddb9d0c1e';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -3069,18 +3043,6 @@ function mantisApplyTeknisi(){
   mantisCloseAllMetaPopovers();
 }
 
-function mantisRefreshAreaSelection(){
-  const current = document.getElementById('entryArea').value;
-  document.querySelectorAll('.entry-area-col').forEach(function(col){
-    col.classList.toggle('selected', col.dataset.value === current);
-  });
-}
-
-function mantisSelectArea(el){
-  document.getElementById('entryArea').value = el.dataset.value;
-  mantisRefreshAreaSelection();
-}
-
 function mantisFillDatalist(datalistId, table, colIndex){
   const datalist = document.getElementById(datalistId);
   if(!datalist || colIndex === -1) return;
@@ -3106,6 +3068,7 @@ function mantisPopulateEntryFormOptions(){
   if(!table) return;
 
   mantisFillDatalist('entryShiftOptions', table, mantisFindColIndex(table, 'Shift'));
+  mantisFillDatalist('entryAreaOptions', table, mantisFindColIndex(table, 'Area'));
   mantisFillDatalist('entryMesinOptions', table, mantisFindColIndex(table, 'Mesin'));
 }
 
@@ -3221,8 +3184,8 @@ function mantisOpenActionModal(){
   document.getElementById('mantisActionModalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  const mesinInput = document.getElementById('entryMesin');
-  if(mesinInput) mesinInput.focus({ preventScroll: true });
+  const areaInput = document.getElementById('entryArea');
+  if(areaInput) areaInput.focus({ preventScroll: true });
 }
 
 function mantisOpenNewAction(){
@@ -3232,7 +3195,6 @@ function mantisOpenNewAction(){
   document.getElementById('entryMesin').value = '';
   document.getElementById('entryIssue').value = '';
   document.getElementById('entryAction').value = '';
-  mantisRefreshAreaSelection();
 
   const titleEl = document.getElementById('mantisNewActionTitle');
   if(titleEl) titleEl.textContent = 'New Action';
@@ -3255,7 +3217,6 @@ function mantisEditPendingAction(id){
   document.getElementById('entryMesin').value = item.Mesin || '';
   document.getElementById('entryIssue').value = item.Issue || '';
   document.getElementById('entryAction').value = item.Action || '';
-  mantisRefreshAreaSelection();
 
   const titleEl = document.getElementById('mantisNewActionTitle');
   if(titleEl) titleEl.textContent = 'Edit Action';
