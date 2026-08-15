@@ -371,6 +371,7 @@ html,body{
   font-size:13px;
   color:var(--ink-3);
 }
+.table-pagination-mobile{ display:none; }
 
 /* ---------- Tabs (Activities) ---------- */
 .tab-row{ display:flex; align-items:center; gap:6px; padding:12px 20px 0 20px; }
@@ -426,8 +427,16 @@ html,body{
 }
 .col-pref-item:last-child{ border-bottom:none; }
 .col-pref-item.dragging{ opacity:.4; background:var(--accent-soft); }
-.col-pref-drag{ flex:0 0 14px; color:var(--ink-3); cursor:grab; }
-.col-pref-drag:active{ cursor:grabbing; }
+.col-pref-drag-handle{
+  display:flex; align-items:center; justify-content:center;
+  flex:0 0 28px;
+  height:28px;
+  margin:-6px;
+  cursor:grab;
+  touch-action:none;
+}
+.col-pref-drag-handle:active{ cursor:grabbing; }
+.col-pref-drag{ flex:0 0 14px; color:var(--ink-3); pointer-events:none; }
 .col-pref-check{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); cursor:pointer; flex:1; }
 .col-pref-check input[type="checkbox"]{
   appearance:none;
@@ -742,17 +751,10 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   .flex.items-center.justify-between{ flex-wrap:wrap; row-gap:10px; }
   .table-search input{ width:90px; }
 
-  .table-rows-control{ flex-wrap:nowrap; gap:8px; }
-  .table-rows-label-text{ display:none; }
-  .table-rows-control > label{ order:2; flex:0 0 auto; }
-  .table-rows-control > label select{ width:56px; }
-  .table-pagination{ display:contents; }
-  .table-pagination .table-page-btn,
-  .table-pagination .table-page-ellipsis,
-  .table-pagination .table-pg-divider{ display:none; }
-  .table-pg-nav{ flex:1 1 0; justify-content:center; }
-  .table-pg-nav:first-of-type{ order:1; }
-  .table-pg-nav:last-of-type{ order:3; }
+  .table-rows-control{ flex-wrap:nowrap; gap:8px; justify-content:center; }
+  .table-rows-control > label{ display:none; }
+  .table-pagination-desktop{ display:none; }
+  .table-pagination-mobile{ display:inline-flex; }
 }
 </style>
 </head>
@@ -1574,21 +1576,73 @@ function mantisStripEmptyColumns(table){
 
 const MANTIS_COLPREFS_PREFIX = 'mantisColPrefs::';
 
+/* Baseline column view shown until the user customizes Settings > Table for that table. */
+const MANTIS_DEFAULT_COLUMN_PREFS = {
+  'parts-table-container': {
+    order: ['B', 'C', 'D', 'E', 'F', 'G', 'N'],
+    hidden: ['A', 'H', 'I', 'J', 'K', 'L', 'M']
+  },
+  'meters-table-container': {
+    order: ['A', 'B', 'C', '__week__'],
+    hidden: []
+  },
+  'po-table-container': {
+    order: ['K', 'L', 'Q', 'R', 'S', 'T', 'X', 'P'],
+    hidden: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'M', 'N', 'O', 'U', 'V', 'W']
+  }
+};
+
 function mantisGetColumnPrefs(containerId){
   try{
     const raw = localStorage.getItem(MANTIS_COLPREFS_PREFIX + containerId);
-    return raw ? JSON.parse(raw) : null;
-  }catch(e){
-    return null;
-  }
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* storage unavailable - ignore */ }
+  return MANTIS_DEFAULT_COLUMN_PREFS[containerId] || null;
 }
 
 function mantisSaveColumnPrefs(containerId, prefs){
   try{ localStorage.setItem(MANTIS_COLPREFS_PREFIX + containerId, JSON.stringify(prefs)); }catch(e){ /* storage unavailable - ignore */ }
 }
 
-function mantisOrderedColumnIds(containerId, table){
-  const allIds = table.cols.map(function(c, i){ return c.id || String(i); });
+function mantisIsWeekLabel(label){
+  return /^W\d+$/i.test((label || '').trim());
+}
+
+/* Groups per-week columns (W27, W28, ...) into a single logical "Week" column
+   pointing at only the most recent week, so Settings shows one toggle instead
+   of one row per week. */
+function mantisGetLogicalColumns(table){
+  const weekIndexes = [];
+  table.cols.forEach(function(c, i){
+    if(mantisIsWeekLabel(c.label)) weekIndexes.push(i);
+  });
+
+  if(!weekIndexes.length){
+    return table.cols.map(function(c, i){ return { id: c.id || String(i), label: c.label || c.id || '', realIndexes: [i] }; });
+  }
+
+  let lastIdx = weekIndexes[0];
+  let lastNum = -Infinity;
+  weekIndexes.forEach(function(i){
+    const num = parseInt((table.cols[i].label || '').replace(/\D/g, ''), 10);
+    if(num > lastNum){ lastNum = num; lastIdx = i; }
+  });
+  const weekSet = {};
+  weekIndexes.forEach(function(i){ weekSet[i] = true; });
+
+  const result = [];
+  table.cols.forEach(function(c, i){
+    if(weekSet[i]){
+      if(i === lastIdx) result.push({ id: '__week__', label: 'Week', realIndexes: [lastIdx] });
+      return;
+    }
+    result.push({ id: c.id || String(i), label: c.label || c.id || '', realIndexes: [i] });
+  });
+  return result;
+}
+
+function mantisOrderedLogicalIds(containerId, logicalCols){
+  const allIds = logicalCols.map(function(c){ return c.id; });
   const prefs = mantisGetColumnPrefs(containerId);
   if(!prefs || !prefs.order || !prefs.order.length) return allIds;
 
@@ -1605,16 +1659,19 @@ function mantisOrderedColumnIds(containerId, table){
 }
 
 function mantisOrderedVisibleColIndexes(containerId, table){
+  const logicalCols = mantisGetLogicalColumns(table);
+  const idToCol = {};
+  logicalCols.forEach(function(c){ idToCol[c.id] = c; });
+
   const prefs = mantisGetColumnPrefs(containerId);
   const hiddenSet = {};
   (prefs && prefs.hidden || []).forEach(function(id){ hiddenSet[id] = true; });
 
-  const idToIndex = {};
-  table.cols.forEach(function(c, i){ idToIndex[c.id || String(i)] = i; });
-
   const result = [];
-  mantisOrderedColumnIds(containerId, table).forEach(function(id){
-    if(!hiddenSet[id] && idToIndex.hasOwnProperty(id)) result.push(idToIndex[id]);
+  mantisOrderedLogicalIds(containerId, logicalCols).forEach(function(id){
+    if(hiddenSet[id]) return;
+    const col = idToCol[id];
+    if(col) result.push.apply(result, col.realIndexes);
   });
   return result;
 }
@@ -1705,7 +1762,7 @@ function renderGvizTableRows(containerId){
   html += '</select><span class="table-rows-label-text">dari ' + totalRows + ' data</span></label>';
 
   if(limit !== 'all' && totalPages > 1){
-    html += '<div class="table-pagination">';
+    html += '<div class="table-pagination table-pagination-desktop">';
     html += '<button type="button" class="table-pg-nav"' + (page <= 1 ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page - 1) + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg>Previous</button>';
     mantisGetPageNumbers(page, totalPages).forEach(function(p){
       if(p === '...'){
@@ -1716,6 +1773,14 @@ function renderGvizTableRows(containerId){
     });
     html += '<span class="table-pg-divider"></span>';
     html += '<button type="button" class="table-pg-nav"' + (page >= totalPages ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page + 1) + ')">Next<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></button>';
+    html += '</div>';
+
+    html += '<div class="table-pagination table-pagination-mobile">';
+    html += '<button type="button" class="table-pg-nav-icon"' + (page <= 1 ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page - 1) + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg></button>';
+    mantisGetMobilePageNumbers(page, totalPages).forEach(function(p){
+      html += '<button type="button" class="table-page-btn' + (p === page ? ' active' : '') + '" onclick="mantisChangePage(\'' + containerId + '\', ' + p + ')">' + p + '</button>';
+    });
+    html += '<button type="button" class="table-pg-nav-icon"' + (page >= totalPages ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page + 1) + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></button>';
     html += '</div>';
   }
 
@@ -1756,6 +1821,21 @@ function mantisGetPageNumbers(current, total){
   });
 
   return result;
+}
+
+function mantisGetMobilePageNumbers(current, total){
+  if(total <= 3){
+    const arr = [];
+    for(let i = 1; i <= total; i++) arr.push(i);
+    return arr;
+  }
+  let start = current - 1;
+  let end = current + 1;
+  if(start < 1){ start = 1; end = 3; }
+  if(end > total){ end = total; start = total - 2; }
+  const arr = [];
+  for(let i = start; i <= end; i++) arr.push(i);
+  return arr;
 }
 
 function mantisChangeRowLimit(containerId, value){
@@ -1957,21 +2037,22 @@ function mantisRenderColumnPrefsList(containerId, table){
   const listEl = document.getElementById('colprefs-' + containerId);
   if(!listEl || !table || !table.cols) return;
 
+  const logicalCols = mantisGetLogicalColumns(table);
+  const idToCol = {};
+  logicalCols.forEach(function(c){ idToCol[c.id] = c; });
+
   const prefs = mantisGetColumnPrefs(containerId);
   const hiddenSet = {};
   (prefs && prefs.hidden || []).forEach(function(id){ hiddenSet[id] = true; });
 
-  const idToCol = {};
-  table.cols.forEach(function(c, i){ idToCol[c.id || String(i)] = c; });
-
   let html = '';
-  mantisOrderedColumnIds(containerId, table).forEach(function(id){
+  mantisOrderedLogicalIds(containerId, logicalCols).forEach(function(id){
     const col = idToCol[id];
     if(!col) return;
     const checked = !hiddenSet[id];
-    html += '<div class="col-pref-item" draggable="true" data-col-id="' + id + '">';
-    html += '<label class="col-pref-check"><input type="checkbox"' + (checked ? ' checked' : '') + ' onchange="mantisToggleColumn(\'' + containerId + '\', \'' + id + '\', this.checked)"><span>' + mantisEscapeHtml(col.label || col.id || '') + '</span></label>';
-    html += '<svg class="col-pref-drag" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M8 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M8 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg>';
+    html += '<div class="col-pref-item" data-col-id="' + id + '">';
+    html += '<label class="col-pref-check"><input type="checkbox"' + (checked ? ' checked' : '') + ' onchange="mantisToggleColumn(\'' + containerId + '\', \'' + id + '\', this.checked)"><span>' + mantisEscapeHtml(col.label) + '</span></label>';
+    html += '<span class="col-pref-drag-handle" draggable="true"><svg class="col-pref-drag" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M8 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M8 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg></span>';
     html += '</div>';
   });
   listEl.innerHTML = html;
@@ -1980,7 +2061,8 @@ function mantisRenderColumnPrefsList(containerId, table){
 
 function mantisToggleColumn(containerId, colId, isChecked){
   const table = mantisTableCache[containerId];
-  const prefs = mantisGetColumnPrefs(containerId) || { order: table ? mantisOrderedColumnIds(containerId, table) : [], hidden: [] };
+  const defaultOrder = table ? mantisGetLogicalColumns(table).map(function(c){ return c.id; }) : [];
+  const prefs = mantisGetColumnPrefs(containerId) || { order: defaultOrder, hidden: [] };
   const hiddenSet = {};
   (prefs.hidden || []).forEach(function(id){ hiddenSet[id] = true; });
   if(isChecked){ delete hiddenSet[colId]; } else { hiddenSet[colId] = true; }
@@ -1991,15 +2073,20 @@ function mantisToggleColumn(containerId, colId, isChecked){
 }
 
 function mantisAttachDragHandlers(listEl, containerId){
-  const items = listEl.querySelectorAll('.col-pref-item');
-  items.forEach(function(item){
-    item.addEventListener('dragstart', function(){
+  listEl.querySelectorAll('.col-pref-drag-handle').forEach(function(handle){
+    const item = handle.closest('.col-pref-item');
+    handle.addEventListener('dragstart', function(e){
       item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try{ e.dataTransfer.setDragImage(item, 10, 10); }catch(err){ /* not critical */ }
     });
-    item.addEventListener('dragend', function(){
+    handle.addEventListener('dragend', function(){
       item.classList.remove('dragging');
       mantisPersistColumnOrder(listEl, containerId);
     });
+  });
+
+  listEl.querySelectorAll('.col-pref-item').forEach(function(item){
     item.addEventListener('dragover', function(e){
       e.preventDefault();
       const dragging = listEl.querySelector('.dragging');
