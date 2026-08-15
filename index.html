@@ -646,7 +646,7 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 .row-detail-label{ color:var(--ink-2); flex:0 0 160px; }
 .row-detail-value{ color:var(--ink); font-weight:500; text-align:left; flex:1; word-break:break-word; }
 
-.row-detail-item-new{ align-items:center; }
+.row-detail-item-new{ align-items:center; flex-wrap:wrap; row-gap:10px; }
 .row-detail-new-tag{
   display:inline-block;
   margin-left:6px;
@@ -659,9 +659,8 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   text-transform:uppercase;
   letter-spacing:.02em;
 }
-.row-detail-value-new{ display:flex; align-items:center; gap:8px; }
 .row-detail-new-input{
-  flex:1;
+  flex:1 1 0%;
   height:34px;
   padding:0 10px;
   border:1px solid var(--line);
@@ -672,7 +671,7 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
   color:var(--ink);
   outline:none;
   box-sizing:border-box;
-  min-width:0;
+  min-width:60px;
 }
 .row-detail-new-input:focus{ border-color:var(--accent); }
 .row-detail-new-save{
@@ -803,6 +802,11 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 
   .table-rows-control{ flex-wrap:nowrap; gap:8px; justify-content:center; }
   .table-rows-control > label{ display:none; }
+
+  .row-detail-item-new{ flex-direction:column; align-items:stretch; }
+  .row-detail-item-new .row-detail-label{ flex:0 0 auto; }
+  .row-detail-new-input{ flex:0 0 auto; width:100%; height:34px; }
+  .row-detail-new-save{ flex:0 0 auto; width:100%; }
   .table-pagination-desktop{ display:none; }
   .table-pagination-mobile{ display:inline-flex; }
 }
@@ -2105,10 +2109,8 @@ function mantisBuildNewReadingRowHtml(table, row){
   return '' +
     '<div class="row-detail-item row-detail-item-new">' +
       '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
-      '<span class="row-detail-value row-detail-value-new">' +
-        inputHtml +
-        '<button type="button" class="row-detail-new-save" onclick="mantisSubmitNewReading()">Simpan</button>' +
-      '</span>' +
+      inputHtml +
+      '<button type="button" class="row-detail-new-save" onclick="mantisSubmitNewReading()">Simpan</button>' +
     '</div>';
 }
 
