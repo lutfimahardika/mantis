@@ -23,6 +23,12 @@
  * Daftar teknisi pada popup "Teknisi" di Activities diambil dari sheet "User"
  * (kolom username & role), hanya baris dengan role = "Teknisi" yang muncul.
  * Kolom password pada sheet itu tidak pernah dikirim ke browser.
+ *
+ * Login (index.html) memvalidasi username/password terhadap sheet "User"
+ * (kolom username/nama, password, role) lewat handleLogin() di bawah - juga
+ * server-side saja, responsnya cuma success/username/role, tidak pernah
+ * mengembalikan password. Tidak butuh MANTIS_WRITE_TOKEN karena ini justru
+ * langkah untuk mendapatkan akses.
  */
 
 var SHEET_ID = '11-sqiV3BYqx738Rhr3Y9SF4Q7FnAGKNqMn-Gvoq6rFs';
@@ -92,6 +98,10 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
 
+    if (body.action === 'login') {
+      return handleLogin(body);
+    }
+
     var expectedToken = PropertiesService.getScriptProperties().getProperty('MANTIS_WRITE_TOKEN');
     if (!expectedToken || body.token !== expectedToken) {
       return jsonResponse({ success: false, error: 'Unauthorized' });
@@ -105,6 +115,61 @@ function doPost(e) {
   } catch (err) {
     return jsonResponse({ success: false, error: err.message });
   }
+}
+
+/**
+ * Checks username/password against the "User" sheet, server-side only - the
+ * password column never leaves this function. Returns just success/username/
+ * role so the browser has something to show without ever seeing the password
+ * itself (the sheet's public gviz read, used elsewhere in index.html, would
+ * otherwise leak it).
+ */
+function handleLogin(body) {
+  var username = (body.username || '').toString().trim();
+  var password = (body.password || '').toString();
+
+  if (!username || !password) {
+    return jsonResponse({ success: false, error: 'Username dan password wajib diisi' });
+  }
+
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = ss.getSheetByName(USER_SHEET_NAME);
+  if (!sheet) {
+    return jsonResponse({ success: false, error: 'Sheet not found: ' + USER_SHEET_NAME });
+  }
+
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
+  var nameCol = -1, roleCol = -1, passCol = -1;
+  for (var i = 0; i < headers.length; i++) {
+    var label = String(headers[i]).trim().toLowerCase();
+    if (label === 'username' || label === 'nama') nameCol = i;
+    if (label === 'role') roleCol = i;
+    if (label === 'password') passCol = i;
+  }
+  if (nameCol === -1 || passCol === -1) {
+    return jsonResponse({ success: false, error: 'Kolom username/password tidak ditemukan di sheet ' + USER_SHEET_NAME });
+  }
+
+  var data = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, lastCol).getValues() : [];
+  for (var r = 0; r < data.length; r++) {
+    var rowName = String(data[r][nameCol] || '').trim();
+    if (rowName.toLowerCase() !== username.toLowerCase()) continue;
+
+    var rowPass = String(data[r][passCol] || '');
+    if (rowPass !== password) {
+      // Same generic error as "user not found" below - don't reveal which
+      // part (username vs password) was wrong.
+      return jsonResponse({ success: false, error: 'Username atau password salah' });
+    }
+
+    var role = roleCol === -1 ? '' : String(data[r][roleCol] || '').trim();
+    return jsonResponse({ success: true, username: rowName, role: role });
+  }
+
+  return jsonResponse({ success: false, error: 'Username atau password salah' });
 }
 
 /**

@@ -1290,6 +1290,43 @@ textarea.entry-input{
 </head>
 <body>
 
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="mantisLoginScreen" style="display:none;">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--canvas);box-sizing:border-box;">
+    <div class="card" style="width:100%;max-width:360px;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;">
+        <svg class="app-logo" style="width:32px;height:32px;flex:0 0 32px;" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+          <g transform="matrix(0.470588,0,0,0.470588,-194.766095,-722.788328)">
+            <path d="M472.441,2598.425L826.772,2598.425L826.772,2007.874L946.979,2007.874C1206.743,2007.874 1417.323,2218.454 1417.323,2478.218L1417.323,2539.074C1417.323,2571.261 1443.234,2597.448 1475.419,2597.789C1475.644,2597.792 1475.868,2597.794 1476.093,2597.796C1491.773,2597.963 1506.868,2591.85 1518.014,2580.821C1529.161,2569.792 1535.433,2554.762 1535.433,2539.081L1535.433,2007.874L1655.64,2007.874C1915.404,2007.874 2125.984,2218.454 2125.984,2478.218L2125.984,2598.425L2480.315,2598.425L2480.315,3188.976L2360.108,3188.976C2100.344,3188.976 1889.764,2978.396 1889.764,2718.632L1889.764,2657.144C1889.764,2624.714 1863.475,2598.425 1831.045,2598.425L1830.372,2598.425C1797.943,2598.425 1771.654,2624.714 1771.654,2657.144L1771.654,3188.976C1771.654,3188.976 1718.856,3188.234 1644.835,3187.194C1387.675,3183.578 1181.102,2974.081 1181.102,2716.896L1181.102,2655.892C1181.102,2623.463 1154.813,2597.174 1122.384,2597.174L1121.71,2597.174C1089.281,2597.174 1062.992,2623.463 1062.992,2655.892L1062.992,3180.674C1062.992,3180.674 1016.587,3181.329 949.842,3182.271C824.261,3184.043 703.188,3135.516 613.593,3047.502C523.999,2959.487 473.327,2839.296 472.865,2713.704C472.615,2645.795 472.441,2598.425 472.441,2598.425Z" fill="var(--logo-color)"/>
+          </g>
+        </svg>
+        <span class="app-logo-text" style="font-size:24px;">mantis</span>
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--ink-3);margin-bottom:22px;">Masuk untuk melanjutkan</div>
+
+      <form onsubmit="mantisSubmitLogin(event)">
+        <div class="entry-field" style="margin-bottom:12px;">
+          <label class="entry-field-label" for="mantisLoginUsername">Username</label>
+          <input type="text" id="mantisLoginUsername" class="entry-input" placeholder="Masukkan username" autocomplete="username" required>
+        </div>
+        <div class="entry-field" style="margin-bottom:14px;">
+          <label class="entry-field-label" for="mantisLoginPassword">Password</label>
+          <input type="password" id="mantisLoginPassword" class="entry-input" placeholder="Masukkan password" autocomplete="current-password" required>
+        </div>
+
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);margin:0 0 16px 2px;cursor:pointer;">
+          <input type="checkbox" id="mantisLoginRemember" checked style="margin:0;">
+          Tetap masuk di perangkat ini
+        </label>
+
+        <div id="mantisLoginError" class="entry-form-message error" style="display:none;margin-bottom:10px;text-align:center;"></div>
+
+        <button type="submit" class="btn-primary" id="mantisLoginSubmitBtn" style="width:100%;justify-content:center;">Masuk</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <div class="app-shell">
 
   <!-- ============ HEADER (grid row 1) ============ -->
@@ -1383,11 +1420,14 @@ textarea.entry-input{
       <div class="sb-divider-full" style="margin-top:8px;"></div>
 
       <div class="sb-account">
-        <svg class="sb-avatar" viewBox="0 0 34 34"><rect width="34" height="34" rx="17" fill="#E4E4E7"/><text x="17" y="21" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6B7280">DA</text></svg>
-        <div>
-          <div style="font-size:13px;font-weight:600;">Dimas Aditya</div>
-          <div style="font-size:11px;color:var(--ink-3);">dimas@mantis.io</div>
+        <svg class="sb-avatar" viewBox="0 0 34 34"><rect width="34" height="34" rx="17" fill="#E4E4E7"/><text x="17" y="21" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6B7280" id="mantisAccountInitials">-</text></svg>
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="mantisAccountName">-</div>
+          <div style="font-size:11px;color:var(--ink-3);" id="mantisAccountRole">-</div>
         </div>
+        <button type="button" title="Keluar" onclick="mantisLogout()" style="flex:0 0 auto;width:28px;height:28px;border:none;border-radius:6px;background:transparent;color:var(--ink-3);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2"/><path d="M9 12h12l-3 -3"/><path d="M18 15l3 -3"/></svg>
+        </button>
       </div>
     </div>
   </div>
@@ -4673,6 +4713,126 @@ function mantisResetAllColumnPrefs(){
     }
   }catch(e){ /* storage unavailable - ignore, default page stays visible */ }
 })();
+
+/* ---------- Auth: login gate backed by the Apps Script "login" action ----------
+   The Sheet's password column is never exposed through the public gviz reads
+   used everywhere else in this file (that's why the Teknisi picker fetches
+   names through the Apps Script too, not the sheet directly) - only Code.gs's
+   handleLogin() ever reads it, server-side, and its response never echoes the
+   password back. This gate is therefore only as strong as that check; it
+   doesn't add a real session (GitHub Pages can't hold one), just a "stay
+   signed in" flag persisted in this browser. */
+const MANTIS_AUTH_LOCAL_KEY = 'mantisAuthUser';
+const MANTIS_AUTH_SESSION_KEY = 'mantisAuthUserSession';
+
+function mantisGetAuthUser(){
+  try{
+    const raw = localStorage.getItem(MANTIS_AUTH_LOCAL_KEY) || sessionStorage.getItem(MANTIS_AUTH_SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+function mantisApplyAccountInfo(user){
+  const name = (user && user.username) || '-';
+  const nameEl = document.getElementById('mantisAccountName');
+  const roleEl = document.getElementById('mantisAccountRole');
+  const initialsEl = document.getElementById('mantisAccountInitials');
+  if(nameEl) nameEl.textContent = name;
+  if(roleEl) roleEl.textContent = (user && user.role) || '-';
+  if(initialsEl){
+    const initials = name.trim().split(/\s+/).map(function(w){ return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
+    initialsEl.textContent = initials || '-';
+  }
+}
+
+function mantisShowLoginScreen(){
+  document.getElementById('mantisLoginScreen').style.display = '';
+  document.querySelector('.app-shell').style.display = 'none';
+}
+
+function mantisShowAppShell(user){
+  document.getElementById('mantisLoginScreen').style.display = 'none';
+  document.querySelector('.app-shell').style.display = '';
+  mantisApplyAccountInfo(user);
+}
+
+function mantisCheckAuth(){
+  const user = mantisGetAuthUser();
+  if(user) mantisShowAppShell(user);
+  else mantisShowLoginScreen();
+}
+
+function mantisShowLoginError(message){
+  const el = document.getElementById('mantisLoginError');
+  if(!el) return;
+  el.textContent = message || '';
+  el.style.display = message ? '' : 'none';
+}
+
+function mantisSubmitLogin(evt){
+  evt.preventDefault();
+  mantisShowLoginError('');
+
+  const username = document.getElementById('mantisLoginUsername').value.trim();
+  const password = document.getElementById('mantisLoginPassword').value;
+  const remember = document.getElementById('mantisLoginRemember').checked;
+
+  if(!username || !password){
+    mantisShowLoginError('Username dan password wajib diisi.');
+    return;
+  }
+  if(!MANTIS_METER_WRITE_URL){
+    mantisShowLoginError('Apps Script belum dikonfigurasi.');
+    return;
+  }
+
+  const btn = document.getElementById('mantisLoginSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Memeriksa...';
+
+  fetch(MANTIS_METER_WRITE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'login', username: username, password: password })
+  }).then(function(res){ return res.json(); }).then(function(data){
+    btn.disabled = false;
+    btn.textContent = 'Masuk';
+
+    if(!data || !data.success){
+      mantisShowLoginError((data && data.error) || 'Username atau password salah.');
+      return;
+    }
+
+    const user = { username: data.username || username, role: data.role || '' };
+    try{
+      localStorage.removeItem(MANTIS_AUTH_LOCAL_KEY);
+      sessionStorage.removeItem(MANTIS_AUTH_SESSION_KEY);
+      if(remember){
+        localStorage.setItem(MANTIS_AUTH_LOCAL_KEY, JSON.stringify(user));
+      } else {
+        sessionStorage.setItem(MANTIS_AUTH_SESSION_KEY, JSON.stringify(user));
+      }
+    }catch(e){ /* storage unavailable - login still works for this page view */ }
+
+    document.getElementById('mantisLoginUsername').value = '';
+    document.getElementById('mantisLoginPassword').value = '';
+    mantisShowAppShell(user);
+  }).catch(function(err){
+    btn.disabled = false;
+    btn.textContent = 'Masuk';
+    mantisShowLoginError('Gagal terhubung ke server: ' + err.message);
+  });
+}
+
+function mantisLogout(){
+  try{
+    localStorage.removeItem(MANTIS_AUTH_LOCAL_KEY);
+    sessionStorage.removeItem(MANTIS_AUTH_SESSION_KEY);
+  }catch(e){ /* storage unavailable - ignore */ }
+  mantisShowLoginScreen();
+}
+
+mantisCheckAuth();
 </script>
 </body>
 </html>
