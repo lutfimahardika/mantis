@@ -2980,10 +2980,70 @@ function mantisCaptureOcrPhoto(){
   canvas.height = cropH;
   canvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-  canvas.toBlob(function(blob){
+  const processed = mantisPreprocessOcrCanvas(canvas);
+  processed.toBlob(function(blob){
     mantisCloseOcrCamera();
-    if(blob) mantisRunOcrOnBlob(blob);
+    if(blob) mantisRunOcrOnBlob(blob, { singleLine: true });
   }, 'image/png');
+}
+
+/* Grayscale + contrast-stretch + Otsu binarization, upscaled to a minimum width.
+   Mechanical counter digits are low-contrast and use a font Tesseract wasn't trained
+   on, so handing it a clean black/white crop instead of the raw camera frame cuts
+   down misreads noticeably. */
+function mantisPreprocessOcrCanvas(srcCanvas){
+  const minWidth = 640;
+  const scale = Math.max(1, minWidth / srcCanvas.width);
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width = Math.round(srcCanvas.width * scale);
+  outCanvas.height = Math.round(srcCanvas.height * scale);
+
+  const ctx = outCanvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(srcCanvas, 0, 0, outCanvas.width, outCanvas.height);
+
+  const imgData = ctx.getImageData(0, 0, outCanvas.width, outCanvas.height);
+  const data = imgData.data;
+  const pixelCount = outCanvas.width * outCanvas.height;
+  const gray = new Uint8ClampedArray(pixelCount);
+  let min = 255, max = 0;
+  for(let i = 0, p = 0; p < pixelCount; i += 4, p++){
+    const g = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+    gray[p] = g;
+    if(g < min) min = g;
+    if(g > max) max = g;
+  }
+
+  const range = max - min || 1;
+  const hist = new Array(256).fill(0);
+  for(let p = 0; p < pixelCount; p++){
+    gray[p] = Math.round((gray[p] - min) * 255 / range);
+    hist[gray[p]]++;
+  }
+
+  // Otsu's method: pick the threshold that best splits digit strokes from background.
+  let sum = 0;
+  for(let t = 0; t < 256; t++) sum += t * hist[t];
+  let sumB = 0, wB = 0, maxVariance = -1, threshold = 127;
+  for(let t = 0; t < 256; t++){
+    wB += hist[t];
+    if(wB === 0) continue;
+    const wF = pixelCount - wB;
+    if(wF === 0) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB;
+    const mF = (sum - sumB) / wF;
+    const variance = wB * wF * (mB - mF) * (mB - mF);
+    if(variance > maxVariance){ maxVariance = variance; threshold = t; }
+  }
+
+  for(let i = 0, p = 0; p < pixelCount; i += 4, p++){
+    const v = gray[p] >= threshold ? 255 : 0;
+    data[i] = data[i + 1] = data[i + 2] = v;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return outCanvas;
 }
 
 /* Meter displays are almost always dominated by one long digit run (the
@@ -3009,20 +3069,45 @@ function mantisExtractMeterReading(text){
 function mantisHandleOcrFile(evt){
   const file = evt.target.files && evt.target.files[0];
   evt.target.value = '';
-  if(file) mantisRunOcrOnBlob(file);
+  if(!file) return;
+
+  const img = new Image();
+  const objectUrl = URL.createObjectURL(file);
+  img.onload = function(){
+    URL.revokeObjectURL(objectUrl);
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    const processed = mantisPreprocessOcrCanvas(canvas);
+    processed.toBlob(function(blob){
+      mantisRunOcrOnBlob(blob || file);
+    }, 'image/png');
+  };
+  img.onerror = function(){
+    URL.revokeObjectURL(objectUrl);
+    mantisRunOcrOnBlob(file);
+  };
+  img.src = objectUrl;
 }
 
-function mantisRunOcrOnBlob(blob){
+function mantisRunOcrOnBlob(blob, options){
+  const singleLine = !!(options && options.singleLine);
   const ocrBtn = document.querySelector('.row-detail-ocr-btn');
   if(ocrBtn) ocrBtn.disabled = true;
   mantisSetOcrStatus('Memuat OCR engine...', false);
 
   mantisLoadTesseract().then(function(){
     mantisSetOcrStatus('Memindai angka meteran...', false);
-    return Tesseract.recognize(blob, 'eng', {
+    const params = {
       tessedit_char_whitelist: '0123456789.',
       logger: function(){}
-    });
+    };
+    // The camera-capture crop is guaranteed to contain a single row of digits;
+    // telling Tesseract that (instead of letting it auto-detect layout) avoids
+    // the segmentation step misreading digits on such a small, tight image.
+    if(singleLine) params.tessedit_pageseg_mode = '7';
+    return Tesseract.recognize(blob, 'eng', params);
   }).then(function(result){
     if(ocrBtn) ocrBtn.disabled = false;
     const text = (result && result.data && result.data.text) || '';
