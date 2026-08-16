@@ -229,7 +229,7 @@ html,body{
   color:var(--accent);
   font-weight:500;
 }
-.sub-item.active svg{ stroke:var(--logo-color); }
+.sub-item.active svg{ stroke:var(--logo-color); fill:var(--logo-color); }
 .sb-divider{ margin:6px 4px; border-top:1px solid var(--line); }
 .sidebar-brand{
   display:none;
@@ -1340,11 +1340,11 @@ textarea.entry-input{
       </div>
       <div class="sub-items">
         <div class="sub-item" data-subpage="newlog" onclick="showActivitiesPage('newlog')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M12 11l0 6"/><path d="M9 14l6 0"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.997 4.17a3 3 0 0 1 2.003 2.83v12a3 3 0 0 1 -3 3h-10a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 2.003 -2.83a4 4 0 0 0 3.997 3.83h4a4 4 0 0 0 3.98 -3.597zm-5.997 6.83a1 1 0 0 0 -1 1v1h-1a1 1 0 0 0 0 2h1v1a1 1 0 0 0 2 0v-1h1a1 1 0 0 0 0 -2h-1v-1a1 1 0 0 0 -1 -1m2 -9a2 2 0 1 1 0 4h-4a2 2 0 1 1 0 -4z"/></svg>
           Entries
         </div>
         <div class="sub-item" data-subpage="records" onclick="showActivitiesPage('records')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"/><path d="M9 12l6 0"/><path d="M9 16l6 0"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 15.731c1.968 1.507 5.234 2.269 9 2.269c3.76 0 7.025 -.76 9 -2.252v2.252c0 2.425 -3.895 3.936 -8.693 3.998l-.307 .002c-4.938 0 -9 -1.523 -9 -4z"/><path d="M3 9.731c1.968 1.507 5.234 2.269 9 2.269c3.76 0 7.025 -.76 9 -2.252v2.252c0 2.477 -4.062 4 -9 4c-4.798 0 -8.77 -1.438 -8.979 -3.795l-.016 -.101l-.005 -.104z"/><path d="M12 2c1.041 0 2.044 .068 2.977 .198l.469 .071q .84 .14 1.586 .348l.44 .131l.075 .024a11 11 0 0 1 .805 .3l.199 .086q .535 .242 .967 .53q .165 .11 .313 .225a3.8 3.8 0 0 1 .669 .668l.091 .128q .07 .105 .129 .211l.07 .139q .163 .35 .2 .73l.01 .211c0 2.477 -4.062 4 -9 4c-4.798 0 -8.77 -1.438 -8.979 -3.795a1 1 0 0 1 -.021 -.205l.005 -.104l.016 -.1c.205 -2.306 4.01 -3.733 8.667 -3.794z"/></svg>
           Records
         </div>
       </div>
@@ -2141,7 +2141,7 @@ textarea.entry-input{
 
         <div class="entry-form-footer">
           <button type="button" class="btn-primary btn-whatsapp" onclick="mantisOpenWaShare()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l1.3 -3.9a9 9 0 1 1 3.4 3l-4.7 .9"/><path d="M9 10h.01"/><path d="M12 10h.01"/><path d="M15 10h.01"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9"/><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1"/></svg>
             Buka WhatsApp
           </button>
         </div>
@@ -3635,22 +3635,23 @@ function mantisRenderMesinDropdownList(filterText){
     return;
   }
 
-  let html = '';
-  if(showTambahan){
-    html += '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectMesin(\'' + MANTIS_TAMBAHAN_MESIN + '\')">' +
-      mantisEscapeHtml(MANTIS_TAMBAHAN_MESIN) +
-      '<span style="display:block;font-size:11px;color:var(--ink-3);">Tambahan pekerjaan &mdash; bukan mesin tertentu</span>' +
-      '</button>';
-    if(matches.length){
-      html += '<div style="border-top:1px solid var(--line);margin:4px 2px;"></div>';
-    }
-  }
-  html += matches.map(function(pair){
+  let html = matches.map(function(pair){
     return '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectMesin(\'' + pair[0].replace(/'/g, "\\'") + '\')">' +
       mantisEscapeHtml(pair[0]) +
       '<span style="display:block;font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(pair[1]) + '</span>' +
       '</button>';
   }).join('');
+
+  if(showTambahan){
+    if(matches.length){
+      html += '<div style="border-top:1px solid var(--line);margin:4px 2px;"></div>';
+    }
+    html += '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectMesin(\'' + MANTIS_TAMBAHAN_MESIN + '\')">' +
+      mantisEscapeHtml(MANTIS_TAMBAHAN_MESIN) +
+      '<span style="display:block;font-size:11px;color:var(--ink-3);">Tambahan pekerjaan &mdash; bukan mesin tertentu</span>' +
+      '</button>';
+  }
+
   listEl.innerHTML = html;
 }
 
@@ -3796,7 +3797,7 @@ function mantisHandleIssueInput(){
   mantisPositionPopover(popover, textarea);
 }
 
-const MANTIS_ACTION_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>';
+const MANTIS_ACTION_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h1m8 -9v1m8 8h1m-15.4 -6.4l.7 .7m12.1 -.7l-.7 .7"/><path d="M9 16a5 5 0 1 1 6 0a3.5 3.5 0 0 0 -1 3a2 2 0 0 1 -4 0a3.5 3.5 0 0 0 -1 -3"/><path d="M9.7 17l4.6 0"/></svg>';
 
 /* Tabler Icons (tabler.io / github.com/tabler/tabler-icons), outline set - flame, droplet, square-rounded */
 const MANTIS_AREA_ICONS = {
@@ -3820,7 +3821,7 @@ const MANTIS_AREA_ICONS = {
 function mantisGetAreaIconHtml(area){
   const entry = MANTIS_AREA_ICONS[(area || '').trim().toLowerCase()];
   if(!entry){
-    return { html: MANTIS_ACTION_ICON, bg: 'var(--accent-soft)' };
+    return { html: MANTIS_ACTION_ICON, bg: '#F4F4F5' };
   }
   return {
     html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + entry.color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + entry.icon + '</svg>',
