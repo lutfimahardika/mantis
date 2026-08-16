@@ -1782,14 +1782,20 @@ textarea.entry-input{
           <div class="card-title">Activities</div>
           <div class="card-sub">Entries &amp; Records</div>
         </div>
-        <div class="flex items-center" id="activities-search-box" style="display:none;gap:8px;">
-          <div class="table-search">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
-            <input type="text" placeholder="Cari..." oninput="mantisSearchTable('activity-records-container', this.value)">
-          </div>
-          <button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet('activity-records-container')" style="width:32px;height:32px;padding:0;justify-content:center;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+        <div class="flex items-center" style="gap:8px;flex-wrap:wrap;row-gap:8px;">
+          <button type="button" class="pill-btn" id="mantisWaPublishBtn" onclick="mantisOpenWaPublish()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l1.3 -3.9a9 9 0 1 1 3.4 3l-4.7 .9"/><path d="M9 10h.01"/><path d="M12 10h.01"/><path d="M15 10h.01"/></svg>
+            Publish
           </button>
+          <div class="flex items-center" id="activities-search-box" style="display:none;gap:8px;">
+            <div class="table-search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
+              <input type="text" placeholder="Cari..." oninput="mantisSearchTable('activity-records-container', this.value)">
+            </div>
+            <button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet('activity-records-container')" style="width:32px;height:32px;padding:0;justify-content:center;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1866,10 +1872,6 @@ textarea.entry-input{
           <div class="card-sub">Belum dipublish ke Google Sheet &mdash; dikumpulkan dulu selama shift</div>
         </div>
         <div class="flex items-center" style="gap:8px;flex-wrap:wrap;row-gap:8px;">
-          <button type="button" class="pill-btn" id="mantisWaPublishBtn" onclick="mantisOpenWaPublish()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l1.3 -3.9a9 9 0 1 1 3.4 3l-4.7 .9"/><path d="M9 10h.01"/><path d="M12 10h.01"/><path d="M15 10h.01"/></svg>
-            Publish to WhatsApp
-          </button>
           <button type="button" class="pill-btn" id="mantisPublishBtn" onclick="mantisPublishPendingActions()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>
             Publish to Sheet
