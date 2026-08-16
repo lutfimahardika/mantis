@@ -4186,9 +4186,8 @@ function mantisPublishPendingActions(){
 
 /* ---------- Problem & Action: format the queued actions as a WhatsApp report ----------
    Grouped Area > Mesin > Issue > Action, matching the shift-report layout used in the
-   maintenance WhatsApp group. Entries with an unrecognized Mesin (no Area match - e.g. a
-   future "Support" option) fall into a trailing "Tambahan pekerjaan" section instead of
-   being grouped under a machine. */
+   maintenance WhatsApp group. Entries with Mesin = Support (no Area) aren't tied to a
+   machine, so they're listed at the end as "*Support <action>" lines instead. */
 function mantisFormatWaDate(isoDate){
   const d = isoDate ? new Date(isoDate + 'T00:00:00') : new Date();
   if(isNaN(d.getTime())) return '';
@@ -4249,9 +4248,8 @@ function mantisBuildWhatsAppMessage(){
   });
 
   if(extra.length){
-    lines.push('*Tambahan pekerjaan*');
     extra.forEach(function(item){
-      lines.push('- ' + (item.Issue ? item.Issue + ': ' : '') + item.Action);
+      lines.push('*' + MANTIS_SUPPORT_MESIN + ' ' + item.Action);
     });
     lines.push('');
   }
