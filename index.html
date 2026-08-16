@@ -2098,8 +2098,8 @@ textarea.entry-input{
         </div>
 
         <div class="entry-field">
-          <label class="entry-field-label" for="entryIssue">Issue</label>
-          <textarea id="entryIssue" class="entry-input" placeholder="Deskripsikan kendala/temuan"
+          <label class="entry-field-label" for="entryIssue">Issue (opsional)</label>
+          <textarea id="entryIssue" class="entry-input" placeholder="Deskripsikan kendala/temuan, kosongkan jika hanya action"
             oninput="mantisHandleIssueInput()" onfocus="mantisOpenIssueDropdown()"></textarea>
 
           <div class="entry-meta-popover" id="mantisIssueDropdown" style="min-width:260px;max-width:320px;" onclick="event.stopPropagation()">
@@ -4060,9 +4060,9 @@ function mantisSubmitMaintenanceEntry(){
     Action: document.getElementById('entryAction').value.trim()
   };
 
-  if(!fields.Mesin || !fields.Issue || !fields.Action){
+  if(!fields.Mesin || !fields.Action){
     messageEl.className = 'entry-form-message error';
-    messageEl.textContent = 'Semua kolom wajib diisi.';
+    messageEl.textContent = 'Mesin dan Action wajib diisi.';
     return;
   }
 
