@@ -2254,6 +2254,7 @@ function showActivitiesTab(name){
   document.getElementById('activities-tab-' + name).style.display = '';
 
   document.getElementById('activities-search-box').style.display = (name === 'records') ? '' : 'none';
+  document.getElementById('mantisWaPublishBtn').style.display = (name === 'newlog') ? '' : 'none';
   document.getElementById('activities-issue-card').style.display = (name === 'newlog') ? '' : 'none';
 
   if(name === 'newlog'){
