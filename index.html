@@ -4293,11 +4293,25 @@ function mantisOpenWaPublish(){
 function mantisCloseWaModal(){
   document.getElementById('mantisWaModalOverlay').classList.remove('open');
   document.body.style.overflow = '';
+  mantisWaShareLeftPending = false;
 }
 
 function mantisCloseWaModalOnBackdrop(evt){
   if(evt.target === evt.currentTarget) mantisCloseWaModal();
 }
+
+/* Tracks whether the user just left for the WhatsApp app via "Buka WhatsApp"
+   (mobile switches apps rather than opening a new tab), so the modal can
+   close itself once they switch back to Mantis instead of being left open
+   underneath. Only auto-closes for that specific flow, not any random
+   away-and-back tab switch while the modal happens to be open. */
+let mantisWaShareLeftPending = false;
+
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState !== 'visible' || !mantisWaShareLeftPending) return;
+  mantisWaShareLeftPending = false;
+  mantisCloseWaModal();
+});
 
 function mantisOpenWaShare(){
   const textarea = document.getElementById('mantisWaPreview');
@@ -4308,6 +4322,7 @@ function mantisOpenWaShare(){
   // waiting on it - the two are independent side effects of one click.
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
   mantisPublishActionsToSheet();
+  mantisWaShareLeftPending = true;
 }
 
 /* ---------- Settings: tabs ---------- */
