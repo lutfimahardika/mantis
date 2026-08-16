@@ -3401,13 +3401,13 @@ function mantisBuildMetersReportCanvas(){
   const rowHeight = 34;
   const headerRowHeight = 40;
   const kopHeight = 100;
-  const footerHeight = 34;
+  const bottomMargin = 24;
   const colGap = 28;
   const margin = 32;
 
   const contentWidth = tableWidth * blocks.length + colGap * (blocks.length - 1);
   const canvasWidth = Math.max(contentWidth + margin * 2, 640);
-  const canvasHeight = kopHeight + headerRowHeight + rowsPerBlock * rowHeight + footerHeight;
+  const canvasHeight = kopHeight + headerRowHeight + rowsPerBlock * rowHeight + bottomMargin;
 
   const scale = 2;
   const canvas = document.createElement('canvas');
@@ -3493,11 +3493,6 @@ function mantisBuildMetersReportCanvas(){
     drawBlock(blockX, blockRows);
     blockX += tableWidth + colGap;
   });
-
-  ctx.font = '11px Inter, sans-serif';
-  ctx.fillStyle = '#A1A1AA';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('Dibuat otomatis oleh Mantis', margin, canvasHeight - 14);
 
   return canvas;
 }
