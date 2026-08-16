@@ -229,6 +229,7 @@ html,body{
   color:var(--accent);
   font-weight:500;
 }
+.sub-item.active svg{ stroke:var(--logo-color); }
 .sb-divider{ margin:6px 4px; border-top:1px solid var(--line); }
 .sidebar-brand{
   display:none;
@@ -1055,11 +1056,13 @@ textarea.entry-input{
 .mantis-chart-wrap::before{
   content:'';
   position:absolute; inset:0;
+  z-index:0;
   background-image:radial-gradient(circle, #E7E7E4 1px, transparent 1.15px);
   background-size:14px 14px;
   pointer-events:none;
 }
-.mantis-chart-markers{ position:absolute; inset:0; pointer-events:none; }
+.mantis-chart-wrap svg{ position:relative; z-index:1; }
+.mantis-chart-markers{ position:absolute; inset:0; z-index:2; pointer-events:none; }
 .mantis-chart-dot{
   position:absolute;
   width:7px; height:7px;
@@ -1225,6 +1228,7 @@ textarea.entry-input{
     padding:6px 0;
   }
   .bottom-nav-item.active{ color:var(--accent); }
+  .bottom-nav-item.active svg{ color:var(--logo-color); }
 
   .banner{ height:auto; flex-wrap:wrap; padding:10px 14px; border-radius:12px; }
 
@@ -2151,7 +2155,12 @@ const mantisPageTitles = {
   support: 'Support'
 };
 
+const MANTIS_LAST_PAGE_KEY = 'mantisLastPage';
+const MANTIS_LAST_ACTIVITIES_TAB_KEY = 'mantisLastActivitiesTab';
+
 function showPage(name){
+  try{ localStorage.setItem(MANTIS_LAST_PAGE_KEY, name); }catch(e){ /* storage unavailable - ignore */ }
+
   document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
   document.getElementById('page-' + name).style.display = '';
 
@@ -2187,6 +2196,8 @@ function showPage(name){
 }
 
 function showActivitiesTab(name){
+  try{ localStorage.setItem(MANTIS_LAST_ACTIVITIES_TAB_KEY, name); }catch(e){ /* storage unavailable - ignore */ }
+
   document.querySelectorAll('.activities-tab-panel').forEach(function(p){ p.style.display = 'none'; });
   document.getElementById('activities-tab-' + name).style.display = '';
 
@@ -4134,6 +4145,24 @@ function mantisResetAllColumnPrefs(){
     if(document.getElementById(containerId)) renderGvizTableRows(containerId);
   });
 }
+
+/* Without this, every reload silently drops the user back on the Dashboard
+   because showPage()/showActivitiesPage() are only ever invoked by nav
+   clicks - nothing reads back where they were before the reload happened. */
+(function mantisRestoreLastPage(){
+  const MANTIS_NAV_PAGES = ['overview', 'activities', 'parts', 'meters', 'po', 'settings', 'support'];
+  try{
+    const lastPage = localStorage.getItem(MANTIS_LAST_PAGE_KEY);
+    if(!lastPage || MANTIS_NAV_PAGES.indexOf(lastPage) === -1 || lastPage === 'overview') return;
+
+    if(lastPage === 'activities'){
+      const lastTab = localStorage.getItem(MANTIS_LAST_ACTIVITIES_TAB_KEY);
+      showActivitiesPage(lastTab === 'records' ? 'records' : 'newlog');
+    } else {
+      showPage(lastPage);
+    }
+  }catch(e){ /* storage unavailable - ignore, default page stays visible */ }
+})();
 </script>
 </body>
 </html>
