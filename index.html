@@ -4207,6 +4207,15 @@ function mantisGroupByOrdered(items, keyFn){
   return { order: order, groups: groups };
 }
 
+/* Action is a free-text textarea - a technician often lists several things
+   done as separate lines in one entry, and each of those lines should get
+   its own bullet/prefix in the report rather than only the first line. */
+function mantisSplitActionLines(action){
+  return (action || '').split('\n')
+    .map(function(line){ return line.trim(); })
+    .filter(Boolean);
+}
+
 function mantisBuildWhatsAppMessage(){
   const queue = mantisGetPendingActions();
   const dateLabel = mantisFormatWaDate(document.getElementById('entryTanggal').value.trim());
@@ -4235,7 +4244,9 @@ function mantisBuildWhatsAppMessage(){
           lines.push('| ' + issue);
         }
         lastIssue = issue || null;
-        lines.push('- ' + item.Action);
+        mantisSplitActionLines(item.Action).forEach(function(actionLine){
+          lines.push('- ' + actionLine);
+        });
       });
     });
 
@@ -4244,7 +4255,9 @@ function mantisBuildWhatsAppMessage(){
 
   if(extra.length){
     extra.forEach(function(item){
-      lines.push('*' + MANTIS_SUPPORT_MESIN + ' ' + item.Action);
+      mantisSplitActionLines(item.Action).forEach(function(actionLine){
+        lines.push('*' + MANTIS_SUPPORT_MESIN + ' ' + actionLine);
+      });
     });
     lines.push('');
   }
