@@ -3609,6 +3609,16 @@ function mantisLookupArea(mesinName){
   return MANTIS_MESIN_AREA_MAP[key] || '';
 }
 
+/* "Support" is a pseudo-machine for work that isn't tied to a specific asset
+   (e.g. helping production). It intentionally has no Area, which is what makes
+   mantisBuildWhatsAppMessage() group it under "Tambahan pekerjaan" instead of
+   under an Area/Mesin block. */
+const MANTIS_SUPPORT_MESIN = 'Support';
+
+function mantisIsSupportMesin(mesinName){
+  return (mesinName || '').trim().toLowerCase() === MANTIS_SUPPORT_MESIN.toLowerCase();
+}
+
 function mantisSyncAreaFromMesin(){
   const mesin = document.getElementById('entryMesin').value;
   document.getElementById('entryArea').value = mantisLookupArea(mesin);
@@ -3623,18 +3633,30 @@ function mantisRenderMesinDropdownList(filterText){
   const matches = MANTIS_MESIN_AREA_LIST.filter(function(pair){
     return !filter || pair[0].toLowerCase().indexOf(filter) !== -1;
   });
+  const showSupport = !filter || MANTIS_SUPPORT_MESIN.toLowerCase().indexOf(filter) !== -1;
 
-  if(!matches.length){
+  if(!matches.length && !showSupport){
     listEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--ink-3);">Tidak ditemukan.</div>';
     return;
   }
 
-  listEl.innerHTML = matches.map(function(pair){
+  let html = '';
+  if(showSupport){
+    html += '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectMesin(\'' + MANTIS_SUPPORT_MESIN + '\')">' +
+      mantisEscapeHtml(MANTIS_SUPPORT_MESIN) +
+      '<span style="display:block;font-size:11px;color:var(--ink-3);">Tambahan pekerjaan &mdash; bukan mesin tertentu</span>' +
+      '</button>';
+    if(matches.length){
+      html += '<div style="border-top:1px solid var(--line);margin:4px 2px;"></div>';
+    }
+  }
+  html += matches.map(function(pair){
     return '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectMesin(\'' + pair[0].replace(/'/g, "\\'") + '\')">' +
       mantisEscapeHtml(pair[0]) +
       '<span style="display:block;font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(pair[1]) + '</span>' +
       '</button>';
   }).join('');
+  listEl.innerHTML = html;
 }
 
 function mantisSetMesinToggleOpen(isOpen){
@@ -3916,7 +3938,7 @@ function mantisRenderProblemActionTable(){
     html += '<td><div class="flex items-center" style="gap:10px;">' +
       '<div class="row-icon" style="background:' + areaIcon.bg + ';">' + areaIcon.html + '</div>' +
       '<div><div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.Mesin) + '</div>' +
-      '<div style="font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(item.Area) + '</div></div>' +
+      '<div style="font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(item.Area || 'Tambahan pekerjaan') + '</div></div>' +
       '</div></td>';
     html += '<td style="white-space:normal;max-width:260px;color:var(--ink);">' + mantisEscapeHtml(item.Issue) + '</td>';
     html += '<td style="white-space:normal;max-width:260px;color:var(--ink);">' + mantisEscapeHtml(item.Action) + '</td>';
@@ -4049,7 +4071,7 @@ function mantisSubmitMaintenanceEntry(){
     return;
   }
 
-  if(!fields.Area){
+  if(!fields.Area && !mantisIsSupportMesin(fields.Mesin)){
     messageEl.className = 'entry-form-message error';
     messageEl.textContent = 'Mesin tidak dikenali. Pilih dari daftar yang tersedia.';
     return;
