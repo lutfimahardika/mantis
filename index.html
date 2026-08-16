@@ -4106,6 +4106,11 @@ function mantisSubmitMaintenanceEntry(){
     // since it never made it to localStorage it will be gone on the next
     // reload - warn immediately instead of letting it vanish silently.
     mantisShowActionsMessage('Penyimpanan lokal browser tidak aktif (mode privat/incognito atau storage penuh). Entry ini akan hilang jika halaman di-reload sebelum di-Publish.', true);
+  } else {
+    // Clear any stale message from before this entry existed (e.g. "Belum ada
+    // action yang perlu dipublish" from clicking Publish while the queue was
+    // still empty) - it no longer applies now that there's something queued.
+    mantisShowActionsMessage('', false);
   }
 }
 
