@@ -1266,7 +1266,7 @@ textarea.entry-input{
   .card{ padding:14px; }
 
   .flex.items-center.justify-between{ flex-wrap:wrap; row-gap:10px; }
-  .table-search input{ width:90px; }
+  .table-search input{ width:70px; }
 
   .table-rows-control{ flex-wrap:nowrap; gap:8px; justify-content:center; }
   .table-rows-control > label{ display:none; }
@@ -1934,6 +1934,9 @@ textarea.entry-input{
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
             <input type="text" placeholder="Cari meters..." oninput="mantisSearchTable('meters-table-container', this.value)">
           </div>
+          <button class="pill-btn" title="Export laporan JPG" onclick="mantisExportMetersReport()" style="width:32px;height:32px;padding:0;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8h.01"/><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12"/><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"/><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"/></svg>
+          </button>
           <button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet('meters-table-container')" style="width:32px;height:32px;padding:0;justify-content:center;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
           </button>
@@ -3318,6 +3321,181 @@ function mantisRefreshSheet(containerId){
   const source = MANTIS_SHEET_SOURCES[containerId];
   if(!source) return;
   loadSheetTable(source[0], containerId, source[1], true);
+}
+
+/* ---------- Meters: export the visible table as a branded JPG report ----------
+   Drawn on a canvas rather than screenshotting the DOM, so the report gets its
+   own minimal letterhead instead of looking like a copy of the app chrome. */
+const MANTIS_LOGO_PATH_D = 'M472.441,2598.425L826.772,2598.425L826.772,2007.874L946.979,2007.874C1206.743,2007.874 1417.323,2218.454 1417.323,2478.218L1417.323,2539.074C1417.323,2571.261 1443.234,2597.448 1475.419,2597.789C1475.644,2597.792 1475.868,2597.794 1476.093,2597.796C1491.773,2597.963 1506.868,2591.85 1518.014,2580.821C1529.161,2569.792 1535.433,2554.762 1535.433,2539.081L1535.433,2007.874L1655.64,2007.874C1915.404,2007.874 2125.984,2218.454 2125.984,2478.218L2125.984,2598.425L2480.315,2598.425L2480.315,3188.976L2360.108,3188.976C2100.344,3188.976 1889.764,2978.396 1889.764,2718.632L1889.764,2657.144C1889.764,2624.714 1863.475,2598.425 1831.045,2598.425L1830.372,2598.425C1797.943,2598.425 1771.654,2624.714 1771.654,2657.144L1771.654,3188.976C1771.654,3188.976 1718.856,3188.234 1644.835,3187.194C1387.675,3183.578 1181.102,2974.081 1181.102,2716.896L1181.102,2655.892C1181.102,2623.463 1154.813,2597.174 1122.384,2597.174L1121.71,2597.174C1089.281,2597.174 1062.992,2623.463 1062.992,2655.892L1062.992,3180.674C1062.992,3180.674 1016.587,3181.329 949.842,3182.271C824.261,3184.043 703.188,3135.516 613.593,3047.502C523.999,2959.487 473.327,2839.296 472.865,2713.704C472.615,2645.795 472.441,2598.425 472.441,2598.425Z';
+
+/* The path's own coordinates sit inside a matrix(0.470588,0,0,0.470588,-194.766095,-722.788328)
+   transform in the source SVG (viewBox 0 0 1000 1000) - replicated here as the
+   same translate+scale so the mark comes out identical, just at a chosen size. */
+function mantisDrawLogoMark(ctx, x, y, size){
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(size / 1000, size / 1000);
+  ctx.translate(-194.766095, -722.788328);
+  ctx.scale(0.470588, 0.470588);
+  ctx.fillStyle = '#FF7034';
+  ctx.fill(new Path2D(MANTIS_LOGO_PATH_D));
+  ctx.restore();
+}
+
+function mantisTruncateToWidth(ctx, text, maxWidth){
+  if(ctx.measureText(text).width <= maxWidth) return text;
+  let t = text;
+  while(t.length > 1 && ctx.measureText(t + '…').width > maxWidth){
+    t = t.slice(0, -1);
+  }
+  return t + '…';
+}
+
+function mantisBuildMetersReportCanvas(){
+  const containerId = 'meters-table-container';
+  const table = mantisTableCache[containerId];
+  if(!table || !table.cols || !table.rows) return null;
+
+  const colOrder = mantisOrderedVisibleColIndexes(containerId, table);
+  if(!colOrder.length) return null;
+
+  const searchTerm = (mantisSearchTerm[containerId] || '').trim().toLowerCase();
+  let rows = table.rows;
+  if(searchTerm){
+    rows = rows.filter(function(r){
+      return (r.c || []).some(function(cell){ return mantisCellText(cell).toLowerCase().indexOf(searchTerm) !== -1; });
+    });
+  }
+
+  const headers = colOrder.map(function(ci){ return table.cols[ci].label || table.cols[ci].id || ''; });
+  const bodyRows = rows.map(function(r){
+    return colOrder.map(function(ci){ return mantisCellText((r.c || [])[ci]); });
+  });
+
+  const headerFont = '600 13px Inter, sans-serif';
+  const cellFont = '13px Inter, sans-serif';
+  const cellPaddingX = 16;
+  const minColWidth = 80;
+  const maxColWidth = 260;
+
+  const measureCanvas = document.createElement('canvas');
+  const mctx = measureCanvas.getContext('2d');
+  const colWidths = headers.map(function(label, i){
+    mctx.font = headerFont;
+    let w = mctx.measureText(label).width;
+    mctx.font = cellFont;
+    bodyRows.forEach(function(row){ w = Math.max(w, mctx.measureText(row[i]).width); });
+    return Math.min(maxColWidth, Math.max(minColWidth, Math.ceil(w) + cellPaddingX * 2));
+  });
+
+  const tableWidth = colWidths.reduce(function(a, b){ return a + b; }, 0);
+  const margin = 32;
+  const canvasWidth = Math.max(tableWidth + margin * 2, 640);
+
+  const rowHeight = 34;
+  const headerRowHeight = 40;
+  const kopHeight = 100;
+  const footerHeight = 34;
+  const rowsForHeight = Math.max(bodyRows.length, 1);
+  const canvasHeight = kopHeight + headerRowHeight + rowsForHeight * rowHeight + footerHeight;
+
+  const scale = 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvasWidth * scale;
+  canvas.height = canvasHeight * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  // --- kop (letterhead) ---
+  const kopX = margin;
+  mantisDrawLogoMark(ctx, kopX, 22, 30);
+  ctx.fillStyle = '#1C1C1C';
+  ctx.font = 'italic 700 21px Inter, sans-serif';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('mantis', kopX + 38, 39);
+
+  ctx.font = '700 17px Manrope, Inter, sans-serif';
+  ctx.fillStyle = '#1C1C1C';
+  ctx.fillText('Laporan Meters — Running Hour', kopX, 68);
+
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillStyle = '#6B7280';
+  ctx.fillText('Dibuat ' + mantisFormatWaDate() + ' · ' + bodyRows.length + ' data', kopX, 88);
+
+  ctx.strokeStyle = '#EFEFED';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, kopHeight);
+  ctx.lineTo(canvasWidth, kopHeight);
+  ctx.stroke();
+
+  // --- table ---
+  const ty = kopHeight;
+
+  ctx.fillStyle = '#FAFAFA';
+  ctx.fillRect(margin, ty, tableWidth, headerRowHeight);
+
+  ctx.font = headerFont;
+  ctx.fillStyle = '#6B7280';
+  ctx.textBaseline = 'middle';
+  let cx = margin;
+  headers.forEach(function(label, i){
+    ctx.fillText(mantisTruncateToWidth(ctx, label, colWidths[i] - cellPaddingX * 2), cx + cellPaddingX, ty + headerRowHeight / 2);
+    cx += colWidths[i];
+  });
+
+  ctx.font = cellFont;
+  let ry = ty + headerRowHeight;
+  if(!bodyRows.length){
+    ctx.fillStyle = '#A1A1AA';
+    ctx.textAlign = 'center';
+    ctx.fillText('Tidak ada data yang cocok.', margin + tableWidth / 2, ry + rowHeight / 2);
+    ctx.textAlign = 'left';
+    ry += rowHeight;
+  } else {
+    bodyRows.forEach(function(row){
+      const rowTop = ry;
+      cx = margin;
+      ctx.fillStyle = '#1C1C1C';
+      row.forEach(function(val, i){
+        ctx.fillText(mantisTruncateToWidth(ctx, val, colWidths[i] - cellPaddingX * 2), cx + cellPaddingX, rowTop + rowHeight / 2);
+        cx += colWidths[i];
+      });
+      ry += rowHeight;
+      ctx.strokeStyle = '#F5F5F4';
+      ctx.beginPath();
+      ctx.moveTo(margin, ry);
+      ctx.lineTo(margin + tableWidth, ry);
+      ctx.stroke();
+    });
+  }
+
+  ctx.strokeStyle = '#EFEFED';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(margin + 0.5, ty + 0.5, tableWidth - 1, headerRowHeight + rowsForHeight * rowHeight - 1);
+
+  ctx.font = '11px Inter, sans-serif';
+  ctx.fillStyle = '#A1A1AA';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Dibuat otomatis oleh Mantis', margin, canvasHeight - 14);
+
+  return canvas;
+}
+
+function mantisExportMetersReport(){
+  const canvas = mantisBuildMetersReportCanvas();
+  if(!canvas){
+    alert('Data meters belum dimuat. Coba refresh dulu.');
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.download = 'mantis-meters-report-' + new Date().toISOString().slice(0, 10) + '.jpg';
+  link.href = canvas.toDataURL('image/jpeg', 0.92);
+  link.click();
 }
 
 /* ---------- Activities: New Entry form ---------- */
