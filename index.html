@@ -1,1 +1,4194 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mantis — Maintenance Dashboard</title>
+<meta name="description" content="Mantis maintenance management dashboard" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;1,700&family=Manrope:wght@600;700;800&display=swap">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+:root{
+  --canvas:      #FAFAFA;
+  --surface:     #FFFFFF;
+  --line:        #EFEFED;
+  --line-soft:   #F5F5F4;
+  --ink:         #1C1C1C;
+  --ink-2:       #6B7280;
+  --ink-3:       #A1A1AA;
+  --accent:      #F5A623;
+  --accent-soft: #FEF6E7;
+  --violet:      #6366F1;
+  --blue:        #2E7CF6;
+  --green:       #16A34A;
+  --red:         #DC2626;
+  --logo-color:  #FF7034;
+  --font-heading: 'Manrope', 'Inter', system-ui, sans-serif;
+}
+
+*{ box-sizing:border-box; }
+
+html,body{
+  margin:0;
+  padding:0;
+  height:100%;
+  background:var(--canvas);
+  color:var(--ink);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  font-size:12px;
+  overscroll-behavior-y:none;
+}
+
+.hairline{ border-color:var(--line); }
+
+/* ---------- Scrollbar ---------- */
+:root{
+  --scroll-thumb:      #EFEFED;
+  --scroll-thumb-hover: #FAFAFA;
+}
+*{
+  scrollbar-width:thin;
+  scrollbar-color:var(--scroll-thumb) transparent;
+}
+*::-webkit-scrollbar{
+  width:8px;
+  height:8px;
+}
+*::-webkit-scrollbar-track{
+  background:transparent;
+}
+*::-webkit-scrollbar-thumb{
+  background-color:var(--scroll-thumb);
+  border-radius:999px;
+  border:2px solid var(--canvas);
+  background-clip:padding-box;
+}
+*::-webkit-scrollbar-thumb:hover{
+  background-color:var(--scroll-thumb-hover);
+}
+*::-webkit-scrollbar-corner{
+  background:transparent;
+}
+
+.sidebar{
+  scrollbar-width:thin;
+  scrollbar-color:var(--line-soft) transparent;
+}
+.sidebar::-webkit-scrollbar{ width:6px; }
+.sidebar::-webkit-scrollbar-thumb{
+  background-color:var(--line-soft);
+  border:none;
+}
+.sidebar::-webkit-scrollbar-thumb:hover{
+  background-color:var(--scroll-thumb);
+}
+
+/* ---------- App shell ---------- */
+.app-shell{
+  background:var(--canvas);
+  display:grid;
+  grid-template-columns:200px 1fr;
+  grid-template-rows:60px 1fr;
+  min-height:100vh;
+}
+
+/* ---------- Header (grid row 1) ---------- */
+.app-header-left{
+  grid-column:1;
+  grid-row:1;
+  height:60px;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  padding:0 16px;
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  position:sticky;
+  top:0;
+  z-index:15;
+  background:var(--surface);
+}
+.app-logo{ width:40px; height:40px; flex:0 0 40px; display:block; }
+.app-logo-text{
+  font-family:'Inter', system-ui, sans-serif;
+  font-weight:700;
+  font-style:italic;
+  font-size:26px;
+  line-height:1;
+  letter-spacing:-0.01em;
+  color:var(--ink);
+  display:flex;
+  align-items:center;
+}
+.app-header-right{
+  grid-column:2;
+  grid-row:1;
+  height:60px;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  padding:0 24px;
+  font-family:var(--font-heading);
+  font-size:18px;
+  font-weight:700;
+  letter-spacing:-0.01em;
+  color:var(--ink);
+  border-bottom:1px solid var(--line);
+  position:sticky;
+  top:0;
+  z-index:15;
+  background:var(--surface);
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  grid-column:1;
+  grid-row:2;
+  width:200px;
+  background:var(--surface);
+  border-right:1px solid var(--line);
+  display:flex;
+  flex-direction:column;
+  padding:16px 12px;
+  position:sticky;
+  top:60px;
+  align-self:start;
+  height:calc(100vh - 60px);
+  overflow-y:auto;
+}
+.sb-avatar{ width:34px; height:34px; border-radius:999px; object-fit:cover; }
+.nav-item{
+  height:34px;
+  display:flex; align-items:center; gap:10px;
+  padding:0 10px;
+  border-radius:8px;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+  transition:background 150ms;
+}
+.nav-item:hover{ background:#FAFAF9; }
+.nav-item.active{
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-weight:500;
+}
+.nav-item.active svg{ fill:var(--logo-color); }
+.nav-item svg{ fill:var(--ink-2); flex:0 0 16px; }
+.nav-item.active .nav-label{ color:var(--accent); }
+.group-label{
+  height:34px;
+  display:flex; align-items:center; gap:10px;
+  padding:0 10px;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+}
+.group-label svg:not(.chev){ fill:var(--ink-2); flex:0 0 16px; }
+.group-label svg.chev{ margin-left:auto; stroke:var(--ink-3); transition:transform 150ms; }
+.group-label:hover{ background:#FAFAF9; border-radius:8px; }
+.group-label.active-group svg:not(.chev){ fill:var(--logo-color); }
+.group-label.active-group span{ color:var(--accent); font-weight:500; }
+.nav-group.collapsed .chev{ transform:rotate(-90deg); }
+.nav-group .sub-items{
+  display:flex; flex-direction:column; overflow:hidden;
+  position:relative;
+  margin-top:2px;
+}
+.nav-group .sub-items::before{
+  content:'';
+  position:absolute;
+  left:18px;
+  top:2px;
+  bottom:8px;
+  width:1px;
+  background:var(--line);
+}
+.nav-group.collapsed .sub-items{ display:none; }
+.sub-item{
+  height:34px;
+  display:flex; align-items:center; gap:10px;
+  padding:0 10px 0 34px;
+  font-size:13px;
+  color:var(--ink-2);
+  border-radius:8px;
+  cursor:pointer;
+  transition:background 150ms;
+}
+.sub-item svg{ flex:0 0 16px; }
+.sub-item:hover{ background:#FAFAF9; color:var(--ink); }
+.sub-item.active{
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-weight:500;
+}
+.sub-item.active svg{ stroke:var(--logo-color); }
+.sb-divider{ margin:6px 4px; border-top:1px solid var(--line); }
+.sidebar-brand{
+  display:none;
+  align-items:center;
+  gap:8px;
+  height:56px;
+  flex:0 0 56px;
+  box-sizing:border-box;
+  padding:0 12px;
+  margin:-16px -12px 16px -12px;
+  border-bottom:1px solid var(--line);
+}
+.sidebar-brand .app-logo{ width:32px; height:32px; flex:0 0 32px; }
+.sidebar-brand .app-logo-text{ font-size:21px; }
+.sidebar-brand-divider{ display:none; }
+.sb-bottom-group{ margin-top:auto; }
+.sb-account{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 4px 4px 4px;
+}
+
+/* ---------- Main content ---------- */
+.main{
+  grid-column:2;
+  grid-row:2;
+  padding:16px;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.page{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.sheet-loading{ padding:32px 20px; font-size:12px; color:var(--ink-3); }
+.sheet-error{ padding:32px 20px; font-size:12px; color:var(--red); }
+.table-search{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  height:32px;
+  padding:0 12px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--surface);
+  flex:0 0 auto;
+}
+.table-search svg{ flex:0 0 14px; stroke:var(--ink-3); }
+.table-search input{
+  border:none;
+  outline:none;
+  background:transparent;
+  font-family:inherit;
+  font-size:12px;
+  color:var(--ink);
+  width:160px;
+}
+.table-search input::placeholder{ color:var(--ink-3); }
+.table-rows-control{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:14px;
+  padding:16px 20px;
+  border-top:1px solid var(--line);
+  font-size:13px;
+  color:var(--ink-2);
+}
+.table-rows-control label{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.table-rows-control select{
+  height:34px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+}
+.table-pagination{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  padding:4px;
+  flex-wrap:wrap;
+}
+.table-pagination button{
+  height:34px;
+  min-width:34px;
+  padding:0 10px;
+  border:none;
+  border-radius:7px;
+  background:transparent;
+  font-size:13px;
+  color:var(--ink-2);
+  cursor:pointer;
+  transition:background 150ms,color 150ms;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.table-pagination button:hover:not(:disabled){ background:#FAFAF9; color:var(--ink); }
+.table-pagination button:disabled{ opacity:.35; cursor:not-allowed; }
+.table-pagination .table-pg-nav{
+  font-weight:600;
+  padding:0 14px;
+  border:none;
+  background:var(--blue);
+  color:#fff;
+}
+.table-pagination .table-pg-nav:hover:not(:disabled){ background:var(--blue); color:#fff; opacity:.92; }
+.table-pg-nav svg{ flex:0 0 auto; }
+.table-page-btn.active{
+  border:1.5px solid var(--accent);
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-weight:700;
+}
+.table-pg-divider{
+  width:1px;
+  height:22px;
+  background:var(--line);
+  margin:0 4px;
+  flex:0 0 1px;
+}
+.table-page-ellipsis{
+  padding:0 6px;
+  font-size:13px;
+  color:var(--ink-3);
+}
+.table-pagination-mobile{ display:none; }
+
+/* ---------- Tabs (Activities) ---------- */
+.tab-row{ display:flex; align-items:center; gap:6px; padding:12px 20px 0 20px; }
+.tab-btn{
+  height:32px;
+  padding:0 14px;
+  border:none;
+  background:transparent;
+  border-radius:8px;
+  font-size:12px; font-weight:500;
+  color:var(--ink-2);
+  cursor:pointer;
+  transition:background 150ms,color 150ms;
+}
+.tab-btn:hover{ background:#FAFAF9; color:var(--ink); }
+.tab-btn.active{ background:var(--accent-soft); color:var(--accent); }
+.tab-panel-empty{ padding:60px 20px; text-align:center; font-size:12px; color:var(--ink-3); }
+
+/* ---------- Settings ---------- */
+.settings-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  padding:16px 0;
+  border-bottom:1px solid var(--line-soft);
+}
+.settings-row:last-child{ border-bottom:none; }
+.settings-row-label{ font-size:13px; font-weight:600; color:var(--ink); margin-bottom:2px; }
+.settings-row-desc{ font-size:12px; color:var(--ink-3); max-width:420px; line-height:1.5; }
+.settings-row-control{ flex:0 0 auto; padding-top:2px; }
+.settings-select{
+  height:34px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  font-size:13px;
+  color:var(--ink);
+  font-family:inherit;
+  cursor:pointer;
+}
+.settings-table-group{ margin-bottom:24px; }
+.settings-table-group:last-child{ margin-bottom:0; }
+.settings-table-group-title{ font-size:13px; font-weight:600; color:var(--ink); margin-bottom:8px; }
+.col-pref-list{ border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.col-pref-loading{ padding:16px; font-size:12px; color:var(--ink-3); }
+.col-pref-item{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px;
+  background:#fff;
+  border-bottom:1px solid var(--line-soft);
+}
+.col-pref-item:last-child{ border-bottom:none; }
+.col-pref-item.dragging{ opacity:.4; background:var(--accent-soft); }
+.col-pref-drag-handle{
+  display:flex; align-items:center; justify-content:center;
+  flex:0 0 28px;
+  height:28px;
+  margin:-6px;
+  cursor:grab;
+  touch-action:none;
+}
+.col-pref-drag-handle:active{ cursor:grabbing; }
+.col-pref-drag{ flex:0 0 14px; color:var(--ink-3); pointer-events:none; }
+.col-pref-check{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); cursor:pointer; flex:1; }
+.col-pref-check input[type="checkbox"]{
+  appearance:none;
+  -webkit-appearance:none;
+  box-sizing:border-box;
+  width:16px;
+  height:16px;
+  flex:0 0 16px;
+  margin:0;
+  border:1.5px solid var(--line);
+  border-radius:5px;
+  background:#fff;
+  cursor:pointer;
+  position:relative;
+  transition:background 150ms,border-color 150ms;
+}
+.col-pref-check input[type="checkbox"]:checked{
+  background:var(--accent-soft);
+  border-color:var(--accent);
+}
+.col-pref-check input[type="checkbox"]:checked::after{
+  content:'';
+  position:absolute;
+  left:50%;
+  top:44%;
+  width:4px;
+  height:8px;
+  border:solid var(--ink);
+  border-width:0 1.5px 1.5px 0;
+  transform:translate(-50%,-50%) rotate(45deg);
+}
+
+/* ---------- Banner ---------- */
+.banner{
+  height:40px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:0 14px;
+  display:flex; align-items:center; gap:8px;
+}
+
+/* ---------- Cards ---------- */
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:20px;
+}
+.card-title{ font-family:var(--font-heading); font-size:15px; font-weight:700; }
+.card-sub{ font-size:12px; color:var(--ink-3); }
+
+.pill-btn{
+  height:32px;
+  padding:0 12px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:12px; font-weight:500;
+  color:var(--ink);
+  cursor:pointer;
+  transition:background 150ms;
+}
+.pill-btn:hover{ background:#FAFAF9; }
+.pill-btn svg{ stroke:var(--ink-2); }
+
+.btn-primary{
+  height:36px;
+  padding:0 14px;
+  background:var(--blue);
+  color:#fff;
+  border-radius:8px;
+  font-size:12px; font-weight:500;
+  display:inline-flex; align-items:center; gap:6px;
+  border:none;
+  cursor:pointer;
+  transition:opacity 150ms;
+}
+.btn-primary:hover{ opacity:.92; }
+
+.full-bleed-divider{
+  margin:0 -20px;
+  border-top:1px solid var(--line);
+}
+
+/* ---------- Metric row ---------- */
+.metric-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+}
+.metric-col{
+  padding:0 20px;
+}
+.metric-col:first-child{ padding-left:0; }
+.metric-col:not(:first-child){ border-left:1px solid var(--line); }
+.metric-label-row{ display:flex; align-items:center; justify-content:space-between; }
+.metric-label{ font-size:12px; color:var(--ink-2); }
+.metric-value{ font-size:28px; font-weight:600; letter-spacing:-0.02em; margin:6px 0; }
+.metric-delta{ display:flex; align-items:center; gap:4px; }
+.metric-delta .pct{ font-size:11px; font-weight:600; color:var(--green); }
+.metric-delta .cap{ font-size:11px; color:var(--ink-3); }
+
+/* ---------- Chart legend ---------- */
+.legend-item{ display:flex; align-items:center; gap:6px; }
+.legend-line{ width:12px; height:2px; border-radius:1px; }
+.legend-dot{ width:6px; height:6px; border-radius:999px; margin-left:-4px; }
+.legend-label{ font-size:11px; font-weight:500; color:var(--ink-2); }
+
+/* ---------- Automation cards ---------- */
+.intro-card{
+  background:#FAFAFA;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px;
+}
+.auto-card{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px;
+  display:flex; flex-direction:column; gap:12px;
+}
+.asset-icon{ width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:0 0 32px; }
+.btn-execute{
+  height:30px; flex:1;
+  background:var(--blue); color:#fff;
+  border:none; border-radius:8px;
+  font-size:11px; font-weight:500;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  cursor:pointer;
+  transition:opacity 150ms;
+}
+.btn-execute:hover{ opacity:.92; }
+.btn-pause{
+  height:30px; flex:1;
+  background:#fff; color:var(--ink-2);
+  border:1px solid var(--line); border-radius:8px;
+  font-size:11px; font-weight:500;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  cursor:pointer;
+  transition:background 150ms;
+}
+.btn-pause:hover{ background:#FAFAF9; }
+
+/* ---------- Table ---------- */
+.table-wrap{ overflow-x:auto; }
+.table-fixed th, .table-fixed td{ overflow:hidden; text-overflow:ellipsis; }
+table{ width:100%; border-collapse:collapse; }
+thead tr{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+th{
+  padding:16px 20px;
+  text-align:left;
+  font-size:12px; font-weight:500;
+  color:var(--ink-2);
+  white-space:nowrap;
+}
+th:first-child, td:first-child{ padding-left:20px; }
+th:last-child, td:last-child{ padding-right:20px; }
+tbody tr{ border-bottom:1px solid var(--line-soft); transition:background 150ms; }
+tbody tr:last-child{ border-bottom:none; }
+tbody tr:hover{ background:#FCFCFB; }
+td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
+.row-icon{ width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:0 0 30px; }
+.badge{ display:inline-flex; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:500; }
+.badge-overdue{ background:#FEF2F2; color:var(--red); }
+.badge-progress{ background:#F4F4F5; color:var(--ink-2); }
+.badge-completed{ background:#F0FDF4; color:var(--green); }
+.table-row-clickable{ cursor:pointer; }
+
+/* ---------- Row detail page ---------- */
+.row-detail-header-grid{
+  display:flex;
+  align-items:stretch;
+  border-bottom:1px solid var(--line);
+}
+.row-detail-back-cell{
+  width:48px;
+  flex:0 0 48px;
+  border:none;
+  border-right:1px solid var(--line);
+  background:transparent;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  color:var(--ink-2);
+  transition:background 150ms,color 150ms;
+}
+.row-detail-back-cell:hover{ background:#FAFAF9; color:var(--ink); }
+.row-detail-title-cell{
+  flex:1;
+  min-width:0;
+  padding:14px 20px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.row-detail-body{ padding:4px 20px 20px 20px; }
+.row-detail-item{
+  display:flex;
+  align-items:flex-start;
+  gap:24px;
+  padding:12px 0;
+  border-bottom:1px solid var(--line-soft);
+  font-size:13px;
+}
+.row-detail-item:last-child{ border-bottom:none; }
+.row-detail-label{ color:var(--ink-2); flex:0 0 160px; }
+.row-detail-value{ color:var(--ink); font-weight:500; text-align:left; flex:1; word-break:break-word; }
+
+.row-detail-item-new{ align-items:center; flex-wrap:wrap; row-gap:10px; }
+.row-detail-new-tag{
+  display:inline-block;
+  margin-left:6px;
+  padding:1px 6px;
+  border-radius:999px;
+  background:rgba(245,166,35,0.14);
+  color:var(--accent);
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+}
+.row-detail-new-input-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:1 1 0%;
+  min-width:120px;
+}
+.row-detail-new-input{
+  flex:1 1 0%;
+  height:34px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--surface);
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  outline:none;
+  box-sizing:border-box;
+  min-width:60px;
+}
+.row-detail-new-input:focus{ border-color:var(--accent); }
+.row-detail-new-save{
+  flex:0 0 auto;
+  height:34px;
+  padding:0 14px;
+  background:var(--accent);
+  color:#fff;
+  border-radius:8px;
+  font-size:13px; font-weight:500;
+  border:none;
+  cursor:pointer;
+  transition:opacity 150ms;
+}
+.row-detail-new-save:hover{ opacity:.92; }
+.row-detail-new-save:disabled{ opacity:.6; cursor:default; }
+.row-detail-ocr-btn{
+  display:none;
+  flex:0 0 auto;
+  width:34px;
+  height:34px;
+  padding:0;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  color:var(--ink-2);
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background 150ms,color 150ms;
+}
+.row-detail-ocr-btn:hover{ background:#FAFAF9; color:var(--ink); }
+.row-detail-ocr-btn:disabled{ opacity:.6; cursor:default; }
+.row-detail-ocr-status{
+  flex:0 0 100%;
+  font-size:12px;
+  color:var(--ink-3);
+  line-height:1.5;
+}
+.mantis-new-reading-error{
+  display:none;
+  margin-top:10px;
+  font-size:12px;
+  color:var(--red);
+}
+
+/* ---------- Activities: New Entry form ---------- */
+.entry-section{ padding:20px; }
+
+.entry-meta-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+}
+.entry-meta-col{ position:relative; padding:0 20px; }
+.entry-meta-col:first-child{ padding-left:0; }
+.entry-meta-col:not(:first-child){ border-left:1px solid var(--line); }
+.entry-meta-label{ display:block; font-size:12px; font-weight:500; color:var(--ink-2); margin-bottom:6px; }
+
+.entry-meta-edit-btn{
+  flex:0 0 auto;
+  width:22px;
+  height:22px;
+  border:none;
+  border-radius:5px;
+  background:transparent;
+  color:var(--ink-3);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background 150ms,color 150ms;
+}
+.entry-meta-edit-btn:hover{ background:#FAFAF9; color:var(--ink); }
+
+.entry-tanggal-hidden-input{
+  position:absolute;
+  bottom:0;
+  left:0;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:0;
+  border:none;
+  opacity:0;
+  pointer-events:none;
+}
+
+.entry-meta-popover{
+  display:none;
+  position:fixed;
+  z-index:50;
+  min-width:190px;
+  max-width:calc(100vw - 24px);
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,.14);
+  padding:8px;
+}
+.entry-meta-popover.open{ display:block; }
+.entry-meta-popover-list{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  max-height:220px;
+  overflow-y:auto;
+}
+.entry-meta-popover-item{
+  display:block;
+  width:100%;
+  padding:8px 10px;
+  border:none;
+  background:transparent;
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  text-align:left;
+  white-space:normal;
+  line-height:1.4;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background 150ms;
+}
+.entry-meta-popover-item:hover{ background:#FAFAF9; }
+.entry-meta-popover-item.selected{ background:var(--accent-soft); color:var(--accent); font-weight:500; }
+.entry-meta-checkbox-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:6px;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+}
+.entry-meta-checkbox-item:hover{ background:#FAFAF9; }
+.entry-meta-checkbox-item input{ margin:0; }
+
+.entry-field-label{ display:block; font-size:11px; font-weight:700; color:var(--ink-2); }
+
+/* ---------- New Action modal ---------- */
+.mantis-modal-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(15,15,15,0.45);
+  z-index:60;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.mantis-modal-overlay.open{ display:flex; }
+.mantis-modal{
+  background:var(--surface);
+  border-radius:16px;
+  width:100%;
+  max-width:460px;
+  max-height:88vh;
+  overflow-y:auto;
+  box-shadow:0 24px 60px rgba(0,0,0,.25);
+}
+.mantis-modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 16px 16px 20px;
+  border-bottom:1px solid var(--line);
+  position:sticky;
+  top:0;
+  background:var(--surface);
+  z-index:1;
+}
+.mantis-modal-close-btn{
+  flex:0 0 auto;
+  width:32px;
+  height:32px;
+  border:none;
+  border-radius:8px;
+  background:transparent;
+  color:var(--ink-2);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background 150ms,color 150ms;
+}
+.mantis-modal-close-btn:hover{ background:#FAFAF9; color:var(--ink); }
+
+.mantis-ocr-camera-body{
+  position:relative;
+  width:100%;
+  aspect-ratio:4 / 3;
+  background:#111;
+  overflow:hidden;
+}
+.mantis-ocr-camera-body video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.mantis-ocr-scan-frame{
+  position:absolute;
+  left:10%;
+  right:10%;
+  top:38%;
+  bottom:38%;
+  border:2px dashed var(--accent);
+  border-radius:8px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.4);
+  pointer-events:none;
+}
+.mantis-ocr-camera-hint{
+  padding:12px 20px 0 20px;
+  font-size:12px;
+  color:var(--ink-3);
+  text-align:center;
+}
+
+@media (max-width:768px){
+  .mantis-modal-overlay{ align-items:flex-end; padding:0; }
+  .mantis-modal{ max-width:100%; max-height:92vh; border-radius:16px 16px 0 0; }
+}
+
+.entry-modal-body{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  padding:20px;
+}
+.entry-field{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#FAFAFA;
+  padding:8px 14px;
+  transition:border-color 150ms,background 150ms;
+}
+.entry-field:focus-within{ border-color:var(--accent); background:var(--surface); }
+.entry-input{
+  display:block;
+  width:100%;
+  height:22px;
+  padding:0;
+  border:none;
+  background:transparent;
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  outline:none;
+  box-shadow:none;
+  appearance:none;
+  -webkit-appearance:none;
+  box-sizing:border-box;
+}
+.entry-input:hover,
+.entry-input:focus,
+.entry-input:focus-visible{
+  border:none;
+  outline:none;
+  box-shadow:none;
+}
+textarea.entry-input{
+  height:auto;
+  min-height:64px;
+  padding:0;
+  resize:none;
+  line-height:1.5;
+}
+
+.entry-mesin-row{ display:flex; align-items:center; gap:6px; }
+.entry-mesin-row .entry-input{ flex:1; }
+.entry-mesin-toggle{
+  flex:0 0 auto;
+  width:20px;
+  height:20px;
+  padding:0;
+  border:none;
+  background:transparent;
+  color:var(--ink-3);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:color 150ms,transform 150ms;
+}
+.entry-mesin-toggle:hover{ color:var(--ink); }
+.entry-mesin-toggle.open{ transform:rotate(180deg); color:var(--accent); }
+
+.entry-form-footer{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:12px;
+  padding-top:16px;
+  border-top:1px solid var(--line);
+}
+.entry-form-message{ flex:1; font-size:12px; }
+.entry-form-message.error{ color:var(--red); }
+.entry-form-message.success{ color:var(--green); }
+
+.entry-row-menu-wrap{ position:relative; display:inline-block; }
+.entry-row-menu-btn{
+  width:28px;
+  height:28px;
+  border:none;
+  border-radius:6px;
+  background:transparent;
+  color:var(--ink-3);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background 150ms,color 150ms;
+}
+.entry-row-menu-btn:hover{ background:#FAFAF9; color:var(--ink); }
+.entry-row-menu{
+  display:none;
+  position:fixed;
+  z-index:50;
+  min-width:130px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,.1);
+  padding:4px;
+}
+.entry-row-menu.open{ display:block; }
+.entry-row-menu-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  padding:8px 10px;
+  border:none;
+  background:transparent;
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  text-align:left;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background 150ms;
+}
+.entry-row-menu-item:hover{ background:#FAFAF9; }
+.entry-row-menu-item.danger{ color:var(--red); }
+.entry-row-menu-item.danger:hover{ background:#FEF2F2; }
+
+@media (max-width:768px){
+  .entry-section{ padding:14px; }
+
+  .entry-meta-grid{ grid-template-columns:repeat(2,1fr); row-gap:14px; }
+  .entry-meta-col{ padding:0 10px; border-left:none; }
+  .entry-meta-col:first-child{ padding-left:0; }
+  .entry-meta-col:nth-child(2){ border-left:1px solid var(--line); }
+  .entry-meta-col.entry-meta-col-teknisi{ grid-column:1 / -1; padding-left:0; border-left:none; border-top:1px solid var(--line); padding-top:14px; }
+
+  .entry-meta-popover{ min-width:170px; }
+
+  .entry-modal-body{ padding:14px; }
+  .entry-input{ font-size:16px; }
+  textarea.entry-input{ min-height:100px; }
+  .entry-form-footer{ flex-direction:column; align-items:stretch; padding-top:14px; }
+  .entry-form-footer .btn-primary{ width:100%; justify-content:center; height:44px; }
+}
+
+.mantis-chart-wrap{ position:relative; width:100%; height:260px; cursor:crosshair; }
+.mantis-chart-wrap::before{
+  content:'';
+  position:absolute; inset:0;
+  z-index:0;
+  background-image:radial-gradient(circle, #E7E7E4 1px, transparent 1.15px);
+  background-size:14px 14px;
+  pointer-events:none;
+}
+.mantis-chart-wrap svg{ position:relative; z-index:1; }
+.mantis-chart-markers{ position:absolute; inset:0; z-index:2; pointer-events:none; }
+.mantis-chart-dot{
+  position:absolute;
+  width:7px; height:7px;
+  margin:-3.5px 0 0 -3.5px;
+  border-radius:50%;
+  background:#fff;
+  border:3px solid #F5A623;
+  box-sizing:border-box;
+}
+.mantis-chart-cursor-line{
+  position:absolute; top:0; bottom:0;
+  border-left:2px dashed #D9D9D6;
+  opacity:0;
+  pointer-events:none;
+}
+.mantis-chart-cursor-dot{
+  position:absolute;
+  width:10px; height:10px;
+  margin:-5px 0 0 -5px;
+  border-radius:50%;
+  background:#F5A623;
+  border:2px solid #fff;
+  box-sizing:border-box;
+  box-shadow:0 1px 3px rgba(0,0,0,.25);
+  opacity:0;
+  pointer-events:none;
+}
+.mantis-chart-line{ stroke-width:2; }
+
+@media (min-width:769px){
+  .mantis-chart-wrap::before{
+    background-image:radial-gradient(circle, #E7E7E4 0.7px, transparent 0.85px);
+    background-size:11px 11px;
+  }
+  .mantis-chart-dot{
+    width:6px; height:6px;
+    margin:-3px 0 0 -3px;
+    border-width:2px;
+  }
+  .mantis-chart-cursor-line{ border-left-width:1.5px; }
+  .mantis-chart-cursor-dot{
+    width:8px; height:8px;
+    margin:-4px 0 0 -4px;
+    border-width:1.5px;
+  }
+  .mantis-chart-line{ stroke-width:1.5; }
+}
+.mantis-chart-tooltip{
+  position:absolute;
+  display:none;
+  transform:translate(-50%,-100%);
+  margin-top:-10px;
+  background:var(--ink);
+  color:#fff;
+  font-size:11px;
+  font-weight:600;
+  padding:4px 8px;
+  border-radius:6px;
+  white-space:nowrap;
+  pointer-events:none;
+  z-index:5;
+}
+.mantis-chart-tooltip::after{
+  content:'';
+  position:absolute;
+  left:50%; top:100%;
+  transform:translateX(-50%);
+  border:4px solid transparent;
+  border-top-color:var(--ink);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1100px){
+  .content-grid{ grid-template-columns:1fr !important; }
+}
+
+.mobile-topbar{ display:none; }
+.sidebar-overlay{ display:none; }
+.mobile-bottom-nav{ display:none; }
+
+@media (max-width:768px){
+  .app-shell{ display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; }
+
+  .app-header-left, .app-header-right{ display:none; }
+
+  .sidebar-brand{ display:flex; }
+
+  .mobile-topbar{
+    display:flex; align-items:center;
+    height:56px; padding:0 12px;
+    border-bottom:1px solid var(--line);
+    background:var(--surface);
+    position:sticky; top:0; z-index:20;
+  }
+  .mobile-topbar-brand{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    display:flex;
+    align-items:center;
+    gap:3px;
+  }
+  .mobile-topbar-brand .app-logo{ width:32px; height:32px; flex:0 0 32px; }
+  .mobile-topbar-brand .app-logo-text{ font-size:21px; }
+  .menu-btn{
+    width:34px; height:34px;
+    border:1px solid var(--line); border-radius:8px;
+    background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+
+  .sidebar{
+    position:fixed; top:0; left:0; width:240px; flex:0 0 240px;
+    height:100vh;
+    height:100dvh;
+    z-index:30;
+    transform:translateX(-100%);
+    transition:transform 200ms ease;
+  }
+  .sidebar.open{
+    transform:translateX(0);
+    box-shadow:8px 0 24px rgba(0,0,0,0.15);
+  }
+
+  .sidebar-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.35);
+    z-index:25;
+    opacity:0; pointer-events:none;
+    transition:opacity 200ms ease;
+  }
+  .sidebar-overlay.show{
+    display:block;
+    opacity:1; pointer-events:auto;
+  }
+
+  .main{ padding:12px 12px calc(76px + env(safe-area-inset-bottom)) 12px; gap:12px; }
+
+  .mobile-bottom-nav{
+    display:flex;
+    position:fixed;
+    left:0; right:0; bottom:0;
+    height:60px;
+    padding-bottom:env(safe-area-inset-bottom);
+    background:var(--surface);
+    border-top:1px solid var(--line);
+    z-index:20;
+    transform:translateZ(0);
+    will-change:transform;
+  }
+  .bottom-nav-item{
+    flex:1;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2px;
+    border:none;
+    background:transparent;
+    color:var(--ink-3);
+    font-size:10px;
+    font-family:inherit;
+    cursor:pointer;
+    padding:6px 0;
+  }
+  .bottom-nav-item.active{ color:var(--accent); }
+  .bottom-nav-item.active svg{ color:var(--logo-color); }
+
+  .bottom-nav-fab{
+    flex:1;
+    display:flex; align-items:center; justify-content:center;
+    border:none;
+    background:transparent;
+    padding:0;
+    cursor:pointer;
+  }
+  .bottom-nav-fab-circle{
+    width:44px; height:44px;
+    border-radius:14px;
+    background:var(--logo-color);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    margin-top:-22px;
+    transition:opacity 150ms;
+  }
+  .bottom-nav-fab:active .bottom-nav-fab-circle{ opacity:.85; }
+
+  .banner{ height:auto; flex-wrap:wrap; padding:10px 14px; border-radius:12px; }
+
+  .metric-grid{ grid-template-columns:repeat(2,1fr); row-gap:16px; }
+  .metric-col{ padding:0 12px; }
+  .metric-col:nth-child(odd){ padding-left:0; border-left:none; }
+  .metric-col:nth-child(even){ border-left:1px solid var(--line); }
+  .metric-col:nth-child(n+3){ border-top:1px solid var(--line); padding-top:14px; }
+
+  .card{ padding:14px; }
+
+  .flex.items-center.justify-between{ flex-wrap:wrap; row-gap:10px; }
+  .table-search input{ width:90px; }
+
+  .table-rows-control{ flex-wrap:nowrap; gap:8px; justify-content:center; }
+  .table-rows-control > label{ display:none; }
+
+  .row-detail-item-new{ flex-direction:column; align-items:stretch; }
+  .row-detail-item-new .row-detail-label{ flex:0 0 auto; }
+  .row-detail-new-input-row{ width:100%; }
+  .row-detail-new-input{ flex:1 1 0%; width:auto; height:44px; font-size:16px; }
+  .row-detail-ocr-btn{ display:flex; flex:0 0 auto; width:44px; height:44px; }
+  .row-detail-new-save{ flex:0 0 auto; width:100%; height:44px; }
+  .table-pagination-desktop{ display:none; }
+  .table-pagination-mobile{ display:inline-flex; }
+
+  .mantis-chart-wrap{ height:200px; }
+}
+
+@media (max-width:420px){
+  .mantis-chart-wrap{ height:170px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ============ HEADER (grid row 1) ============ -->
+  <div class="app-header-left">
+    <svg class="app-logo" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+      <g transform="matrix(0.470588,0,0,0.470588,-194.766095,-722.788328)">
+        <path d="M472.441,2598.425L826.772,2598.425L826.772,2007.874L946.979,2007.874C1206.743,2007.874 1417.323,2218.454 1417.323,2478.218L1417.323,2539.074C1417.323,2571.261 1443.234,2597.448 1475.419,2597.789C1475.644,2597.792 1475.868,2597.794 1476.093,2597.796C1491.773,2597.963 1506.868,2591.85 1518.014,2580.821C1529.161,2569.792 1535.433,2554.762 1535.433,2539.081L1535.433,2007.874L1655.64,2007.874C1915.404,2007.874 2125.984,2218.454 2125.984,2478.218L2125.984,2598.425L2480.315,2598.425L2480.315,3188.976L2360.108,3188.976C2100.344,3188.976 1889.764,2978.396 1889.764,2718.632L1889.764,2657.144C1889.764,2624.714 1863.475,2598.425 1831.045,2598.425L1830.372,2598.425C1797.943,2598.425 1771.654,2624.714 1771.654,2657.144L1771.654,3188.976C1771.654,3188.976 1718.856,3188.234 1644.835,3187.194C1387.675,3183.578 1181.102,2974.081 1181.102,2716.896L1181.102,2655.892C1181.102,2623.463 1154.813,2597.174 1122.384,2597.174L1121.71,2597.174C1089.281,2597.174 1062.992,2623.463 1062.992,2655.892L1062.992,3180.674C1062.992,3180.674 1016.587,3181.329 949.842,3182.271C824.261,3184.043 703.188,3135.516 613.593,3047.502C523.999,2959.487 473.327,2839.296 472.865,2713.704C472.615,2645.795 472.441,2598.425 472.441,2598.425Z" fill="var(--logo-color)"/>
+      </g>
+    </svg>
+    <span class="app-logo-text">mantis</span>
+  </div>
+  <div class="app-header-right" id="page-topbar-title">Dashboard</div>
+
+  <!-- ============ MOBILE TOPBAR ============ -->
+  <div class="mobile-topbar">
+    <button class="menu-btn" onclick="toggleSidebar()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"/><path d="M9 4v16"/><path d="M15 10l-2 2l2 2"/></svg>
+    </button>
+    <div class="mobile-topbar-brand">
+      <svg class="app-logo" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+        <g transform="matrix(0.470588,0,0,0.470588,-194.766095,-722.788328)">
+          <path d="M472.441,2598.425L826.772,2598.425L826.772,2007.874L946.979,2007.874C1206.743,2007.874 1417.323,2218.454 1417.323,2478.218L1417.323,2539.074C1417.323,2571.261 1443.234,2597.448 1475.419,2597.789C1475.644,2597.792 1475.868,2597.794 1476.093,2597.796C1491.773,2597.963 1506.868,2591.85 1518.014,2580.821C1529.161,2569.792 1535.433,2554.762 1535.433,2539.081L1535.433,2007.874L1655.64,2007.874C1915.404,2007.874 2125.984,2218.454 2125.984,2478.218L2125.984,2598.425L2480.315,2598.425L2480.315,3188.976L2360.108,3188.976C2100.344,3188.976 1889.764,2978.396 1889.764,2718.632L1889.764,2657.144C1889.764,2624.714 1863.475,2598.425 1831.045,2598.425L1830.372,2598.425C1797.943,2598.425 1771.654,2624.714 1771.654,2657.144L1771.654,3188.976C1771.654,3188.976 1718.856,3188.234 1644.835,3187.194C1387.675,3183.578 1181.102,2974.081 1181.102,2716.896L1181.102,2655.892C1181.102,2623.463 1154.813,2597.174 1122.384,2597.174L1121.71,2597.174C1089.281,2597.174 1062.992,2623.463 1062.992,2655.892L1062.992,3180.674C1062.992,3180.674 1016.587,3181.329 949.842,3182.271C824.261,3184.043 703.188,3135.516 613.593,3047.502C523.999,2959.487 473.327,2839.296 472.865,2713.704C472.615,2645.795 472.441,2598.425 472.441,2598.425Z" fill="var(--logo-color)"/>
+        </g>
+      </svg>
+      <span class="app-logo-text">mantis</span>
+    </div>
+    <button class="menu-btn" style="margin-left:auto;" onclick="showPage('settings')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>
+    </button>
+  </div>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- ============ SIDEBAR ============ -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <svg class="app-logo" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+        <g transform="matrix(0.470588,0,0,0.470588,-194.766095,-722.788328)">
+          <path d="M472.441,2598.425L826.772,2598.425L826.772,2007.874L946.979,2007.874C1206.743,2007.874 1417.323,2218.454 1417.323,2478.218L1417.323,2539.074C1417.323,2571.261 1443.234,2597.448 1475.419,2597.789C1475.644,2597.792 1475.868,2597.794 1476.093,2597.796C1491.773,2597.963 1506.868,2591.85 1518.014,2580.821C1529.161,2569.792 1535.433,2554.762 1535.433,2539.081L1535.433,2007.874L1655.64,2007.874C1915.404,2007.874 2125.984,2218.454 2125.984,2478.218L2125.984,2598.425L2480.315,2598.425L2480.315,3188.976L2360.108,3188.976C2100.344,3188.976 1889.764,2978.396 1889.764,2718.632L1889.764,2657.144C1889.764,2624.714 1863.475,2598.425 1831.045,2598.425L1830.372,2598.425C1797.943,2598.425 1771.654,2624.714 1771.654,2657.144L1771.654,3188.976C1771.654,3188.976 1718.856,3188.234 1644.835,3187.194C1387.675,3183.578 1181.102,2974.081 1181.102,2716.896L1181.102,2655.892C1181.102,2623.463 1154.813,2597.174 1122.384,2597.174L1121.71,2597.174C1089.281,2597.174 1062.992,2623.463 1062.992,2655.892L1062.992,3180.674C1062.992,3180.674 1016.587,3181.329 949.842,3182.271C824.261,3184.043 703.188,3135.516 613.593,3047.502C523.999,2959.487 473.327,2839.296 472.865,2713.704C472.615,2645.795 472.441,2598.425 472.441,2598.425Z" fill="var(--logo-color)"/>
+        </g>
+      </svg>
+      <span class="app-logo-text">mantis</span>
+    </div>
+    <div class="sb-divider sidebar-brand-divider"></div>
+    <!-- Main nav -->
+    <div class="nav-item active" data-page="overview" onclick="showPage('overview')">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 3a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2zm10 -4a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 -8a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2z"/></svg>
+      <span class="nav-label">Dashboard</span>
+    </div>
+    <div class="nav-group" id="navGroupActivities">
+      <div class="group-label" onclick="toggleGroup(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 2a1 1 0 0 1 1 1v17h17a1 1 0 0 1 .993 .883l.007 .117a1 1 0 0 1 -1 1h-18a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1z"/><path d="M19 4a3 3 0 1 1 -.651 5.93l-2.002 3.202a3 3 0 1 1 -4.927 .337l-1.378 -1.655a3 3 0 1 1 1.538 -1.282l1.378 1.654a2.994 2.994 0 0 1 1.693 -.115l2.002 -3.203a3 3 0 0 1 2.347 -4.868z"/></svg>
+        <span>Activities</span>
+        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6"/></svg>
+      </div>
+      <div class="sub-items">
+        <div class="sub-item" data-subpage="newlog" onclick="showActivitiesPage('newlog')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M12 11l0 6"/><path d="M9 14l6 0"/></svg>
+          Entries
+        </div>
+        <div class="sub-item" data-subpage="records" onclick="showActivitiesPage('records')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"/><path d="M9 12l6 0"/><path d="M9 16l6 0"/></svg>
+          Records
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-item" data-page="parts" onclick="showPage('parts')">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M6 5.667a3.667 3.667 0 0 1 3.667 -3.667h8.666a3.667 3.667 0 0 1 3.667 3.667v8.666a3.667 3.667 0 0 1 -3.667 3.667h-8.666a3.667 3.667 0 0 1 -3.667 -3.667z"/><path d="M2 9c0 -1.094 .533 -1.828 1.514 -2.374a1 1 0 1 1 .972 1.748c-.398 .221 -.486 .342 -.486 .626v10c0 .548 .452 1 1 1h9.998c.32 0 .618 -.154 .805 -.407l.065 -.1a1 1 0 1 1 1.738 .99a3 3 0 0 1 -2.606 1.517h-10c-1.652 0 -3 -1.348 -3 -3z"/></svg>
+      <span>Parts</span>
+    </div>
+    <div class="nav-item" data-page="meters" onclick="showPage('meters')">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-.293 3.953a1 1 0 0 0 -1.414 0l-2.59 2.59l-.083 .094l-.068 .1a2.001 2.001 0 0 0 -2.547 1.774l-.005 .149l.005 .15a2 2 0 1 0 3.917 -.701a.968 .968 0 0 0 .195 -.152l2.59 -2.59l.083 -.094a1 1 0 0 0 -.083 -1.32z"/></svg>
+      <span>Meters</span>
+    </div>
+    <div class="nav-item" data-page="po" onclick="showPage('po')">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l.117 .007a1 1 0 0 1 .876 .876l.007 .117v4l.005 .15a2 2 0 0 0 1.838 1.844l.157 .006h4l.117 .007a1 1 0 0 1 .876 .876l.007 .117v9a3 3 0 0 1 -2.824 2.995l-.176 .005h-10a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-14a3 3 0 0 1 2.824 -2.995l.176 -.005zm3 14h-6a1 1 0 0 0 0 2h6a1 1 0 0 0 0 -2m0 -4h-6a1 1 0 0 0 0 2h6a1 1 0 0 0 0 -2m-5 -4h-1a1 1 0 1 0 0 2h1a1 1 0 0 0 0 -2"/><path d="M19 7h-4l-.001 -4.001z"/></svg>
+      <span>Orders</span>
+    </div>
+
+    <!-- Bottom group: Settings, Support, Account -->
+    <div class="sb-bottom-group">
+      <div class="nav-item" data-page="settings" onclick="showPage('settings')">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M14.647 4.081a.724 .724 0 0 0 1.08 .448c2.439 -1.485 5.23 1.305 3.745 3.744a.724 .724 0 0 0 .447 1.08c2.775 .673 2.775 4.62 0 5.294a.724 .724 0 0 0 -.448 1.08c1.485 2.439 -1.305 5.23 -3.744 3.745a.724 .724 0 0 0 -1.08 .447c-.673 2.775 -4.62 2.775 -5.294 0a.724 .724 0 0 0 -1.08 -.448c-2.439 1.485 -5.23 -1.305 -3.745 -3.744a.724 .724 0 0 0 -.447 -1.08c-2.775 -.673 -2.775 -4.62 0 -5.294a.724 .724 0 0 0 .448 -1.08c-1.485 -2.439 1.305 -5.23 3.744 -3.745a.722 .722 0 0 0 1.08 -.447c.673 -2.775 4.62 -2.775 5.294 0zm-2.647 4.919a3 3 0 1 0 0 6a3 3 0 0 0 0 -6"/></svg>
+        <span>Settings</span>
+      </div>
+      <div class="nav-item" data-page="support" onclick="showPage('support')">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2c5.523 0 10 4.477 10 10a10 10 0 0 1 -19.995 .324l-.005 -.324l.004 -.28c.148 -5.393 4.566 -9.72 9.996 -9.72zm0 13a1 1 0 0 0 -.993 .883l-.007 .117l.007 .127a1 1 0 0 0 1.986 0l.007 -.117l-.007 -.127a1 1 0 0 0 -.993 -.883zm1.368 -6.673a2.98 2.98 0 0 0 -3.631 .728a1 1 0 0 0 1.44 1.383l.171 -.18a.98 .98 0 0 1 1.11 -.15a1 1 0 0 1 -.34 1.886l-.232 .012a1 1 0 0 0 .111 1.994a3 3 0 0 0 1.371 -5.673z"/></svg>
+        <span>Support</span>
+      </div>
+
+      <div class="sb-divider-full" style="margin-top:8px;"></div>
+
+      <div class="sb-account">
+        <svg class="sb-avatar" viewBox="0 0 34 34"><rect width="34" height="34" rx="17" fill="#E4E4E7"/><text x="17" y="21" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6B7280">DA</text></svg>
+        <div>
+          <div style="font-size:13px;font-weight:600;">Dimas Aditya</div>
+          <div style="font-size:11px;color:var(--ink-3);">dimas@mantis.io</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN CONTENT ============ -->
+  <div class="main">
+
+  <div class="page" id="page-overview">
+
+    <!-- Content grid -->
+    <div class="content-grid" style="display:grid;grid-template-columns:2.6fr 1fr;gap:16px;">
+
+      <!-- Left column -->
+      <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+
+        <!-- Maintenance Summary -->
+        <div class="card">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="card-title">Maintenance Summary</div>
+              <div class="card-sub">Facility Performance</div>
+            </div>
+            <div class="flex items-center" style="gap:8px;">
+              <button class="pill-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></svg>
+                Filter
+              </button>
+              <button class="pill-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M11 15h1"/><path d="M12 15v3"/></svg>
+                This Year
+              </button>
+              <button class="pill-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <div class="full-bleed-divider" style="margin-top:20px;margin-bottom:20px;"></div>
+
+          <div class="metric-grid">
+            <div class="metric-col">
+              <div class="metric-label-row">
+                <span class="metric-label">Total Work Orders</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/></svg>
+              </div>
+              <div class="metric-value">1,284</div>
+              <div class="metric-delta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6 -6l4 4l8 -8"/><path d="M14 7l7 0l0 7"/></svg>
+                <span class="pct">+9.4%</span><span class="cap">Than last Month</span>
+              </div>
+            </div>
+            <div class="metric-col">
+              <div class="metric-label-row">
+                <span class="metric-label">Completed On Time</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/></svg>
+              </div>
+              <div class="metric-value">1,073</div>
+              <div class="metric-delta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6 -6l4 4l8 -8"/><path d="M14 7l7 0l0 7"/></svg>
+                <span class="pct">+11.2%</span><span class="cap">Than last Month</span>
+              </div>
+            </div>
+            <div class="metric-col">
+              <div class="metric-label-row">
+                <span class="metric-label">Equipment Uptime</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/></svg>
+              </div>
+              <div class="metric-value">96,8%</div>
+              <div class="metric-delta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6 -6l4 4l8 -8"/><path d="M14 7l7 0l0 7"/></svg>
+                <span class="pct">+2.1%</span><span class="cap">Than last Month</span>
+              </div>
+            </div>
+            <div class="metric-col">
+              <div class="metric-label-row">
+                <span class="metric-label">Avg Response Time</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/></svg>
+              </div>
+              <div class="metric-value">2,4h</div>
+              <div class="metric-delta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6 -6l4 4l8 -8"/><path d="M14 7l7 0l0 7"/></svg>
+                <span class="pct">+14.6%</span><span class="cap">Than last Month</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Maintenance Overview chart -->
+        <div class="card" style="height:360px;display:flex;flex-direction:column;">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="card-title">Maintenance Overview</div>
+              <div class="flex items-center" style="gap:14px;margin-top:8px;">
+                <div class="legend-item">
+                  <span class="legend-line" style="background:var(--accent);"></span>
+                  <span class="legend-dot" style="background:var(--accent);"></span>
+                  <span class="legend-label">Work Orders</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-line" style="background:var(--violet);"></span>
+                  <span class="legend-dot" style="background:var(--violet);"></span>
+                  <span class="legend-label">Completed</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center" style="gap:8px;">
+              <button class="pill-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -6"/><path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -10"/><path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -14"/><path d="M4 20h14"/></svg>
+                Chart
+              </button>
+              <button style="width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2"><circle cx="12" cy="5" r="1.5" fill="var(--ink-2)"/><circle cx="12" cy="12" r="1.5" fill="var(--ink-2)"/><circle cx="12" cy="19" r="1.5" fill="var(--ink-2)"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div style="flex:1;margin-top:12px;min-height:0;">
+            <svg viewBox="0 0 1000 320" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">
+              <defs>
+                <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
+                  <circle cx="2" cy="2" r="0.9" fill="#E7E7E4"/>
+                </pattern>
+                <linearGradient id="gradAmber" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#F5A623" stop-opacity="0.22"/>
+                  <stop offset="100%" stop-color="#F5A623" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="gradViolet" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#6366F1" stop-opacity="0.22"/>
+                  <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+
+              <rect x="0" y="0" width="1000" height="320" fill="url(#dots)"/>
+
+              <!-- tracker line -->
+              <line x1="500" y1="10" x2="500" y2="310" stroke="#D9D9D6" stroke-width="1" stroke-dasharray="3 3"/>
+
+              <!-- Followers/Completed area + line -->
+              <path d="M0,274 L62.5,265 L125,268 L187.5,256 L250,244 L312.5,250 L375,235 L437.5,250 L500,280 L562.5,226 L625,205 L687.5,196 L750,175 L812.5,160 L875,145 L937.5,130 L1000,115 L1000,310 L0,310 Z" fill="url(#gradViolet)"/>
+              <polyline points="0,274 62.5,265 125,268 187.5,256 250,244 312.5,250 375,235 437.5,250 500,280 562.5,226 625,205 687.5,196 750,175 812.5,160 875,145 937.5,130 1000,115" fill="none" stroke="#6366F1" stroke-width="2" stroke-linejoin="round"/>
+
+              <!-- Work Orders area + line -->
+              <path d="M0,205 L62.5,211 L125,196 L187.5,184 L250,190 L312.5,175 L375,160 L437.5,166 L500,145 L562.5,130 L625,136 L687.5,115 L750,100 L812.5,85 L875,70 L937.5,58 L1000,46 L1000,310 L0,310 Z" fill="url(#gradAmber)"/>
+              <polyline points="0,205 62.5,211 125,196 187.5,184 250,190 312.5,175 375,160 437.5,166 500,145 562.5,130 625,136 687.5,115 750,100 812.5,85 875,70 937.5,58 1000,46" fill="none" stroke="#F5A623" stroke-width="2" stroke-linejoin="round"/>
+
+              <!-- tracker dots -->
+              <circle cx="500" cy="145" r="3.5" fill="#fff" stroke="#F5A623" stroke-width="2"/>
+              <circle cx="500" cy="280" r="3.5" fill="#fff" stroke="#6366F1" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="flex justify-between" style="margin-top:8px;">
+            <span style="font-size:11px;color:var(--ink-3);">01 Jan</span>
+            <span style="font-size:11px;color:var(--ink-3);">08 Feb</span>
+            <span style="font-size:11px;color:var(--ink-3);">15 Mar</span>
+            <span style="font-size:11px;color:var(--ink-3);">24 Apr</span>
+            <span style="font-size:11px;color:var(--ink-3);">31 May</span>
+            <span style="font-size:11px;color:var(--ink-3);">01 Jun</span>
+            <span style="font-size:11px;color:var(--ink-3);">08 Jul</span>
+            <span style="font-size:11px;color:var(--ink-3);">15 Aug</span>
+            <span style="font-size:11px;color:var(--ink-3);">24 Aug</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right column: Maintenance Automation -->
+      <div class="card" style="display:flex;flex-direction:column;gap:14px;">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="card-title">Maintenance Automation</div>
+            <div class="card-sub">Manage Automation Prompt</div>
+          </div>
+        </div>
+        <button class="pill-btn" style="align-self:flex-start;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
+          Create
+        </button>
+
+        <div class="intro-card">
+          <div style="font-size:12px;font-weight:600;">Reduce Downtime and Delays 🔧</div>
+          <div style="font-size:11px;color:var(--ink-3);margin-top:4px;line-height:1.5;">Automate technician assignment and preventive scheduling to keep operations running.</div>
+        </div>
+
+        <!-- Automation card 1 -->
+        <div class="auto-card">
+          <div class="flex items-center" style="gap:10px;">
+            <div class="asset-icon" style="background:linear-gradient(135deg,#FFD34D,#F5891F);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11"/></svg>
+            </div>
+            <div style="min-width:0;">
+              <div style="font-size:12px;font-weight:600;">CNC-Machine-04</div>
+              <div style="font-size:11px;color:var(--ink-3);">Building A · Line 2</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)" style="margin-left:auto;flex:0 0 14px;"><circle cx="9" cy="5" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="9" cy="19" r="1.4"/><circle cx="15" cy="5" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="15" cy="19" r="1.4"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;">Auto Assign Technician</div>
+            <div style="font-size:11px;color:var(--ink-3);margin-top:2px;line-height:1.5;">Assign the nearest available technician when a fault is detected.</div>
+          </div>
+          <div class="flex" style="gap:8px;">
+            <button class="btn-execute">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3"/><path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3"/></svg>
+              Execute
+            </button>
+            <button class="btn-pause">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -12"/><path d="M14 6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -12"/></svg>
+              Pause
+            </button>
+          </div>
+        </div>
+
+        <!-- Automation card 2 -->
+        <div class="auto-card">
+          <div class="flex items-center" style="gap:10px;">
+            <div class="asset-icon" style="background:linear-gradient(135deg,#38BDF8,#2563EB);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h8.5a2.5 2.5 0 1 0 -2.34 -3.24"/><path d="M3 12h15.5a2.5 2.5 0 1 1 -2.34 3.24"/><path d="M4 16h5.5a2.5 2.5 0 1 1 -2.34 3.24"/></svg>
+            </div>
+            <div style="min-width:0;">
+              <div style="font-size:12px;font-weight:600;">HVAC-Unit-12</div>
+              <div style="font-size:11px;color:var(--ink-3);">Building B · Rooftop</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)" style="margin-left:auto;flex:0 0 14px;"><circle cx="9" cy="5" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="9" cy="19" r="1.4"/><circle cx="15" cy="5" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="15" cy="19" r="1.4"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;">Schedule Preventive Maintenance</div>
+            <div style="font-size:11px;color:var(--ink-3);margin-top:2px;line-height:1.5;">Create a work order every 30 days based on runtime hours.</div>
+          </div>
+          <div class="flex" style="gap:8px;">
+            <button class="btn-execute">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3"/><path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3"/></svg>
+              Execute
+            </button>
+            <button class="btn-pause">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -12"/><path d="M14 6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -12"/></svg>
+              Pause
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Work Order List -->
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="card-title">Work Order List</div>
+          <div class="card-sub">Manage Your Work Orders</div>
+        </div>
+        <div class="flex items-center" style="gap:8px;">
+          <button class="pill-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></svg>
+            Filter
+          </button>
+          <button class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
+            New Work Order
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>
+              <span class="flex items-center" style="gap:4px;">Work Order
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6"/></svg>
+              </span>
+            </th>
+            <th>Asset &amp; Issue</th>
+            <th>Request Date</th>
+            <th>Cost</th>
+            <th>
+              <span class="flex items-center" style="gap:4px;">Downtime
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/></svg>
+              </span>
+            </th>
+            <th>Completion</th>
+            <th>Status</th>
+            <th style="width:48px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="flex items-center" style="gap:10px;">
+                <div class="row-icon" style="background:linear-gradient(135deg,#FFD34D,#F5891F);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:500;">WO-2049</div>
+                  <div style="font-size:11px;color:var(--ink-3);">Building A · Line 2</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:13px;color:var(--ink);">HVAC Unit</div>
+              <div style="font-size:12px;color:var(--ink-3);">Filter Replacement &amp; Inspection</div>
+            </td>
+            <td>13/12/2024</td>
+            <td>$1.240</td>
+            <td>8 hrs</td>
+            <td>92%</td>
+            <td><span class="badge badge-overdue">Overdue</span></td>
+            <td>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center" style="gap:10px;">
+                <div class="row-icon" style="background:#2E7CF6;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:500;">WO-2050</div>
+                  <div style="font-size:11px;color:var(--ink-3);">Building B · Warehouse</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:13px;color:var(--ink);">Conveyor Belt</div>
+              <div style="font-size:12px;color:var(--ink-3);">Motor Bearing Replacement</div>
+            </td>
+            <td>25/12/2024</td>
+            <td>$3.860</td>
+            <td>14 hrs</td>
+            <td>78%</td>
+            <td><span class="badge badge-progress">In Progress</span></td>
+            <td>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center" style="gap:10px;">
+                <div class="row-icon" style="background:linear-gradient(135deg,#38BDF8,#2563EB);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h8.5a2.5 2.5 0 1 0 -2.34 -3.24"/><path d="M3 12h15.5a2.5 2.5 0 1 1 -2.34 3.24"/><path d="M4 16h5.5a2.5 2.5 0 1 1 -2.34 3.24"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:500;">WO-2051</div>
+                  <div style="font-size:11px;color:var(--ink-3);">Building C · Line 5</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:13px;color:var(--ink);">CNC Machine</div>
+              <div style="font-size:12px;color:var(--ink-3);">Calibration &amp; Lubrication</div>
+            </td>
+            <td>01/01/2025</td>
+            <td>$980</td>
+            <td>3 hrs</td>
+            <td>100%</td>
+            <td><span class="badge badge-completed">Completed</span></td>
+            <td>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="flex items-center" style="gap:10px;">
+                <div class="row-icon" style="background:#0F0F0F;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:500;">WO-2052</div>
+                  <div style="font-size:11px;color:var(--ink-3);">Building A · Rooftop</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:13px;color:var(--ink);">Generator</div>
+              <div style="font-size:12px;color:var(--ink-3);">Fuel System Check</div>
+            </td>
+            <td>11/01/2024</td>
+            <td>$2.150</td>
+            <td>6 hrs</td>
+            <td>95%</td>
+            <td><span class="badge badge-completed">Completed</span></td>
+            <td>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ink-3)"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+  </div>
+  <!-- /page-overview -->
+
+  <!-- ============ ACTIVITIES ============ -->
+  <div class="page" id="page-activities" style="display:none;">
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="card-title">Activities</div>
+          <div class="card-sub">Entries &amp; Records</div>
+        </div>
+        <div class="flex items-center" id="activities-search-box" style="display:none;gap:8px;">
+          <div class="table-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
+            <input type="text" placeholder="Cari..." oninput="mantisSearchTable('activity-records-container', this.value)">
+          </div>
+          <button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet('activity-records-container')" style="width:32px;height:32px;padding:0;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="full-bleed-divider" style="margin:0;"></div>
+
+      <div class="activities-tab-panel" id="activities-tab-newlog">
+        <div class="entry-section">
+          <div class="entry-meta-grid">
+            <div class="entry-meta-col">
+              <div class="flex items-center justify-between">
+                <div class="metric-label">Tanggal</div>
+                <button type="button" class="entry-meta-edit-btn" title="Ubah tanggal" onclick="mantisOpenTanggalPicker(event)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/></svg>
+                </button>
+              </div>
+              <div class="metric-value" id="mantisTanggalView">-</div>
+
+              <input type="date" id="entryTanggal" class="entry-tanggal-hidden-input" onchange="mantisApplyTanggal()">
+            </div>
+
+            <div class="entry-meta-col">
+              <div class="flex items-center justify-between">
+                <div class="metric-label">Shift</div>
+                <button type="button" class="entry-meta-edit-btn" title="Ubah shift" onclick="mantisToggleMetaPopover('shift', event)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/></svg>
+                </button>
+              </div>
+              <div class="metric-value" id="mantisShiftView">-</div>
+
+              <div class="entry-meta-popover" id="mantisShiftPopover" onclick="event.stopPropagation()">
+                <div class="entry-meta-popover-list">
+                  <button type="button" class="entry-meta-popover-item" data-value="Shift 1" onclick="mantisApplyShift(this.dataset.value)">Shift 1</button>
+                  <button type="button" class="entry-meta-popover-item" data-value="Shift 2" onclick="mantisApplyShift(this.dataset.value)">Shift 2</button>
+                  <button type="button" class="entry-meta-popover-item" data-value="Shift 3" onclick="mantisApplyShift(this.dataset.value)">Shift 3</button>
+                  <button type="button" class="entry-meta-popover-item" data-value="Non-Shift" onclick="mantisApplyShift(this.dataset.value)">Non-Shift</button>
+                  <button type="button" class="entry-meta-popover-item" data-value="Longshift 1" onclick="mantisApplyShift(this.dataset.value)">Longshift 1</button>
+                  <button type="button" class="entry-meta-popover-item" data-value="Longshift 2" onclick="mantisApplyShift(this.dataset.value)">Longshift 2</button>
+                </div>
+                <input type="hidden" id="entryShift">
+              </div>
+            </div>
+
+            <div class="entry-meta-col entry-meta-col-teknisi">
+              <div class="flex items-center justify-between">
+                <div class="metric-label">Teknisi</div>
+                <button type="button" class="entry-meta-edit-btn" title="Ubah teknisi" onclick="mantisToggleMetaPopover('teknisi', event)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/></svg>
+                </button>
+              </div>
+              <div class="metric-value" id="mantisTeknisiView">-</div>
+
+              <div class="entry-meta-popover" id="mantisTeknisiPopover" onclick="event.stopPropagation()">
+                <div class="entry-meta-popover-list" id="mantisTeknisiCheckboxList"></div>
+                <button type="button" class="btn-primary" style="width:100%;justify-content:center;margin-top:8px;" onclick="mantisApplyTeknisi()">Selesai</button>
+                <input type="hidden" id="entryTeknisi">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="activities-tab-panel" id="activities-tab-records" style="display:none;">
+        <div id="activity-records-container"></div>
+      </div>
+    </div>
+
+    <div class="card" id="activities-issue-card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="flex items-center" style="gap:8px;">
+            <div class="card-title">Problem &amp; Action</div>
+            <span class="badge badge-progress" id="mantisPendingBadge" style="display:none;"></span>
+          </div>
+          <div class="card-sub">Belum dipublish ke Google Sheet &mdash; dikumpulkan dulu selama shift</div>
+        </div>
+        <div class="flex items-center" style="gap:8px;">
+          <button type="button" class="pill-btn" id="mantisPublishBtn" onclick="mantisPublishPendingActions()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>
+            Publish to Sheet
+          </button>
+          <button type="button" class="btn-primary" onclick="mantisOpenNewAction()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
+            New Action
+          </button>
+        </div>
+      </div>
+
+      <div id="mantisActionsMessage" class="entry-form-message" style="display:none;padding:0 20px 16px 20px;"></div>
+
+      <div class="full-bleed-divider" style="margin:0;"></div>
+
+      <div id="entry-actions-list-container"></div>
+    </div>
+
+  </div>
+
+  <!-- ============ PARTS & INVENTORY (Sparepart) ============ -->
+  <div class="page" id="page-parts" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="card-title">Parts</div>
+          <div class="card-sub">Data Sparepart</div>
+        </div>
+        <div class="flex items-center" style="gap:8px;">
+          <div class="table-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
+            <input type="text" placeholder="Cari parts..." oninput="mantisSearchTable('parts-table-container', this.value)">
+          </div>
+          <button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet('parts-table-container')" style="width:32px;height:32px;padding:0;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="parts-table-container"></div>
+    </div>
+  </div>
+
+  <!-- ============ METERS (Running Hour) ============ -->
+  <div class="page" id="page-meters" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="card-title">Meters</div>
+          <div class="card-sub">Data Running Hour</div>
+        </div>
+        <div class="flex items-center" style="gap:8px;">
+          <div class="table-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
+            <input type="text" placeholder="Cari meters..." oninput="mantisSearchTable('meters-table-container', this.value)">
+          </div>
+          <button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet('meters-table-container')" style="width:32px;height:32px;padding:0;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="meters-table-container"></div>
+    </div>
+  </div>
+
+  <!-- ============ PURCHASE ORDERS (PRPO) ============ -->
+  <div class="page" id="page-po" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;" class="flex items-center justify-between">
+        <div>
+          <div class="card-title">Orders</div>
+          <div class="card-sub">Data PRPO</div>
+        </div>
+        <div class="flex items-center" style="gap:8px;">
+          <div class="table-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
+            <input type="text" placeholder="Cari orders..." oninput="mantisSearchTable('po-table-container', this.value)">
+          </div>
+          <button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet('po-table-container')" style="width:32px;height:32px;padding:0;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="po-table-container"></div>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div class="page" id="page-settings" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;">
+        <div class="card-title">Settings</div>
+        <div class="card-sub">Pengaturan akun &amp; aplikasi</div>
+      </div>
+      <div class="full-bleed-divider" style="margin:0;"></div>
+
+      <div class="tab-row">
+        <button class="tab-btn active" data-settings-tab="language" onclick="showSettingsTab('language')">Bahasa</button>
+        <button class="tab-btn" data-settings-tab="table" onclick="showSettingsTab('table')">Table</button>
+      </div>
+
+      <div class="settings-tab-panel" id="settings-tab-language" style="padding:20px;">
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Bahasa Aplikasi</div>
+            <div class="settings-row-desc">Pilih bahasa yang digunakan untuk antarmuka Mantis.</div>
+          </div>
+          <div class="settings-row-control">
+            <select class="settings-select" id="mantisLanguageSelect" onchange="mantisSetLanguage(this.value)">
+              <option value="id">Bahasa Indonesia</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-tab-panel" id="settings-tab-table" style="display:none;padding:20px;">
+        <div class="flex items-start justify-between" style="gap:16px;margin-bottom:16px;">
+          <div class="card-sub" style="margin-bottom:0;">Atur kolom yang ditampilkan dan urutannya pada tiap tabel. Seret ikon titik untuk mengubah urutan.</div>
+          <button type="button" class="pill-btn" style="flex:0 0 auto;" onclick="mantisResetAllColumnPrefs()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.05 11a8 8 0 1 1 .5 4m-.5 5v-5h5"/></svg>
+            Reset
+          </button>
+        </div>
+
+        <div class="settings-table-group">
+          <div class="settings-table-group-title">Activities &mdash; Records</div>
+          <div class="col-pref-list" id="colprefs-activity-records-container"><div class="col-pref-loading">Memuat kolom...</div></div>
+        </div>
+        <div class="settings-table-group">
+          <div class="settings-table-group-title">Parts</div>
+          <div class="col-pref-list" id="colprefs-parts-table-container"><div class="col-pref-loading">Memuat kolom...</div></div>
+        </div>
+        <div class="settings-table-group">
+          <div class="settings-table-group-title">Meters</div>
+          <div class="col-pref-list" id="colprefs-meters-table-container"><div class="col-pref-loading">Memuat kolom...</div></div>
+        </div>
+        <div class="settings-table-group">
+          <div class="settings-table-group-title">Orders</div>
+          <div class="col-pref-list" id="colprefs-po-table-container"><div class="col-pref-loading">Memuat kolom...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SUPPORT ============ -->
+  <div class="page" id="page-support" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:20px;">
+        <div class="card-title">Support</div>
+        <div class="card-sub">Bantuan &amp; pusat dukungan</div>
+      </div>
+      <div class="full-bleed-divider" style="margin:0;"></div>
+      <div class="tab-panel-empty">Coming soon</div>
+    </div>
+  </div>
+
+  <!-- ============ ROW DETAIL ============ -->
+  <div class="page" id="page-detail" style="display:none;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="row-detail-header-grid">
+        <button type="button" class="row-detail-back-cell" onclick="mantisCloseRowDetail()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l6 6"/><path d="M5 12l6 -6"/><path d="M5 12l14 0"/></svg>
+        </button>
+        <div class="row-detail-title-cell">
+          <div class="card-title" id="mantisDetailTitle">Detail Item</div>
+        </div>
+      </div>
+      <div class="row-detail-body" id="mantisRowDetailBody"></div>
+    </div>
+  </div>
+
+  </div>
+  <!-- /main -->
+
+  <!-- ============ MOBILE BOTTOM NAV ============ -->
+  <nav class="mobile-bottom-nav">
+    <button class="bottom-nav-item active" data-page="overview" onclick="showPage('overview')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2zm10 -4a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 -8a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2z"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="bottom-nav-item" data-page="activities" onclick="showActivitiesPage('records')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 2a1 1 0 0 1 1 1v17h17a1 1 0 0 1 .993 .883l.007 .117a1 1 0 0 1 -1 1h-18a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1z"/><path d="M19 4a3 3 0 1 1 -.651 5.93l-2.002 3.202a3 3 0 1 1 -4.927 .337l-1.378 -1.655a3 3 0 1 1 1.538 -1.282l1.378 1.654a2.994 2.994 0 0 1 1.693 -.115l2.002 -3.203a3 3 0 0 1 2.347 -4.868z"/></svg>
+      <span>Activities</span>
+    </button>
+    <button class="bottom-nav-fab" onclick="showActivitiesPage('newlog')" aria-label="Tambah Activity Entry">
+      <span class="bottom-nav-fab-circle">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
+      </span>
+    </button>
+    <button class="bottom-nav-item" data-page="parts" onclick="showPage('parts')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5.667a3.667 3.667 0 0 1 3.667 -3.667h8.666a3.667 3.667 0 0 1 3.667 3.667v8.666a3.667 3.667 0 0 1 -3.667 3.667h-8.666a3.667 3.667 0 0 1 -3.667 -3.667z"/><path d="M2 9c0 -1.094 .533 -1.828 1.514 -2.374a1 1 0 1 1 .972 1.748c-.398 .221 -.486 .342 -.486 .626v10c0 .548 .452 1 1 1h9.998c.32 0 .618 -.154 .805 -.407l.065 -.1a1 1 0 1 1 1.738 .99a3 3 0 0 1 -2.606 1.517h-10c-1.652 0 -3 -1.348 -3 -3z"/></svg>
+      <span>Parts</span>
+    </button>
+    <button class="bottom-nav-item" data-page="meters" onclick="showPage('meters')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-.293 3.953a1 1 0 0 0 -1.414 0l-2.59 2.59l-.083 .094l-.068 .1a2.001 2.001 0 0 0 -2.547 1.774l-.005 .149l.005 .15a2 2 0 1 0 3.917 -.701a.968 .968 0 0 0 .195 -.152l2.59 -2.59l.083 -.094a1 1 0 0 0 -.083 -1.32z"/></svg>
+      <span>Meters</span>
+    </button>
+  </nav>
+
+  <!-- ============ NEW ACTION MODAL (Problem & Action input) ============ -->
+  <div class="mantis-modal-overlay" id="mantisActionModalOverlay" onclick="mantisCloseNewActionOnBackdrop(event)">
+    <div class="mantis-modal" onclick="event.stopPropagation()">
+      <div class="mantis-modal-header">
+        <div class="card-title" id="mantisNewActionTitle">New Action</div>
+        <button type="button" class="mantis-modal-close-btn" onclick="mantisCloseNewAction()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="entry-modal-body">
+        <input type="hidden" id="entryArea">
+
+        <div class="entry-field">
+          <label class="entry-field-label" for="entryMesin">Mesin</label>
+          <div class="entry-mesin-row">
+            <input type="text" id="entryMesin" class="entry-input" placeholder="Nama mesin" autocomplete="off"
+              oninput="mantisHandleMesinInput()" onfocus="mantisOpenMesinDropdown()">
+            <button type="button" class="entry-mesin-toggle" tabindex="-1" onclick="mantisToggleMesinDropdown(event)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6"/></svg>
+            </button>
+          </div>
+
+          <div class="entry-meta-popover" id="mantisMesinDropdown" onclick="event.stopPropagation()">
+            <div class="entry-meta-popover-list" id="mantisMesinDropdownList"></div>
+          </div>
+        </div>
+
+        <div class="entry-field">
+          <label class="entry-field-label" for="entryIssue">Issue</label>
+          <textarea id="entryIssue" class="entry-input" placeholder="Deskripsikan kendala/temuan"
+            oninput="mantisHandleIssueInput()" onfocus="mantisOpenIssueDropdown()"></textarea>
+
+          <div class="entry-meta-popover" id="mantisIssueDropdown" style="min-width:260px;max-width:320px;" onclick="event.stopPropagation()">
+            <div class="entry-meta-popover-list" id="mantisIssueDropdownList"></div>
+          </div>
+        </div>
+
+        <div class="entry-field">
+          <label class="entry-field-label" for="entryAction">Action</label>
+          <textarea id="entryAction" class="entry-input" placeholder="Tindakan perbaikan yang dilakukan"></textarea>
+        </div>
+
+        <div class="entry-form-footer">
+          <div class="entry-form-message" id="mantisEntryMessage"></div>
+          <button type="button" class="btn-primary" id="mantisEntrySubmitBtn" onclick="mantisSubmitMaintenanceEntry()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
+            <span id="mantisEntrySubmitLabel">Tambahkan ke Daftar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ OCR CAMERA MODAL (scan meter reading) ============ -->
+  <div class="mantis-modal-overlay" id="mantisOcrCameraOverlay" onclick="mantisCloseOcrCameraOnBackdrop(event)">
+    <div class="mantis-modal" style="max-width:420px;" onclick="event.stopPropagation()">
+      <div class="mantis-modal-header">
+        <div class="card-title">Scan Meteran</div>
+        <button type="button" class="mantis-modal-close-btn" onclick="mantisCloseOcrCamera()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="mantis-ocr-camera-body">
+        <video id="mantisOcrVideo" autoplay playsinline muted></video>
+        <div class="mantis-ocr-scan-frame"></div>
+      </div>
+      <div class="mantis-ocr-camera-hint">Posisikan angka meteran di dalam kotak, lalu ambil foto</div>
+
+      <div class="entry-form-footer" style="padding:16px 20px;">
+        <button type="button" class="btn-primary" style="width:100%;justify-content:center;" onclick="mantisCaptureOcrPhoto()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><circle cx="12" cy="13" r="3"/></svg>
+          Ambil Foto
+        </button>
+      </div>
+    </div>
+  </div>
+  <canvas id="mantisOcrCanvas" style="display:none;"></canvas>
+
+</div>
+<!-- /app-shell -->
+
+<script>
+function toggleGroup(el){
+  el.parentElement.classList.toggle('collapsed');
+}
+function toggleSidebar(){
+  const isOpen = document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+/* ---------- Google Sheet integration (read-only) ---------- */
+const MANTIS_SHEET_ID = '11-sqiV3BYqx738Rhr3Y9SF4Q7FnAGKNqMn-Gvoq6rFs';
+
+/* Apps Script Web App yang menulis reading baru ke sheet "Running Hour".
+   Isi kedua nilai ini setelah deploy Apps Script (lihat apps-script/Code.gs). */
+const MANTIS_METER_WRITE_URL = 'https://script.google.com/macros/s/AKfycbxFTyoLRLPO_PvyPOVYoGXlKpZXCknYWiRlubdh8Gyq4P8n63hhg26Bo4rg8ceu9uMT/exec';
+const MANTIS_METER_WRITE_TOKEN = '0502f1eebcf46081d755f09ddb9d0c1e';
+
+const mantisLoadedPages = {};
+const mantisPageTitles = {
+  overview: 'Dashboard',
+  activities: 'Activities',
+  parts: 'Parts',
+  meters: 'Meters',
+  po: 'Orders',
+  settings: 'Settings',
+  support: 'Support'
+};
+
+const MANTIS_LAST_PAGE_KEY = 'mantisLastPage';
+const MANTIS_LAST_ACTIVITIES_TAB_KEY = 'mantisLastActivitiesTab';
+
+function showPage(name){
+  try{ localStorage.setItem(MANTIS_LAST_PAGE_KEY, name); }catch(e){ /* storage unavailable - ignore */ }
+
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById('page-' + name).style.display = '';
+
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(el){ el.classList.remove('active'); });
+  const activeNav = document.querySelector('.nav-item[data-page="' + name + '"]');
+  if(activeNav) activeNav.classList.add('active');
+
+  document.querySelectorAll('.sub-item.active').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.group-label.active-group').forEach(function(el){ el.classList.remove('active-group'); });
+
+  document.querySelectorAll('.bottom-nav-item').forEach(function(el){ el.classList.remove('active'); });
+  const activeBottomNav = document.querySelector('.bottom-nav-item[data-page="' + name + '"]');
+  if(activeBottomNav) activeBottomNav.classList.add('active');
+
+  document.getElementById('page-topbar-title').textContent = mantisPageTitles[name] || name;
+
+  if(name === 'parts' && !mantisLoadedPages.parts){
+    mantisLoadedPages.parts = true;
+    loadSheetTable('Sparepart', 'parts-table-container', 'mantisHandleSparepart');
+  }
+  if(name === 'meters' && !mantisLoadedPages.meters){
+    mantisLoadedPages.meters = true;
+    loadSheetTable('Running Hour', 'meters-table-container', 'mantisHandleRunningHour');
+  }
+  if(name === 'po' && !mantisLoadedPages.po){
+    mantisLoadedPages.po = true;
+    loadSheetTable('PRPO', 'po-table-container', 'mantisHandlePRPO');
+  }
+
+  if(document.getElementById('sidebar').classList.contains('open')){
+    toggleSidebar();
+  }
+}
+
+function showActivitiesTab(name){
+  try{ localStorage.setItem(MANTIS_LAST_ACTIVITIES_TAB_KEY, name); }catch(e){ /* storage unavailable - ignore */ }
+
+  document.querySelectorAll('.activities-tab-panel').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById('activities-tab-' + name).style.display = '';
+
+  document.getElementById('activities-search-box').style.display = (name === 'records') ? '' : 'none';
+  document.getElementById('activities-issue-card').style.display = (name === 'newlog') ? '' : 'none';
+
+  if(name === 'newlog'){
+    mantisInitEntryForm();
+    mantisRenderProblemActionTable();
+  }
+
+  if((name === 'records' || name === 'newlog') && !mantisLoadedPages.activities){
+    mantisLoadedPages.activities = true;
+    loadSheetTable('Maintenance', 'activity-records-container', 'mantisHandleMaintenance', false, mantisPopulateEntryFormOptions);
+  } else if(name === 'newlog'){
+    mantisPopulateEntryFormOptions();
+  }
+}
+
+function showActivitiesPage(name){
+  showPage('activities');
+  showActivitiesTab(name);
+
+  const activeSub = document.querySelector('.sub-item[data-subpage="' + name + '"]');
+  if(activeSub) activeSub.classList.add('active');
+
+  const group = document.getElementById('navGroupActivities');
+  if(group){
+    group.classList.remove('collapsed');
+    const groupLabel = group.querySelector('.group-label');
+    if(groupLabel) groupLabel.classList.add('active-group');
+  }
+}
+
+function mantisEscapeHtml(str){
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+const MANTIS_ROW_OPTIONS = [10, 25, 50, 100];
+const mantisTableCache = {};
+const mantisRowLimits = {};
+const mantisCurrentPage = {};
+const mantisColumnWidths = {};
+const mantisSearchTerm = {};
+
+function mantisStripEmptyColumns(table){
+  if(!table || !table.cols || !table.rows) return table;
+
+  const keepIndexes = table.cols.map(function(c, i){ return i; }).filter(function(i){
+    const col = table.cols[i];
+    const hasLabel = col.label && col.label.trim() !== '';
+    if(hasLabel) return true;
+    return table.rows.some(function(r){
+      const cell = r.c && r.c[i];
+      const val = cell && (cell.f !== undefined && cell.f !== null ? cell.f : cell.v);
+      return val !== null && val !== undefined && String(val).trim() !== '';
+    });
+  });
+
+  if(keepIndexes.length === table.cols.length) return table;
+
+  return {
+    cols: keepIndexes.map(function(i){ return table.cols[i]; }),
+    rows: table.rows.map(function(r){
+      return { c: keepIndexes.map(function(i){ return (r.c && r.c[i]) || null; }) };
+    })
+  };
+}
+
+const MANTIS_COLPREFS_PREFIX = 'mantisColPrefs::';
+
+/* Baseline column view shown until the user customizes Settings > Table for that table. */
+const MANTIS_DEFAULT_COLUMN_PREFS = {
+  'parts-table-container': {
+    order: ['B', 'C', 'D', 'E', 'F', 'G', 'N'],
+    hidden: ['A', 'H', 'I', 'J', 'K', 'L', 'M']
+  },
+  'meters-table-container': {
+    order: ['A', 'B', 'C', '__week__'],
+    hidden: ['A', 'C']
+  },
+  'po-table-container': {
+    order: ['K', 'L', 'Q', 'R', 'S', 'T', 'X', 'P'],
+    hidden: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'M', 'N', 'O', 'U', 'V', 'W']
+  }
+};
+
+function mantisGetColumnPrefs(containerId){
+  try{
+    const raw = localStorage.getItem(MANTIS_COLPREFS_PREFIX + containerId);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* storage unavailable - ignore */ }
+  const def = MANTIS_DEFAULT_COLUMN_PREFS[containerId];
+  return def ? { order: def.order.slice(), hidden: def.hidden.slice() } : null;
+}
+
+function mantisSaveColumnPrefs(containerId, prefs){
+  try{ localStorage.setItem(MANTIS_COLPREFS_PREFIX + containerId, JSON.stringify(prefs)); }catch(e){ /* storage unavailable - ignore */ }
+}
+
+function mantisIsWeekLabel(label){
+  return /^W\d+$/i.test((label || '').trim());
+}
+
+/* Groups per-week columns (W27, W28, ...) into a single logical "Week" column
+   pointing at only the most recent week, so Settings shows one toggle instead
+   of one row per week. */
+function mantisGetLogicalColumns(table){
+  const weekIndexes = [];
+  table.cols.forEach(function(c, i){
+    if(mantisIsWeekLabel(c.label)) weekIndexes.push(i);
+  });
+
+  if(!weekIndexes.length){
+    return table.cols.map(function(c, i){ return { id: c.id || String(i), label: c.label || c.id || '', realIndexes: [i] }; });
+  }
+
+  let lastIdx = weekIndexes[0];
+  let lastNum = -Infinity;
+  weekIndexes.forEach(function(i){
+    const num = parseInt((table.cols[i].label || '').replace(/\D/g, ''), 10);
+    if(num > lastNum){ lastNum = num; lastIdx = i; }
+  });
+  const weekSet = {};
+  weekIndexes.forEach(function(i){ weekSet[i] = true; });
+
+  const result = [];
+  table.cols.forEach(function(c, i){
+    if(weekSet[i]){
+      if(i === lastIdx) result.push({ id: '__week__', label: 'Week', realIndexes: [lastIdx] });
+      return;
+    }
+    result.push({ id: c.id || String(i), label: c.label || c.id || '', realIndexes: [i] });
+  });
+  return result;
+}
+
+function mantisOrderedLogicalIds(containerId, logicalCols){
+  const allIds = logicalCols.map(function(c){ return c.id; });
+  const prefs = mantisGetColumnPrefs(containerId);
+  if(!prefs || !prefs.order || !prefs.order.length) return allIds;
+
+  const remaining = {};
+  allIds.forEach(function(id){ remaining[id] = true; });
+  const ordered = [];
+  prefs.order.forEach(function(id){
+    if(remaining[id]){ ordered.push(id); delete remaining[id]; }
+  });
+  allIds.forEach(function(id){
+    if(remaining[id]) ordered.push(id);
+  });
+  return ordered;
+}
+
+function mantisOrderedVisibleColIndexes(containerId, table){
+  const logicalCols = mantisGetLogicalColumns(table);
+  const idToCol = {};
+  logicalCols.forEach(function(c){ idToCol[c.id] = c; });
+
+  const prefs = mantisGetColumnPrefs(containerId);
+  const hiddenSet = {};
+  (prefs && prefs.hidden || []).forEach(function(id){ hiddenSet[id] = true; });
+
+  const result = [];
+  mantisOrderedLogicalIds(containerId, logicalCols).forEach(function(id){
+    if(hiddenSet[id]) return;
+    const col = idToCol[id];
+    if(col) result.push.apply(result, col.realIndexes);
+  });
+  return result;
+}
+
+function renderGvizTable(container, table, containerId){
+  mantisTableCache[containerId] = mantisStripEmptyColumns(table);
+  if(!(containerId in mantisRowLimits)) mantisRowLimits[containerId] = 10;
+  if(!(containerId in mantisCurrentPage)) mantisCurrentPage[containerId] = 1;
+  delete mantisColumnWidths[containerId];
+  renderGvizTableRows(containerId);
+}
+
+function renderGvizTableRows(containerId){
+  const container = document.getElementById(containerId);
+  const table = mantisTableCache[containerId];
+  const limit = mantisRowLimits[containerId];
+
+  if(!table || !table.cols || !table.rows){
+    container.innerHTML = '<div class="sheet-error">Data tidak ditemukan pada sheet.</div>';
+    return;
+  }
+
+  const searchTerm = (mantisSearchTerm[containerId] || '').trim().toLowerCase();
+  let indexedRows = table.rows.map(function(r, i){ return { row: r, index: i }; });
+  if(searchTerm){
+    indexedRows = indexedRows.filter(function(item){
+      return (item.row.c || []).some(function(cell){
+        return mantisCellText(cell).toLowerCase().indexOf(searchTerm) !== -1;
+      });
+    });
+  }
+
+  const totalRows = indexedRows.length;
+  const totalPages = (limit === 'all') ? 1 : Math.max(1, Math.ceil(totalRows / limit));
+  const page = Math.min(Math.max(1, mantisCurrentPage[containerId] || 1), totalPages);
+  mantisCurrentPage[containerId] = page;
+
+  let rowsToShow;
+  if(limit === 'all'){
+    rowsToShow = indexedRows;
+  } else {
+    const start = (page - 1) * limit;
+    rowsToShow = indexedRows.slice(start, start + limit);
+  }
+
+  const lockedWidths = mantisColumnWidths[containerId];
+  let tableOpenTag = '<table>';
+  let colgroupHtml = '';
+  if(lockedWidths){
+    const totalWidth = lockedWidths.reduce(function(sum, w){ return sum + w; }, 0);
+    tableOpenTag = '<table class="table-fixed" style="table-layout:fixed;width:' + totalWidth + 'px;">';
+    colgroupHtml = '<colgroup>' + lockedWidths.map(function(w){ return '<col style="width:' + w + 'px;">'; }).join('') + '</colgroup>';
+  }
+
+  const colOrder = mantisOrderedVisibleColIndexes(containerId, table);
+
+  let html = '<div class="table-wrap">' + tableOpenTag + colgroupHtml + '<thead><tr>';
+  colOrder.forEach(function(ci){
+    const c = table.cols[ci];
+    html += '<th>' + mantisEscapeHtml(c.label || c.id || '') + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  if(rowsToShow.length === 0){
+    html += '<tr><td colspan="' + colOrder.length + '" style="text-align:center;color:var(--ink-3);padding:32px 20px;">Tidak ada data yang cocok.</td></tr>';
+  }
+  rowsToShow.forEach(function(item){
+    html += '<tr class="table-row-clickable" onclick="mantisShowRowDetail(\'' + containerId + '\', ' + item.index + ')">';
+    colOrder.forEach(function(ci){
+      const cell = (item.row.c || [])[ci];
+      let val = '';
+      if(cell){
+        val = (cell.f !== undefined && cell.f !== null) ? cell.f : (cell.v !== undefined && cell.v !== null ? cell.v : '');
+      }
+      html += '<td>' + mantisEscapeHtml(val) + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  html += '<div class="table-rows-control">';
+  html += '<label><span class="table-rows-label-text">Tampilkan</span>';
+  html += '<select onchange="mantisChangeRowLimit(\'' + containerId + '\', this.value)">';
+  MANTIS_ROW_OPTIONS.forEach(function(n){
+    const selected = (String(limit) === String(n)) ? ' selected' : '';
+    html += '<option value="' + n + '"' + selected + '>' + n + '</option>';
+  });
+  html += '<option value="all"' + (limit === 'all' ? ' selected' : '') + '>Semua</option>';
+  html += '</select><span class="table-rows-label-text">dari ' + totalRows + ' data</span></label>';
+
+  if(limit !== 'all' && totalPages > 1){
+    html += '<div class="table-pagination table-pagination-desktop">';
+    html += '<button type="button" class="table-pg-nav"' + (page <= 1 ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page - 1) + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg>Previous</button>';
+    mantisGetPageNumbers(page, totalPages).forEach(function(p){
+      if(p === '...'){
+        html += '<span class="table-page-ellipsis">&hellip;</span>';
+      } else {
+        html += '<button type="button" class="table-page-btn' + (p === page ? ' active' : '') + '" onclick="mantisChangePage(\'' + containerId + '\', ' + p + ')">' + p + '</button>';
+      }
+    });
+    html += '<span class="table-pg-divider"></span>';
+    html += '<button type="button" class="table-pg-nav"' + (page >= totalPages ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page + 1) + ')">Next<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></button>';
+    html += '</div>';
+
+    html += '<div class="table-pagination table-pagination-mobile">';
+    html += '<button type="button" class="table-pg-nav-icon"' + (page <= 1 ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page - 1) + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg></button>';
+    mantisGetMobilePageNumbers(page, totalPages).forEach(function(p){
+      html += '<button type="button" class="table-page-btn' + (p === page ? ' active' : '') + '" onclick="mantisChangePage(\'' + containerId + '\', ' + p + ')">' + p + '</button>';
+    });
+    html += '<button type="button" class="table-pg-nav-icon"' + (page >= totalPages ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page + 1) + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></button>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+
+  container.innerHTML = html;
+
+  if(!lockedWidths){
+    const ths = container.querySelectorAll('table thead th');
+    if(ths.length){
+      mantisColumnWidths[containerId] = Array.prototype.map.call(ths, function(th){ return th.offsetWidth; });
+    }
+  }
+}
+
+function mantisGetPageNumbers(current, total){
+  const delta = 1;
+  const range = [];
+  const result = [];
+  let last;
+
+  for(let i = 1; i <= total; i++){
+    if(i === 1 || i === total || (i >= current - delta && i <= current + delta)){
+      range.push(i);
+    }
+  }
+
+  range.forEach(function(i){
+    if(last !== undefined){
+      if(i - last === 2){
+        result.push(last + 1);
+      } else if(i - last > 1){
+        result.push('...');
+      }
+    }
+    result.push(i);
+    last = i;
+  });
+
+  return result;
+}
+
+function mantisGetMobilePageNumbers(current, total){
+  if(total <= 3){
+    const arr = [];
+    for(let i = 1; i <= total; i++) arr.push(i);
+    return arr;
+  }
+  let start = current - 1;
+  let end = current + 1;
+  if(start < 1){ start = 1; end = 3; }
+  if(end > total){ end = total; start = total - 2; }
+  const arr = [];
+  for(let i = start; i <= end; i++) arr.push(i);
+  return arr;
+}
+
+function mantisChangeRowLimit(containerId, value){
+  mantisRowLimits[containerId] = (value === 'all') ? 'all' : parseInt(value, 10);
+  mantisCurrentPage[containerId] = 1;
+  delete mantisColumnWidths[containerId];
+  renderGvizTableRows(containerId);
+}
+
+function mantisSearchTable(containerId, query){
+  mantisSearchTerm[containerId] = query;
+  mantisCurrentPage[containerId] = 1;
+  renderGvizTableRows(containerId);
+}
+
+function mantisChangePage(containerId, page){
+  mantisCurrentPage[containerId] = page;
+  renderGvizTableRows(containerId);
+}
+
+const MANTIS_DETAIL_RETURN_PAGE = {
+  'parts-table-container': 'parts',
+  'meters-table-container': 'meters',
+  'po-table-container': 'po',
+  'activity-records-container': 'activities'
+};
+let mantisDetailReturnPage = 'overview';
+
+function mantisCellText(cell){
+  if(!cell) return '';
+  const val = (cell.f !== undefined && cell.f !== null) ? cell.f : (cell.v !== undefined && cell.v !== null ? cell.v : '');
+  return (val === null || val === undefined) ? '' : String(val);
+}
+
+const MANTIS_DETAIL_TITLE_COLUMN = {
+  'parts-table-container': 'Nama Material',
+  'meters-table-container': 'Nama Mesin',
+  'po-table-container': 'Deskripsi material'
+};
+function mantisFindColIndex(table, label){
+  if(!label) return -1;
+  return table.cols.findIndex(function(c){ return (c.label || '').trim() === label; });
+}
+
+function mantisGetMeterUnit(table, row){
+  const unitIdx = mantisFindColIndex(table, 'Unit') !== -1 ? mantisFindColIndex(table, 'Unit') : mantisFindColIndex(table, 'Satuan');
+  return unitIdx >= 0 ? mantisCellText(row.c && row.c[unitIdx]) : '';
+}
+
+function mantisIsDateUnit(unitVal){
+  return /tanggal|date/i.test((unitVal || '').trim());
+}
+
+const MANTIS_METER_CHART_W = 1000;
+const MANTIS_METER_CHART_H = 260;
+let mantisMeterChartPoints = [];
+let mantisMeterChartUnit = '';
+
+/* Catmull-Rom-to-Bezier smoothing: curves through every point without overshooting. */
+function mantisSmoothLinePath(coords){
+  if(coords.length < 2) return '';
+  if(coords.length === 2){
+    return 'M' + coords[0].x.toFixed(2) + ',' + coords[0].y.toFixed(2) + ' L' + coords[1].x.toFixed(2) + ',' + coords[1].y.toFixed(2);
+  }
+  let d = 'M' + coords[0].x.toFixed(2) + ',' + coords[0].y.toFixed(2);
+  for(let i = 0; i < coords.length - 1; i++){
+    const p0 = coords[i - 1] || coords[i];
+    const p1 = coords[i];
+    const p2 = coords[i + 1];
+    const p3 = coords[i + 2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ' C' + cp1x.toFixed(2) + ',' + cp1y.toFixed(2) + ' ' + cp2x.toFixed(2) + ',' + cp2y.toFixed(2) + ' ' + p2.x.toFixed(2) + ',' + p2.y.toFixed(2);
+  }
+  return d;
+}
+
+function mantisBuildMeterReadingsChartHtml(table, row){
+  const weekCols = [];
+  table.cols.forEach(function(c, i){
+    if(mantisIsWeekLabel(c.label)) weekCols.push({ index: i, label: c.label });
+  });
+  weekCols.sort(function(a, b){
+    return parseInt((a.label || '').replace(/\D/g, ''), 10) - parseInt((b.label || '').replace(/\D/g, ''), 10);
+  });
+
+  const points = weekCols.map(function(wc){
+    const cell = row.c && row.c[wc.index];
+    const num = cell && typeof cell.v === 'number' ? cell.v : parseFloat(mantisCellText(cell));
+    return { label: wc.label, value: isNaN(num) ? null : num };
+  }).filter(function(p){ return p.value !== null; });
+
+  if(points.length < 2){
+    mantisMeterChartPoints = [];
+    return '';
+  }
+
+  const values = points.map(function(p){ return p.value; });
+  let min = Math.min.apply(null, values);
+  let max = Math.max.apply(null, values);
+  if(min === max){ min -= 1; max += 1; }
+  const padY = (max - min) * 0.1;
+  min -= padY; max += padY;
+
+  const W = MANTIS_METER_CHART_W, H = MANTIS_METER_CHART_H;
+  const n = points.length;
+  const stepX = n > 1 ? (W / (n - 1)) : 0;
+  const coords = points.map(function(p, i){
+    return {
+      x: i * stepX,
+      y: 10 + (H - 20) * (1 - (p.value - min) / (max - min))
+    };
+  });
+
+  const unitVal = mantisGetMeterUnit(table, row);
+
+  mantisMeterChartUnit = unitVal;
+  mantisMeterChartPoints = points.map(function(p, i){
+    return { x: coords[i].x, y: coords[i].y, label: p.label, value: p.value };
+  });
+
+  const linePath = mantisSmoothLinePath(coords);
+  const areaPath = linePath + ' L' + W + ',' + H + ' L0,' + H + ' Z';
+  const dots = coords.map(function(c){
+    const leftPct = (c.x / W * 100).toFixed(2);
+    const topPct = (c.y / H * 100).toFixed(2);
+    return '<span class="mantis-chart-dot" style="left:' + leftPct + '%;top:' + topPct + '%;"></span>';
+  }).join('');
+
+  const maxLabels = 8;
+  const labelStep = Math.max(1, Math.ceil(n / maxLabels));
+  const labelsHtml = points.map(function(p, i){
+    if(i % labelStep !== 0 && i !== n - 1) return '';
+    return '<span style="font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(p.label) + '</span>';
+  }).filter(Boolean).join('');
+
+  const lastVal = values[values.length - 1];
+
+  return '' +
+    '<div style="padding:16px 0 20px 0;border-bottom:1px solid var(--line-soft);display:flex;flex-direction:column;">' +
+      '<div class="flex items-start justify-between">' +
+        '<div>' +
+          '<div class="card-title">Meter Readings</div>' +
+          '<div class="flex items-center" style="gap:14px;margin-top:8px;">' +
+            '<div class="legend-item">' +
+              '<span class="legend-line" style="background:var(--accent);"></span>' +
+              '<span class="legend-dot" style="background:var(--accent);"></span>' +
+              '<span class="legend-label">Reading' + (unitVal ? ' (' + mantisEscapeHtml(unitVal) + ')' : '') + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:20px;font-weight:600;color:var(--ink);">' + mantisEscapeHtml(String(lastVal)) + (unitVal ? '<span style="font-size:12px;font-weight:500;color:var(--ink-3);"> ' + mantisEscapeHtml(unitVal) + '</span>' : '') + '</div>' +
+      '</div>' +
+      '<div class="mantis-chart-wrap" style="margin-top:12px;touch-action:none;" ' +
+          'onpointerdown="mantisHandleMeterChartPointer(event)" onpointermove="mantisHandleMeterChartPointer(event)" onpointerleave="mantisHideMeterChartCursor()">' +
+        '<svg id="mantisMeterChartSvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:100%;display:block;touch-action:none;">' +
+          '<defs>' +
+            '<linearGradient id="meterGradAmber" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0%" stop-color="#F5A623" stop-opacity="0.22"/>' +
+              '<stop offset="100%" stop-color="#F5A623" stop-opacity="0"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<path d="' + areaPath + '" fill="url(#meterGradAmber)"/>' +
+          '<path class="mantis-chart-line" d="' + linePath + '" fill="none" stroke="#F5A623" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+        '</svg>' +
+        '<div class="mantis-chart-markers">' +
+          dots +
+          '<div class="mantis-chart-cursor-line" id="mantisMeterChartCursorLine"></div>' +
+          '<div class="mantis-chart-cursor-dot" id="mantisMeterChartCursorDot"></div>' +
+        '</div>' +
+        '<div class="mantis-chart-tooltip" id="mantisMeterChartTooltip"></div>' +
+      '</div>' +
+      '<div class="flex justify-between" style="margin-top:8px;">' + labelsHtml + '</div>' +
+    '</div>';
+}
+
+function mantisHandleMeterChartPointer(evt){
+  if(!mantisMeterChartPoints.length) return;
+  const svg = document.getElementById('mantisMeterChartSvg');
+  if(!svg) return;
+  const rect = svg.getBoundingClientRect();
+  if(!rect.width) return;
+
+  const clientX = (evt.touches && evt.touches[0]) ? evt.touches[0].clientX : evt.clientX;
+  const fracX = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  const virtualX = fracX * MANTIS_METER_CHART_W;
+
+  let nearest = mantisMeterChartPoints[0];
+  let nearestDist = Infinity;
+  mantisMeterChartPoints.forEach(function(p){
+    const d = Math.abs(p.x - virtualX);
+    if(d < nearestDist){ nearestDist = d; nearest = p; }
+  });
+
+  mantisShowMeterChartCursor(nearest);
+  if(evt.cancelable) evt.preventDefault();
+}
+
+function mantisShowMeterChartCursor(point){
+  const dot = document.getElementById('mantisMeterChartCursorDot');
+  const line = document.getElementById('mantisMeterChartCursorLine');
+  const tooltip = document.getElementById('mantisMeterChartTooltip');
+  if(!dot || !line || !tooltip) return;
+
+  const leftPct = (point.x / MANTIS_METER_CHART_W * 100) + '%';
+  const topPct = (point.y / MANTIS_METER_CHART_H * 100) + '%';
+
+  dot.style.left = leftPct;
+  dot.style.top = topPct;
+  dot.style.opacity = '1';
+
+  line.style.left = leftPct;
+  line.style.opacity = '1';
+
+  tooltip.style.left = leftPct;
+  tooltip.style.top = topPct;
+  tooltip.textContent = point.label + ' · ' + point.value + (mantisMeterChartUnit ? ' ' + mantisMeterChartUnit : '');
+  tooltip.style.display = 'block';
+}
+
+function mantisHideMeterChartCursor(){
+  const dot = document.getElementById('mantisMeterChartCursorDot');
+  const line = document.getElementById('mantisMeterChartCursorLine');
+  const tooltip = document.getElementById('mantisMeterChartTooltip');
+  if(dot) dot.style.opacity = '0';
+  if(line) line.style.opacity = '0';
+  if(tooltip) tooltip.style.display = 'none';
+}
+
+let mantisDetailContainerId = null;
+let mantisDetailRowIndex = null;
+
+function mantisShowRowDetail(containerId, rowIndex){
+  const table = mantisTableCache[containerId];
+  const row = table && table.rows[rowIndex];
+  if(!row) return;
+
+  mantisDetailContainerId = containerId;
+  mantisDetailRowIndex = rowIndex;
+
+  let html = '';
+  if(containerId === 'meters-table-container'){
+    html += mantisBuildMeterReadingsChartHtml(table, row);
+  }
+  html += '<div class="row-detail-list">';
+  table.cols.forEach(function(c, i){
+    const val = mantisCellText(row.c && row.c[i]) || '-';
+    html += '<div class="row-detail-item"><span class="row-detail-label">' + mantisEscapeHtml(c.label || c.id || '') + '</span><span class="row-detail-value">' + mantisEscapeHtml(val) + '</span></div>';
+  });
+  if(containerId === 'meters-table-container'){
+    html += mantisBuildNewReadingRowHtml(table, row);
+  }
+  html += '</div>';
+
+  if(containerId === 'meters-table-container'){
+    html += '<div class="mantis-new-reading-error" id="mantisNewReadingError"></div>';
+  }
+
+  document.getElementById('mantisRowDetailBody').innerHTML = html;
+
+  const titleIndex = mantisFindColIndex(table, MANTIS_DETAIL_TITLE_COLUMN[containerId]);
+  const titleVal = titleIndex >= 0 ? mantisCellText(row.c && row.c[titleIndex]) : mantisCellText(row.c && row.c[0]);
+  document.getElementById('mantisDetailTitle').textContent = titleVal || 'Detail Item';
+
+  mantisDetailReturnPage = MANTIS_DETAIL_RETURN_PAGE[containerId] || 'overview';
+
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById('page-detail').style.display = '';
+
+  if(document.getElementById('sidebar').classList.contains('open')){
+    toggleSidebar();
+  }
+  window.scrollTo(0, 0);
+}
+
+function mantisCloseRowDetail(){
+  if(mantisDetailReturnPage === 'activities'){
+    showActivitiesPage('records');
+  } else {
+    showPage(mantisDetailReturnPage);
+  }
+}
+
+/* ---------- New meter reading (inline row) ---------- */
+function mantisSuggestNextWeekLabel(table){
+  let maxNum = 0;
+  table.cols.forEach(function(c){
+    if(mantisIsWeekLabel(c.label)){
+      const n = parseInt((c.label || '').replace(/\D/g, ''), 10);
+      if(n > maxNum) maxNum = n;
+    }
+  });
+  return 'W' + (maxNum + 1);
+}
+
+function mantisBuildNewReadingRowHtml(table, row){
+  const nextWeek = mantisSuggestNextWeekLabel(table);
+  const unitVal = mantisGetMeterUnit(table, row);
+  const isDate = mantisIsDateUnit(unitVal);
+  const inputHtml = isDate
+    ? '<input type="date" id="mantisNewReadingInput" class="row-detail-new-input">'
+    : '<input type="number" id="mantisNewReadingInput" class="row-detail-new-input" placeholder="Masukkan nilai" inputmode="decimal">';
+
+  const ocrBtnHtml = isDate ? '' :
+    '<button type="button" class="row-detail-ocr-btn" title="Scan angka meteran dari foto" onclick="mantisOpenOcrCapture()">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><circle cx="12" cy="13" r="3"/></svg>' +
+    '</button>';
+  const ocrFileInputHtml = isDate ? '' :
+    '<input type="file" id="mantisOcrFileInput" accept="image/*" capture="environment" style="display:none;" onchange="mantisHandleOcrFile(event)">';
+
+  return '' +
+    '<div class="row-detail-item row-detail-item-new">' +
+      '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
+      '<div class="row-detail-new-input-row">' + inputHtml + ocrBtnHtml + '</div>' +
+      ocrFileInputHtml +
+      '<button type="button" class="row-detail-new-save" onclick="mantisSubmitNewReading()">Simpan</button>' +
+      '<span class="row-detail-ocr-status" id="mantisOcrStatus" style="display:none;"></span>' +
+    '</div>';
+}
+
+function mantisShowNewReadingError(message){
+  const errEl = document.getElementById('mantisNewReadingError');
+  if(!errEl) return;
+  errEl.textContent = message;
+  errEl.style.display = '';
+}
+
+/* ---------- OCR: scan meter reading from a photo (Tesseract.js, loaded on demand) ---------- */
+const MANTIS_TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js';
+let mantisTesseractLoadPromise = null;
+
+function mantisLoadTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  if(mantisTesseractLoadPromise) return mantisTesseractLoadPromise;
+
+  mantisTesseractLoadPromise = new Promise(function(resolve, reject){
+    const script = document.createElement('script');
+    script.src = MANTIS_TESSERACT_URL;
+    script.onload = function(){ resolve(); };
+    script.onerror = function(){
+      mantisTesseractLoadPromise = null;
+      reject(new Error('Gagal memuat OCR engine. Periksa koneksi internet.'));
+    };
+    document.body.appendChild(script);
+  });
+  return mantisTesseractLoadPromise;
+}
+
+function mantisSetOcrStatus(message, isError){
+  const el = document.getElementById('mantisOcrStatus');
+  if(!el) return;
+  el.textContent = message || '';
+  el.style.color = isError ? 'var(--red)' : 'var(--ink-3)';
+  el.style.display = message ? '' : 'none';
+}
+
+/* ---------- OCR: live camera viewfinder with a scan-area guide ---------- */
+let mantisOcrStream = null;
+
+function mantisOpenOcrCapture(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    mantisOpenOcrFilePicker();
+    return;
+  }
+
+  const overlay = document.getElementById('mantisOcrCameraOverlay');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } },
+    audio: false
+  }).then(function(stream){
+    mantisOcrStream = stream;
+    const video = document.getElementById('mantisOcrVideo');
+    video.srcObject = stream;
+  }).catch(function(){
+    mantisCloseOcrCamera();
+    mantisOpenOcrFilePicker();
+  });
+}
+
+function mantisOpenOcrFilePicker(){
+  const fileInput = document.getElementById('mantisOcrFileInput');
+  if(fileInput) fileInput.click();
+}
+
+function mantisStopOcrStream(){
+  if(mantisOcrStream){
+    mantisOcrStream.getTracks().forEach(function(track){ track.stop(); });
+    mantisOcrStream = null;
+  }
+  const video = document.getElementById('mantisOcrVideo');
+  if(video) video.srcObject = null;
+}
+
+function mantisCloseOcrCamera(){
+  mantisStopOcrStream();
+  document.getElementById('mantisOcrCameraOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function mantisCloseOcrCameraOnBackdrop(evt){
+  if(evt.target === evt.currentTarget) mantisCloseOcrCamera();
+}
+
+function mantisCaptureOcrPhoto(){
+  const video = document.getElementById('mantisOcrVideo');
+  if(!video || !video.videoWidth){
+    mantisCloseOcrCamera();
+    mantisOpenOcrFilePicker();
+    return;
+  }
+
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const cropX = vw * 0.10, cropY = vh * 0.38, cropW = vw * 0.80, cropH = vh * 0.24;
+
+  const canvas = document.getElementById('mantisOcrCanvas');
+  canvas.width = cropW;
+  canvas.height = cropH;
+  canvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+  canvas.toBlob(function(blob){
+    mantisCloseOcrCamera();
+    if(blob) mantisRunOcrOnBlob(blob);
+  }, 'image/png');
+}
+
+/* Meter displays are almost always dominated by one long digit run (the
+   running-hour count, optionally with one decimal point) - picking the
+   longest digit sequence the OCR engine found is a simple, reliable heuristic. */
+function mantisExtractMeterReading(text){
+  const matches = (text || '').match(/\d[\d.,]*\d|\d/g);
+  if(!matches || !matches.length) return null;
+
+  matches.sort(function(a, b){ return b.length - a.length; });
+  let raw = matches[0].replace(/,/g, '.');
+  raw = raw.replace(/^\.+|\.+$/g, '');
+
+  const dotCount = (raw.match(/\./g) || []).length;
+  if(dotCount > 1){
+    const parts = raw.split('.');
+    raw = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+  }
+
+  return raw || null;
+}
+
+function mantisHandleOcrFile(evt){
+  const file = evt.target.files && evt.target.files[0];
+  evt.target.value = '';
+  if(file) mantisRunOcrOnBlob(file);
+}
+
+function mantisRunOcrOnBlob(blob){
+  const ocrBtn = document.querySelector('.row-detail-ocr-btn');
+  if(ocrBtn) ocrBtn.disabled = true;
+  mantisSetOcrStatus('Memuat OCR engine...', false);
+
+  mantisLoadTesseract().then(function(){
+    mantisSetOcrStatus('Memindai angka meteran...', false);
+    return Tesseract.recognize(blob, 'eng', {
+      tessedit_char_whitelist: '0123456789.',
+      logger: function(){}
+    });
+  }).then(function(result){
+    if(ocrBtn) ocrBtn.disabled = false;
+    const text = (result && result.data && result.data.text) || '';
+    const value = mantisExtractMeterReading(text);
+
+    if(value === null){
+      mantisSetOcrStatus('Angka tidak terbaca dari foto. Coba foto ulang atau isi manual.', true);
+      return;
+    }
+
+    const input = document.getElementById('mantisNewReadingInput');
+    if(input){
+      input.value = value;
+      input.focus();
+    }
+    mantisSetOcrStatus('Terdeteksi: ' + value + '. Periksa angkanya, lalu tekan Simpan.', false);
+  }).catch(function(err){
+    if(ocrBtn) ocrBtn.disabled = false;
+    mantisSetOcrStatus('Gagal memindai foto: ' + err.message, true);
+  });
+}
+
+function mantisApplyNewReadingLocally(table, row, week, value){
+  let colIndex = mantisFindColIndex(table, week);
+  if(colIndex === -1){
+    table.cols.push({ id: 'col' + table.cols.length, label: week, type: 'number' });
+    colIndex = table.cols.length - 1;
+  }
+  if(!row.c) row.c = [];
+  row.c[colIndex] = { v: value, f: String(value) };
+
+  try{ sessionStorage.removeItem(MANTIS_SHEET_CACHE_PREFIX + 'Running Hour'); }catch(e){ /* storage unavailable - ignore */ }
+
+  if(document.getElementById('meters-table-container') && typeof renderGvizTableRows === 'function'){
+    renderGvizTableRows('meters-table-container');
+  }
+}
+
+function mantisSubmitNewReading(){
+  const table = mantisTableCache[mantisDetailContainerId];
+  const row = table && table.rows[mantisDetailRowIndex];
+  const input = document.getElementById('mantisNewReadingInput');
+  if(!table || !row || !input) return;
+
+  const unitVal = mantisGetMeterUnit(table, row);
+  const isDate = mantisIsDateUnit(unitVal);
+  const raw = input.value.trim();
+
+  let value;
+  if(isDate){
+    if(!raw){
+      mantisShowNewReadingError('Pilih tanggal terlebih dahulu.');
+      return;
+    }
+    value = raw;
+  } else {
+    if(raw === '' || isNaN(Number(raw))){
+      mantisShowNewReadingError('Nilai reading harus berupa angka.');
+      return;
+    }
+    value = Number(raw);
+  }
+
+  if(!MANTIS_METER_WRITE_URL){
+    mantisShowNewReadingError('Apps Script belum dikonfigurasi. Isi MANTIS_METER_WRITE_URL di index.html.');
+    return;
+  }
+
+  const week = mantisSuggestNextWeekLabel(table);
+  const titleIndex = mantisFindColIndex(table, MANTIS_DETAIL_TITLE_COLUMN[mantisDetailContainerId]);
+  const machineName = titleIndex >= 0 ? mantisCellText(row.c && row.c[titleIndex]) : '';
+
+  const saveBtn = document.querySelector('.row-detail-new-save');
+  if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...'; }
+  const errEl = document.getElementById('mantisNewReadingError');
+  if(errEl) errEl.style.display = 'none';
+
+  const containerId = mantisDetailContainerId;
+  const rowIndex = mantisDetailRowIndex;
+
+  fetch(MANTIS_METER_WRITE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      token: MANTIS_METER_WRITE_TOKEN,
+      sheet: 'Running Hour',
+      machine: machineName,
+      week: week,
+      value: value
+    })
+  }).then(function(res){ return res.json(); }).then(function(data){
+    if(!data || !data.success){
+      if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Simpan'; }
+      mantisShowNewReadingError((data && data.error) ? data.error : 'Gagal menyimpan reading.');
+      return;
+    }
+    mantisApplyNewReadingLocally(table, row, week, value);
+    mantisShowRowDetail(containerId, rowIndex);
+  }).catch(function(err){
+    if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Simpan'; }
+    mantisShowNewReadingError('Gagal terhubung ke server: ' + err.message);
+  });
+}
+
+const MANTIS_SHEET_CACHE_PREFIX = 'mantisSheetCache::';
+
+function mantisReadSheetCache(sheetName){
+  try{
+    const raw = sessionStorage.getItem(MANTIS_SHEET_CACHE_PREFIX + sheetName);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){
+    return null;
+  }
+}
+
+function mantisWriteSheetCache(sheetName, table){
+  try{
+    sessionStorage.setItem(MANTIS_SHEET_CACHE_PREFIX + sheetName, JSON.stringify({ table: table, ts: Date.now() }));
+  }catch(e){ /* storage unavailable/full - ignore, cache is best-effort */ }
+}
+
+function loadSheetTable(sheetName, containerId, handlerName, forceRefresh, onDone){
+  const container = document.getElementById(containerId);
+  const cached = forceRefresh ? null : mantisReadSheetCache(sheetName);
+
+  if(cached){
+    renderGvizTable(container, cached.table, containerId);
+    if(typeof onDone === 'function') onDone();
+  } else {
+    container.innerHTML = '<div class="sheet-loading">Memuat data dari Google Sheet...</div>';
+  }
+
+  window[handlerName] = function(res){
+    if(!res || res.status === 'error'){
+      if(!cached){
+        container.innerHTML = '<div class="sheet-error">Gagal memuat data dari sheet' + (res && res.errors && res.errors[0] ? ': ' + mantisEscapeHtml(res.errors[0].detailed_message || res.errors[0].message) : '.') + '</div>';
+      }
+      return;
+    }
+    mantisWriteSheetCache(sheetName, res.table);
+    renderGvizTable(container, res.table, containerId);
+    if(typeof onDone === 'function') onDone();
+  };
+
+  const tqx = 'out:json;responseHandler:' + handlerName;
+  const url = 'https://docs.google.com/spreadsheets/d/' + MANTIS_SHEET_ID + '/gviz/tq?sheet=' + encodeURIComponent(sheetName) + '&tqx=' + encodeURIComponent(tqx) + '&_=' + Date.now();
+
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = function(){
+    if(!cached){
+      container.innerHTML = '<div class="sheet-error">Gagal memuat data. Periksa koneksi internet atau akses sheet.</div>';
+    }
+  };
+  script.onload = function(){ script.remove(); };
+  document.body.appendChild(script);
+}
+
+const MANTIS_SHEET_SOURCES = {
+  'parts-table-container': ['Sparepart', 'mantisHandleSparepart'],
+  'meters-table-container': ['Running Hour', 'mantisHandleRunningHour'],
+  'po-table-container': ['PRPO', 'mantisHandlePRPO'],
+  'activity-records-container': ['Maintenance', 'mantisHandleMaintenance']
+};
+
+function mantisRefreshSheet(containerId){
+  const source = MANTIS_SHEET_SOURCES[containerId];
+  if(!source) return;
+  loadSheetTable(source[0], containerId, source[1], true);
+}
+
+/* ---------- Activities: New Entry form ---------- */
+/* Tanggal/Shift/Teknisi describe the current shift and are entered once, then
+   reused for every Problem & Action added until Publish. They live in plain
+   inputs with no built-in persistence, so without this they silently reset
+   to blank on every reload even though the queued actions below survive
+   (those are saved separately to localStorage). */
+const MANTIS_SHIFT_META_KEY = 'mantisShiftMeta';
+
+function mantisSaveShiftMeta(){
+  const meta = {
+    Tanggal: document.getElementById('entryTanggal').value,
+    Shift: document.getElementById('entryShift').value,
+    Teknisi: document.getElementById('entryTeknisi').value
+  };
+  try{ localStorage.setItem(MANTIS_SHIFT_META_KEY, JSON.stringify(meta)); }catch(e){ /* storage unavailable/full - ignore */ }
+}
+
+function mantisRestoreShiftMeta(){
+  try{
+    const raw = localStorage.getItem(MANTIS_SHIFT_META_KEY);
+    if(!raw) return;
+    const meta = JSON.parse(raw);
+    if(meta && meta.Tanggal) document.getElementById('entryTanggal').value = meta.Tanggal;
+    if(meta && meta.Shift) document.getElementById('entryShift').value = meta.Shift;
+    if(meta && meta.Teknisi) document.getElementById('entryTeknisi').value = meta.Teknisi;
+  }catch(e){ /* storage unavailable/corrupt - ignore */ }
+}
+
+function mantisInitEntryForm(){
+  mantisRestoreShiftMeta();
+
+  const dateInput = document.getElementById('entryTanggal');
+  if(dateInput && !dateInput.value){
+    const d = new Date();
+    const pad = function(n){ return String(n).padStart(2, '0'); };
+    dateInput.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  mantisSyncShiftView();
+}
+
+const MANTIS_MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function mantisFormatTanggalDisplay(isoDate){
+  if(!isoDate) return '-';
+  const d = new Date(isoDate + 'T00:00:00');
+  if(isNaN(d.getTime())) return '-';
+  const yy = String(d.getFullYear()).slice(-2);
+  return d.getDate() + ' ' + MANTIS_MONTHS_ID[d.getMonth()] + ' ' + yy;
+}
+
+function mantisSyncShiftView(){
+  const tanggalView = document.getElementById('mantisTanggalView');
+  const shiftView = document.getElementById('mantisShiftView');
+  const teknisiView = document.getElementById('mantisTeknisiView');
+  if(tanggalView) tanggalView.textContent = mantisFormatTanggalDisplay(document.getElementById('entryTanggal').value);
+  if(shiftView) shiftView.textContent = document.getElementById('entryShift').value.trim() || '-';
+  if(teknisiView) teknisiView.textContent = document.getElementById('entryTeknisi').value.trim() || '-';
+}
+
+function mantisCloseAllMetaPopovers(){
+  document.querySelectorAll('.entry-meta-popover.open').forEach(function(p){ p.classList.remove('open'); });
+  const mesinToggle = document.querySelector('.entry-mesin-toggle');
+  if(mesinToggle) mesinToggle.classList.remove('open');
+}
+
+function mantisPositionPopover(popover, anchorEl){
+  const rect = anchorEl.getBoundingClientRect();
+  const popW = popover.offsetWidth;
+  const popH = popover.offsetHeight;
+
+  let left = rect.right - popW;
+  if(left < 8) left = 8;
+  const maxLeft = window.innerWidth - popW - 8;
+  if(left > maxLeft) left = Math.max(8, maxLeft);
+
+  let top = rect.bottom + 8;
+  if(top + popH > window.innerHeight - 8){
+    top = rect.top - popH - 8;
+    if(top < 8) top = 8;
+  }
+
+  popover.style.left = left + 'px';
+  popover.style.top = top + 'px';
+}
+
+function mantisToggleMetaPopover(which, evt){
+  if(evt) evt.stopPropagation();
+  const id = 'mantis' + which.charAt(0).toUpperCase() + which.slice(1) + 'Popover';
+  const popover = document.getElementById(id);
+  if(!popover) return;
+
+  const isOpen = popover.classList.contains('open');
+  mantisCloseAllMetaPopovers();
+  if(isOpen) return;
+
+  popover.classList.add('open');
+
+  const anchorEl = evt && evt.currentTarget;
+  if(anchorEl) mantisPositionPopover(popover, anchorEl);
+
+  if(which === 'shift'){
+    mantisRefreshShiftPopoverSelection();
+  } else if(which === 'teknisi'){
+    mantisPopulateTeknisiCheckboxes();
+  }
+}
+
+function mantisOpenTanggalPicker(evt){
+  if(evt) evt.stopPropagation();
+  mantisCloseAllMetaPopovers();
+
+  const input = document.getElementById('entryTanggal');
+  if(!input) return;
+  input.focus();
+  if(typeof input.showPicker === 'function'){
+    try{ input.showPicker(); return; }catch(e){ /* fall through to click() below */ }
+  }
+  input.click();
+}
+
+function mantisApplyTanggal(){
+  mantisSyncShiftView();
+  mantisSaveShiftMeta();
+  mantisCloseAllMetaPopovers();
+}
+
+function mantisRefreshShiftPopoverSelection(){
+  const current = document.getElementById('entryShift').value;
+  document.querySelectorAll('#mantisShiftPopover .entry-meta-popover-item').forEach(function(btn){
+    btn.classList.toggle('selected', btn.dataset.value === current);
+  });
+}
+
+function mantisApplyShift(value){
+  document.getElementById('entryShift').value = value;
+  mantisSyncShiftView();
+  mantisSaveShiftMeta();
+  mantisCloseAllMetaPopovers();
+}
+
+let mantisTeknisiListCache = null;
+
+function mantisFetchTeknisiList(callback){
+  if(!MANTIS_METER_WRITE_URL){ callback([]); return; }
+  const url = MANTIS_METER_WRITE_URL + '?action=teknisiList&token=' + encodeURIComponent(MANTIS_METER_WRITE_TOKEN);
+  fetch(url).then(function(res){ return res.json(); }).then(function(data){
+    callback((data && data.success && Array.isArray(data.names)) ? data.names : []);
+  }).catch(function(){ callback([]); });
+}
+
+function mantisRenderTeknisiCheckboxes(names){
+  const container = document.getElementById('mantisTeknisiCheckboxList');
+  if(!container) return;
+
+  if(!names.length){
+    container.innerHTML = '<div style="font-size:12px;color:var(--ink-3);padding:8px;">Belum ada teknisi terdaftar di sheet User (role: Teknisi).</div>';
+    return;
+  }
+
+  const current = (document.getElementById('entryTeknisi').value || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+
+  container.innerHTML = names.slice().sort().map(function(name){
+    const checked = current.indexOf(name) !== -1 ? ' checked' : '';
+    return '<label class="entry-meta-checkbox-item"><input type="checkbox" value="' + mantisEscapeHtml(name) + '"' + checked + '> ' + mantisEscapeHtml(name) + '</label>';
+  }).join('');
+}
+
+function mantisPopulateTeknisiCheckboxes(){
+  const container = document.getElementById('mantisTeknisiCheckboxList');
+  if(!container) return;
+
+  if(mantisTeknisiListCache){
+    mantisRenderTeknisiCheckboxes(mantisTeknisiListCache);
+    return;
+  }
+
+  if(!MANTIS_METER_WRITE_URL){
+    container.innerHTML = '<div style="font-size:12px;color:var(--red);padding:8px;">Apps Script belum dikonfigurasi.</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="sheet-loading" style="padding:8px;">Memuat daftar teknisi...</div>';
+  mantisFetchTeknisiList(function(names){
+    mantisTeknisiListCache = names;
+    mantisRenderTeknisiCheckboxes(names);
+  });
+}
+
+function mantisApplyTeknisi(){
+  const container = document.getElementById('mantisTeknisiCheckboxList');
+  const checked = Array.prototype.slice.call(container.querySelectorAll('input[type="checkbox"]:checked')).map(function(cb){ return cb.value; });
+  document.getElementById('entryTeknisi').value = checked.join(', ');
+  mantisSyncShiftView();
+  mantisSaveShiftMeta();
+  mantisCloseAllMetaPopovers();
+}
+
+function mantisFillDatalist(datalistId, table, colIndex){
+  const datalist = document.getElementById(datalistId);
+  if(!datalist || colIndex === -1) return;
+
+  const seen = {};
+  Array.prototype.forEach.call(datalist.options, function(opt){ seen[opt.value] = true; });
+
+  const values = [];
+  table.rows.forEach(function(r){
+    const val = mantisCellText(r.c && r.c[colIndex]).trim();
+    if(val && !seen[val]){ seen[val] = true; values.push(val); }
+  });
+  values.sort();
+  values.forEach(function(v){
+    const opt = document.createElement('option');
+    opt.value = v;
+    datalist.appendChild(opt);
+  });
+}
+
+function mantisPopulateEntryFormOptions(){
+  const table = mantisTableCache['activity-records-container'];
+  if(!table) return;
+
+  mantisFillDatalist('entryShiftOptions', table, mantisFindColIndex(table, 'Shift'));
+}
+
+/* Mesin -> Area is a fixed mapping (not user-entered): the Area field follows
+   whichever machine is selected, based on the plant's machine registry. */
+const MANTIS_MESIN_AREA_LIST = [
+  ['Dumping Area', 'Proses'],
+  ['Powder Tank', 'Proses'],
+  ['Sugar Tank', 'Proses'],
+  ['High Shear Mixer', 'Proses'],
+  ['Choco Slurry 1', 'Proses'],
+  ['Choco Slurry 2', 'Proses'],
+  ['Reception Tank 1', 'Proses'],
+  ['Reception Tank 2', 'Proses'],
+  ['Pasteurizer', 'Proses'],
+  ['Homogenizer GEA', 'Proses'],
+  ['Pasteurize Tank 1', 'Proses'],
+  ['Pasteurize Tank 2', 'Proses'],
+  ['Mixing Tank 1', 'Proses'],
+  ['Mixing Tank 2', 'Proses'],
+  ['Storage Tank 1', 'Proses'],
+  ['Storage Tank 2', 'Proses'],
+  ['Storage Tank 3', 'Proses'],
+  ['Storage Tank 4', 'Proses'],
+  ['Sterilizer', 'Proses'],
+  ['Homogenizer Tetra', 'Proses'],
+  ['Aseptic Flex Dosing', 'Proses'],
+  ['Aseptic Tank 1', 'Proses'],
+  ['Aseptic Tank 2', 'Proses'],
+  ['CIP Aseptic', 'Proses'],
+  ['CIP Non-Aseptic Line 1', 'Proses'],
+  ['CIP Non-Aseptic Line 2', 'Proses'],
+  ['CIP Non-Aseptic Line 3', 'Proses'],
+  ['Linemaker 1', 'Proses'],
+  ['Linemaker 2', 'Proses'],
+  ['Linemaker 3', 'Proses'],
+  ['Combibloc 1', 'Filling'],
+  ['Combibloc 2', 'Filling'],
+  ['Combibloc 3', 'Filling'],
+  ['Tetra A3 Flex', 'Filling'],
+  ['Domino for C1', 'Filling'],
+  ['Domino for C2', 'Filling'],
+  ['Domino for C3', 'Filling'],
+  ['Domino for Tetra', 'Filling'],
+  ['Tetra Cap 30 Flex', 'Packing'],
+  ['Carton Sealer', 'Packing'],
+  ['Conveyor System 1', 'Packing'],
+  ['Conveyor System 2', 'Packing'],
+  ['Conveyor System 3', 'Packing'],
+  ['Conveyor Buffer 1', 'Packing'],
+  ['Conveyor Buffer 2', 'Packing'],
+  ['Conveyor Buffer 3', 'Packing'],
+  ['Straw Applicator 1', 'Packing'],
+  ['Straw Applicator 2', 'Packing'],
+  ['Straw Applicator 3', 'Packing'],
+  ['Traypacker 1', 'Packing'],
+  ['Traypacker 2', 'Packing'],
+  ['Traypacker 3', 'Packing'],
+  ['Videojet for TP1', 'Packing'],
+  ['Videojet for TP2', 'Packing'],
+  ['Videojet for TP3', 'Packing'],
+  ['Videojet for Cap 30', 'Packing']
+];
+
+const MANTIS_MESIN_AREA_MAP = {};
+MANTIS_MESIN_AREA_LIST.forEach(function(pair){
+  MANTIS_MESIN_AREA_MAP[pair[0].toLowerCase()] = pair[1];
+});
+
+function mantisLookupArea(mesinName){
+  const key = (mesinName || '').trim().toLowerCase();
+  return MANTIS_MESIN_AREA_MAP[key] || '';
+}
+
+function mantisSyncAreaFromMesin(){
+  const mesin = document.getElementById('entryMesin').value;
+  document.getElementById('entryArea').value = mantisLookupArea(mesin);
+}
+
+/* ---------- Mesin: custom dropdown (replaces native <input list> datalist) ---------- */
+function mantisRenderMesinDropdownList(filterText){
+  const listEl = document.getElementById('mantisMesinDropdownList');
+  if(!listEl) return;
+
+  const filter = (filterText || '').trim().toLowerCase();
+  const matches = MANTIS_MESIN_AREA_LIST.filter(function(pair){
+    return !filter || pair[0].toLowerCase().indexOf(filter) !== -1;
+  });
+
+  if(!matches.length){
+    listEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--ink-3);">Tidak ditemukan.</div>';
+    return;
+  }
+
+  listEl.innerHTML = matches.map(function(pair){
+    return '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectMesin(\'' + pair[0].replace(/'/g, "\\'") + '\')">' +
+      mantisEscapeHtml(pair[0]) +
+      '<span style="display:block;font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(pair[1]) + '</span>' +
+      '</button>';
+  }).join('');
+}
+
+function mantisSetMesinToggleOpen(isOpen){
+  const toggle = document.querySelector('.entry-mesin-toggle');
+  if(toggle) toggle.classList.toggle('open', isOpen);
+}
+
+function mantisOpenMesinDropdown(){
+  const popover = document.getElementById('mantisMesinDropdown');
+  const input = document.getElementById('entryMesin');
+  if(!popover || !input) return;
+
+  const isOpen = popover.classList.contains('open');
+  mantisCloseAllMetaPopovers();
+  if(isOpen) return;
+
+  popover.classList.add('open');
+  mantisSetMesinToggleOpen(true);
+  mantisRenderMesinDropdownList(input.value);
+  mantisPositionPopover(popover, input);
+}
+
+function mantisToggleMesinDropdown(evt){
+  if(evt) evt.stopPropagation();
+  const popover = document.getElementById('mantisMesinDropdown');
+  if(popover && popover.classList.contains('open')){
+    mantisCloseAllMetaPopovers();
+    return;
+  }
+  document.getElementById('entryMesin').focus();
+  mantisOpenMesinDropdown();
+}
+
+function mantisHandleMesinInput(){
+  mantisSyncAreaFromMesin();
+  const popover = document.getElementById('mantisMesinDropdown');
+  const input = document.getElementById('entryMesin');
+  if(!popover.classList.contains('open')){
+    mantisOpenMesinDropdown();
+  } else {
+    mantisRenderMesinDropdownList(input.value);
+    mantisPositionPopover(popover, input);
+  }
+}
+
+function mantisSelectMesin(name){
+  document.getElementById('entryMesin').value = name;
+  mantisSyncAreaFromMesin();
+  mantisCloseAllMetaPopovers();
+}
+
+/* ---------- Issue: suggestions from Google Sheet history (never blocks free text) ---------- */
+let mantisIssueSuggestionsCache = [];
+
+function mantisGetIssueSuggestions(mesinFilter, textFilter){
+  const table = mantisTableCache['activity-records-container'];
+  if(!table || !table.rows) return [];
+
+  const mesinIdx = mantisFindColIndex(table, 'Mesin');
+  const issueIdx = mantisFindColIndex(table, 'Issue');
+  if(issueIdx === -1) return [];
+
+  const mesinKey = (mesinFilter || '').trim().toLowerCase();
+  const textKey = (textFilter || '').trim().toLowerCase();
+
+  const seen = {};
+  const results = [];
+
+  for(let i = table.rows.length - 1; i >= 0 && results.length < 8; i--){
+    const row = table.rows[i];
+    const issue = mantisCellText(row.c && row.c[issueIdx]).trim();
+    if(!issue) continue;
+
+    const mesin = mesinIdx !== -1 ? mantisCellText(row.c && row.c[mesinIdx]).trim() : '';
+    if(mesinKey && mesin.toLowerCase() !== mesinKey) continue;
+    if(textKey && issue.toLowerCase().indexOf(textKey) === -1) continue;
+
+    const dedupeKey = issue.toLowerCase();
+    if(seen[dedupeKey]) continue;
+    seen[dedupeKey] = true;
+
+    results.push(issue);
+  }
+
+  return results;
+}
+
+function mantisRenderIssueDropdownList(){
+  const listEl = document.getElementById('mantisIssueDropdownList');
+  if(!listEl) return false;
+
+  const mesin = document.getElementById('entryMesin').value;
+  const textValue = document.getElementById('entryIssue').value;
+  mantisIssueSuggestionsCache = mantisGetIssueSuggestions(mesin, textValue);
+
+  if(!mantisIssueSuggestionsCache.length){
+    listEl.innerHTML = '';
+    return false;
+  }
+
+  listEl.innerHTML = mantisIssueSuggestionsCache.map(function(issue, idx){
+    const preview = issue.length > 90 ? issue.slice(0, 90) + '…' : issue;
+    return '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectIssue(' + idx + ')">' + mantisEscapeHtml(preview) + '</button>';
+  }).join('');
+  return true;
+}
+
+function mantisSelectIssue(idx){
+  const issue = mantisIssueSuggestionsCache[idx];
+  if(issue === undefined) return;
+  document.getElementById('entryIssue').value = issue;
+  mantisCloseAllMetaPopovers();
+}
+
+function mantisOpenIssueDropdown(){
+  const popover = document.getElementById('mantisIssueDropdown');
+  const textarea = document.getElementById('entryIssue');
+  if(!popover || !textarea) return;
+
+  const isOpen = popover.classList.contains('open');
+  mantisCloseAllMetaPopovers();
+  if(isOpen) return;
+
+  const hasSuggestions = mantisRenderIssueDropdownList();
+  if(!hasSuggestions) return;
+
+  popover.classList.add('open');
+  mantisPositionPopover(popover, textarea);
+}
+
+function mantisHandleIssueInput(){
+  const popover = document.getElementById('mantisIssueDropdown');
+  const textarea = document.getElementById('entryIssue');
+  const hasSuggestions = mantisRenderIssueDropdownList();
+
+  if(!hasSuggestions){
+    popover.classList.remove('open');
+    return;
+  }
+
+  popover.classList.add('open');
+  mantisPositionPopover(popover, textarea);
+}
+
+const MANTIS_ACTION_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>';
+
+/* Tabler Icons (tabler.io / github.com/tabler/tabler-icons), outline set - flame, droplet, square-rounded */
+const MANTIS_AREA_ICONS = {
+  proses: {
+    icon: '<path d="M12 10.941c2.333 -3.308 .167 -7.823 -1 -8.941c0 3.395 -2.235 5.299 -3.667 6.706c-1.43 1.408 -2.333 3.294 -2.333 5.588c0 3.704 3.134 6.706 7 6.706c3.866 0 7 -3.002 7 -6.706c0 -1.712 -1.232 -4.403 -2.333 -5.588c-2.084 3.353 -3.257 3.353 -4.667 2.235" />',
+    color: 'var(--red)',
+    bg: '#FEF2F2'
+  },
+  filling: {
+    icon: '<path d="M7.502 19.423c2.602 2.105 6.395 2.105 8.996 0c2.602 -2.105 3.262 -5.708 1.566 -8.546l-4.89 -7.26c-.42 -.625 -1.287 -.803 -1.936 -.397a1.376 1.376 0 0 0 -.41 .397l-4.893 7.26c-1.695 2.838 -1.035 6.441 1.567 8.546" />',
+    color: 'var(--blue)',
+    bg: '#EFF6FF'
+  },
+  packing: {
+    icon: '<path d="M12 3c7.2 0 9 1.8 9 9c0 7.2 -1.8 9 -9 9c-7.2 0 -9 -1.8 -9 -9c0 -7.2 1.8 -9 9 -9" />',
+    color: 'var(--green)',
+    bg: '#F0FDF4'
+  }
+};
+
+function mantisGetAreaIconHtml(area){
+  const entry = MANTIS_AREA_ICONS[(area || '').trim().toLowerCase()];
+  if(!entry){
+    return { html: MANTIS_ACTION_ICON, bg: 'var(--accent-soft)' };
+  }
+  return {
+    html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + entry.color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + entry.icon + '</svg>',
+    bg: entry.bg
+  };
+}
+const MANTIS_TRASH_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>';
+const MANTIS_MENU_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>';
+const MANTIS_EDIT_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/></svg>';
+
+/* ---------- Problem & Action: local queue (published to the sheet at end of shift) ---------- */
+const MANTIS_PENDING_ACTIONS_KEY = 'mantisPendingActions';
+
+function mantisGetPendingActions(){
+  try{
+    const raw = localStorage.getItem(MANTIS_PENDING_ACTIONS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+
+function mantisSavePendingActions(list){
+  const json = JSON.stringify(list);
+  try{
+    localStorage.setItem(MANTIS_PENDING_ACTIONS_KEY, json);
+    // Verify the write actually stuck - some browsers (private/incognito mode,
+    // storage quota exceeded, storage disabled by policy) accept setItem()
+    // without throwing but silently discard the value, which otherwise looks
+    // like a successful save until the page is reloaded and the entry is gone.
+    return localStorage.getItem(MANTIS_PENDING_ACTIONS_KEY) === json;
+  }catch(e){
+    return false;
+  }
+}
+
+function mantisAddPendingAction(entry){
+  const list = mantisGetPendingActions();
+  list.push(entry);
+  return mantisSavePendingActions(list);
+}
+
+function mantisRemovePendingAction(id){
+  const list = mantisGetPendingActions().filter(function(item){ return item.id !== id; });
+  mantisSavePendingActions(list);
+  mantisRenderProblemActionTable();
+}
+
+function mantisUpdatePendingAction(id, fields){
+  const list = mantisGetPendingActions();
+  const idx = list.findIndex(function(item){ return item.id === id; });
+  if(idx === -1) return true;
+  list[idx] = Object.assign({}, list[idx], fields);
+  return mantisSavePendingActions(list);
+}
+
+function mantisToggleActionMenu(btn, evt){
+  if(evt) evt.stopPropagation();
+  const menu = btn.nextElementSibling;
+  if(!menu) return;
+  const isOpen = menu.classList.contains('open');
+  document.querySelectorAll('.entry-row-menu.open').forEach(function(m){ m.classList.remove('open'); });
+  if(!isOpen){
+    menu.classList.add('open');
+    mantisPositionPopover(menu, btn);
+  }
+}
+
+document.addEventListener('click', function(){
+  document.querySelectorAll('.entry-row-menu.open').forEach(function(m){ m.classList.remove('open'); });
+  mantisCloseAllMetaPopovers();
+});
+window.addEventListener('scroll', function(evt){
+  const target = evt.target;
+  if(target && typeof target.closest === 'function' && target.closest('.entry-meta-popover')) return;
+  mantisCloseAllMetaPopovers();
+  document.querySelectorAll('.entry-row-menu.open').forEach(function(m){ m.classList.remove('open'); });
+}, true);
+
+function mantisUpdatePendingBadge(count){
+  const badge = document.getElementById('mantisPendingBadge');
+  if(!badge) return;
+  if(count > 0){
+    badge.style.display = '';
+    badge.textContent = count + ' pending';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function mantisRenderProblemActionTable(){
+  const container = document.getElementById('entry-actions-list-container');
+  if(!container) return;
+
+  const queue = mantisGetPendingActions();
+  mantisUpdatePendingBadge(queue.length);
+
+  if(!queue.length){
+    container.innerHTML = '<div class="tab-panel-empty">Belum ada action yang ditambahkan pada shift ini.</div>';
+    return;
+  }
+
+  const items = queue.slice().sort(function(a, b){ return (b.createdAt || 0) - (a.createdAt || 0); });
+
+  let html = '<div class="table-wrap"><table><thead><tr>';
+  html += '<th>Mesin</th><th>Issue</th><th>Action</th><th style="width:44px;"></th>';
+  html += '</tr></thead><tbody>';
+
+  items.forEach(function(item){
+    const areaIcon = mantisGetAreaIconHtml(item.Area);
+    html += '<tr>';
+    html += '<td><div class="flex items-center" style="gap:10px;">' +
+      '<div class="row-icon" style="background:' + areaIcon.bg + ';">' + areaIcon.html + '</div>' +
+      '<div><div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.Mesin) + '</div>' +
+      '<div style="font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(item.Area) + '</div></div>' +
+      '</div></td>';
+    html += '<td style="white-space:normal;max-width:260px;color:var(--ink);">' + mantisEscapeHtml(item.Issue) + '</td>';
+    html += '<td style="white-space:normal;max-width:260px;color:var(--ink);">' + mantisEscapeHtml(item.Action) + '</td>';
+    html += '<td><div class="entry-row-menu-wrap">' +
+      '<button type="button" class="entry-row-menu-btn" title="Menu" onclick="mantisToggleActionMenu(this, event)">' + MANTIS_MENU_ICON + '</button>' +
+      '<div class="entry-row-menu">' +
+        '<button type="button" class="entry-row-menu-item" onclick="mantisEditPendingAction(\'' + item.id + '\')">' + MANTIS_EDIT_ICON + 'Edit</button>' +
+        '<button type="button" class="entry-row-menu-item danger" onclick="mantisRemovePendingAction(\'' + item.id + '\')">' + MANTIS_TRASH_ICON + 'Hapus</button>' +
+      '</div>' +
+    '</div></td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+let mantisEditingActionId = null;
+
+function mantisOpenActionModal(){
+  document.getElementById('mantisActionModalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  const areaInput = document.getElementById('entryArea');
+  if(areaInput) areaInput.focus({ preventScroll: true });
+}
+
+function mantisOpenNewAction(){
+  mantisEditingActionId = null;
+
+  document.getElementById('entryArea').value = '';
+  document.getElementById('entryMesin').value = '';
+  document.getElementById('entryIssue').value = '';
+  document.getElementById('entryAction').value = '';
+
+  const titleEl = document.getElementById('mantisNewActionTitle');
+  if(titleEl) titleEl.textContent = 'New Action';
+  const submitLabelEl = document.getElementById('mantisEntrySubmitLabel');
+  if(submitLabelEl) submitLabelEl.textContent = 'Tambahkan ke Daftar';
+
+  const messageEl = document.getElementById('mantisEntryMessage');
+  if(messageEl){ messageEl.className = 'entry-form-message'; messageEl.textContent = ''; }
+
+  mantisOpenActionModal();
+}
+
+function mantisEditPendingAction(id){
+  const item = mantisGetPendingActions().find(function(i){ return i.id === id; });
+  if(!item) return;
+
+  mantisEditingActionId = id;
+
+  document.getElementById('entryArea').value = item.Area || '';
+  document.getElementById('entryMesin').value = item.Mesin || '';
+  document.getElementById('entryIssue').value = item.Issue || '';
+  document.getElementById('entryAction').value = item.Action || '';
+
+  const titleEl = document.getElementById('mantisNewActionTitle');
+  if(titleEl) titleEl.textContent = 'Edit Action';
+  const submitLabelEl = document.getElementById('mantisEntrySubmitLabel');
+  if(submitLabelEl) submitLabelEl.textContent = 'Simpan Perubahan';
+
+  const messageEl = document.getElementById('mantisEntryMessage');
+  if(messageEl){ messageEl.className = 'entry-form-message'; messageEl.textContent = ''; }
+
+  mantisOpenActionModal();
+}
+
+function mantisCloseNewAction(){
+  mantisEditingActionId = null;
+  document.getElementById('mantisActionModalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function mantisCloseNewActionOnBackdrop(evt){
+  if(evt.target === evt.currentTarget) mantisCloseNewAction();
+}
+
+document.addEventListener('keydown', function(evt){
+  if(evt.key !== 'Escape') return;
+  if(document.getElementById('mantisOcrCameraOverlay').classList.contains('open')){
+    mantisCloseOcrCamera();
+    return;
+  }
+  if(document.getElementById('mantisActionModalOverlay').classList.contains('open')){
+    mantisCloseNewAction();
+  }
+});
+
+/* Keyboard-safe UX for every input/textarea/select: on mobile, the on-screen
+   keyboard covers roughly the bottom half of the viewport. Whenever any real
+   (non-hidden) field gets focus, scroll it to the vertical center of the
+   visible area once the keyboard has finished animating in, so the field and
+   any nearby save button stay visible above it. */
+document.addEventListener('focusin', function(evt){
+  const el = evt.target;
+  if(!el || typeof el.matches !== 'function') return;
+  if(!el.matches('input, textarea, select')) return;
+  if(el.type === 'hidden' || el.classList.contains('entry-tanggal-hidden-input')) return;
+  if(!window.matchMedia('(max-width:768px)').matches) return;
+
+  setTimeout(function(){
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 300);
+});
+
+function mantisSubmitMaintenanceEntry(){
+  const messageEl = document.getElementById('mantisEntryMessage');
+  messageEl.className = 'entry-form-message';
+  messageEl.textContent = '';
+
+  const mesinValue = document.getElementById('entryMesin').value.trim();
+  const areaValue = mantisLookupArea(mesinValue);
+  document.getElementById('entryArea').value = areaValue;
+
+  const fields = {
+    Area: areaValue,
+    Mesin: mesinValue,
+    Issue: document.getElementById('entryIssue').value.trim(),
+    Action: document.getElementById('entryAction').value.trim()
+  };
+
+  if(!fields.Mesin || !fields.Issue || !fields.Action){
+    messageEl.className = 'entry-form-message error';
+    messageEl.textContent = 'Semua kolom wajib diisi.';
+    return;
+  }
+
+  if(!fields.Area){
+    messageEl.className = 'entry-form-message error';
+    messageEl.textContent = 'Mesin tidak dikenali. Pilih dari daftar yang tersedia.';
+    return;
+  }
+
+  let saved;
+  if(mantisEditingActionId){
+    saved = mantisUpdatePendingAction(mantisEditingActionId, fields);
+  } else {
+    fields.id = 'act_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    fields.createdAt = Date.now();
+    saved = mantisAddPendingAction(fields);
+  }
+
+  mantisCloseNewAction();
+  mantisRenderProblemActionTable();
+
+  if(!saved){
+    // The entry is still visible in this tab's in-memory list right now, but
+    // since it never made it to localStorage it will be gone on the next
+    // reload - warn immediately instead of letting it vanish silently.
+    mantisShowActionsMessage('Penyimpanan lokal browser tidak aktif (mode privat/incognito atau storage penuh). Entry ini akan hilang jika halaman di-reload sebelum di-Publish.', true);
+  }
+}
+
+/* ---------- Problem & Action: publish queued actions to the sheet ---------- */
+const MANTIS_PUBLISH_BTN_HTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>Publish to Sheet';
+
+function mantisRestorePublishBtn(btn){
+  if(!btn) return;
+  btn.disabled = false;
+  btn.innerHTML = MANTIS_PUBLISH_BTN_HTML;
+}
+
+function mantisShowActionsMessage(text, isError){
+  const messageEl = document.getElementById('mantisActionsMessage');
+  if(!messageEl) return;
+  messageEl.style.display = text ? '' : 'none';
+  messageEl.className = 'entry-form-message' + (isError ? ' error' : ' success');
+  messageEl.textContent = text || '';
+}
+
+function mantisPublishPendingActions(){
+  const queue = mantisGetPendingActions();
+
+  if(!queue.length){
+    mantisShowActionsMessage('Belum ada action yang perlu dipublish.', true);
+    return;
+  }
+
+  const meta = {
+    Tanggal: document.getElementById('entryTanggal').value.trim(),
+    Shift: document.getElementById('entryShift').value.trim(),
+    Teknisi: document.getElementById('entryTeknisi').value.trim()
+  };
+
+  for(const key in meta){
+    if(!meta[key]){
+      mantisShowActionsMessage('Isi Tanggal, Shift, dan Teknisi terlebih dahulu sebelum publish.', true);
+      return;
+    }
+  }
+
+  if(!MANTIS_METER_WRITE_URL){
+    mantisShowActionsMessage('Apps Script belum dikonfigurasi. Isi MANTIS_METER_WRITE_URL di index.html.', true);
+    return;
+  }
+
+  const btn = document.getElementById('mantisPublishBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Mempublish...'; }
+  mantisShowActionsMessage('', false);
+
+  const values = queue.map(function(item){
+    return {
+      Tanggal: meta.Tanggal,
+      Shift: meta.Shift,
+      Teknisi: meta.Teknisi,
+      Area: item.Area,
+      Mesin: item.Mesin,
+      Issue: item.Issue,
+      Action: item.Action
+    };
+  });
+
+  fetch(MANTIS_METER_WRITE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      token: MANTIS_METER_WRITE_TOKEN,
+      action: 'appendRow',
+      sheet: 'Maintenance',
+      values: values
+    })
+  }).then(function(res){ return res.json(); }).then(function(data){
+    mantisRestorePublishBtn(btn);
+    if(!data || !data.success){
+      mantisShowActionsMessage((data && data.error) ? data.error : 'Gagal mempublish data.', true);
+      return;
+    }
+    mantisSavePendingActions([]);
+    mantisRenderProblemActionTable();
+
+    try{ sessionStorage.removeItem(MANTIS_SHEET_CACHE_PREFIX + 'Maintenance'); }catch(e){ /* storage unavailable - ignore */ }
+    mantisLoadedPages.activities = false;
+
+    mantisShowActionsMessage((data.count || values.length) + ' action berhasil dipublish ke Google Sheet.', false);
+  }).catch(function(err){
+    mantisRestorePublishBtn(btn);
+    mantisShowActionsMessage('Gagal terhubung ke server: ' + err.message, true);
+  });
+}
+
+/* ---------- Settings: tabs ---------- */
+function showSettingsTab(name){
+  document.querySelectorAll('.settings-tab-panel').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById('settings-tab-' + name).style.display = '';
+
+  document.querySelectorAll('.tab-btn[data-settings-tab]').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelector('.tab-btn[data-settings-tab="' + name + '"]').classList.add('active');
+
+  if(name === 'table') mantisInitTableSettingsTab();
+}
+
+/* ---------- Settings: language ---------- */
+function mantisSetLanguage(lang){
+  try{ localStorage.setItem('mantisLanguage', lang); }catch(e){ /* storage unavailable - ignore */ }
+}
+
+(function mantisRestoreLanguage(){
+  try{
+    const lang = localStorage.getItem('mantisLanguage');
+    const sel = document.getElementById('mantisLanguageSelect');
+    if(lang && sel) sel.value = lang;
+  }catch(e){ /* storage unavailable - ignore */ }
+})();
+
+/* ---------- Settings: table columns ---------- */
+let mantisTableSettingsInited = false;
+
+function mantisInitTableSettingsTab(){
+  if(mantisTableSettingsInited) return;
+  mantisTableSettingsInited = true;
+  Object.keys(MANTIS_SHEET_SOURCES).forEach(function(containerId){
+    mantisBuildColumnPrefsSection(containerId);
+  });
+}
+
+function mantisBuildColumnPrefsSection(containerId){
+  const source = MANTIS_SHEET_SOURCES[containerId];
+  if(!source) return;
+
+  const cached = mantisTableCache[containerId];
+  if(cached){
+    mantisRenderColumnPrefsList(containerId, cached);
+    return;
+  }
+  loadSheetTable(source[0], containerId, source[1], false, function(){
+    mantisRenderColumnPrefsList(containerId, mantisTableCache[containerId]);
+  });
+}
+
+function mantisRenderColumnPrefsList(containerId, table){
+  const listEl = document.getElementById('colprefs-' + containerId);
+  if(!listEl || !table || !table.cols) return;
+
+  const logicalCols = mantisGetLogicalColumns(table);
+  const idToCol = {};
+  logicalCols.forEach(function(c){ idToCol[c.id] = c; });
+
+  const prefs = mantisGetColumnPrefs(containerId);
+  const hiddenSet = {};
+  (prefs && prefs.hidden || []).forEach(function(id){ hiddenSet[id] = true; });
+
+  let html = '';
+  mantisOrderedLogicalIds(containerId, logicalCols).forEach(function(id){
+    const col = idToCol[id];
+    if(!col) return;
+    const checked = !hiddenSet[id];
+    html += '<div class="col-pref-item" data-col-id="' + id + '">';
+    html += '<label class="col-pref-check"><input type="checkbox"' + (checked ? ' checked' : '') + ' onchange="mantisToggleColumn(\'' + containerId + '\', \'' + id + '\', this.checked)"><span>' + mantisEscapeHtml(col.label) + '</span></label>';
+    html += '<span class="col-pref-drag-handle" draggable="true"><svg class="col-pref-drag" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M8 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M8 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg></span>';
+    html += '</div>';
+  });
+  listEl.innerHTML = html;
+  mantisAttachDragHandlers(listEl, containerId);
+}
+
+function mantisToggleColumn(containerId, colId, isChecked){
+  const table = mantisTableCache[containerId];
+  const defaultOrder = table ? mantisGetLogicalColumns(table).map(function(c){ return c.id; }) : [];
+  const prefs = mantisGetColumnPrefs(containerId) || { order: defaultOrder, hidden: [] };
+  const hiddenSet = {};
+  (prefs.hidden || []).forEach(function(id){ hiddenSet[id] = true; });
+  if(isChecked){ delete hiddenSet[colId]; } else { hiddenSet[colId] = true; }
+  prefs.hidden = Object.keys(hiddenSet);
+  mantisSaveColumnPrefs(containerId, prefs);
+  delete mantisColumnWidths[containerId];
+  renderGvizTableRows(containerId);
+}
+
+function mantisAttachDragHandlers(listEl, containerId){
+  listEl.querySelectorAll('.col-pref-drag-handle').forEach(function(handle){
+    const item = handle.closest('.col-pref-item');
+    handle.addEventListener('dragstart', function(e){
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try{ e.dataTransfer.setDragImage(item, 10, 10); }catch(err){ /* not critical */ }
+    });
+    handle.addEventListener('dragend', function(){
+      item.classList.remove('dragging');
+      mantisPersistColumnOrder(listEl, containerId);
+    });
+  });
+
+  listEl.querySelectorAll('.col-pref-item').forEach(function(item){
+    item.addEventListener('dragover', function(e){
+      e.preventDefault();
+      const dragging = listEl.querySelector('.dragging');
+      if(!dragging || dragging === item) return;
+      const rect = item.getBoundingClientRect();
+      const after = (e.clientY - rect.top) > rect.height / 2;
+      listEl.insertBefore(dragging, after ? item.nextSibling : item);
+    });
+  });
+}
+
+function mantisPersistColumnOrder(listEl, containerId){
+  const ids = Array.prototype.map.call(listEl.querySelectorAll('.col-pref-item'), function(item){ return item.getAttribute('data-col-id'); });
+  const prefs = mantisGetColumnPrefs(containerId) || { order: [], hidden: [] };
+  prefs.order = ids;
+  mantisSaveColumnPrefs(containerId, prefs);
+  delete mantisColumnWidths[containerId];
+  renderGvizTableRows(containerId);
+}
+
+function mantisResetAllColumnPrefs(){
+  Object.keys(MANTIS_SHEET_SOURCES).forEach(function(containerId){
+    try{ localStorage.removeItem(MANTIS_COLPREFS_PREFIX + containerId); }catch(e){ /* storage unavailable - ignore */ }
+    delete mantisColumnWidths[containerId];
+
+    const table = mantisTableCache[containerId];
+    if(table) mantisRenderColumnPrefsList(containerId, table);
+    if(document.getElementById(containerId)) renderGvizTableRows(containerId);
+  });
+}
+
+/* Without this, every reload silently drops the user back on the Dashboard
+   because showPage()/showActivitiesPage() are only ever invoked by nav
+   clicks - nothing reads back where they were before the reload happened. */
+(function mantisRestoreLastPage(){
+  const MANTIS_NAV_PAGES = ['overview', 'activities', 'parts', 'meters', 'po', 'settings', 'support'];
+  try{
+    const lastPage = localStorage.getItem(MANTIS_LAST_PAGE_KEY);
+    if(!lastPage || MANTIS_NAV_PAGES.indexOf(lastPage) === -1 || lastPage === 'overview') return;
+
+    if(lastPage === 'activities'){
+      const lastTab = localStorage.getItem(MANTIS_LAST_ACTIVITIES_TAB_KEY);
+      showActivitiesPage(lastTab === 'records' ? 'records' : 'newlog');
+    } else {
+      showPage(lastPage);
+    }
+  }catch(e){ /* storage unavailable - ignore, default page stays visible */ }
+})();
+</script>
+</body>
+</html>
