@@ -3604,14 +3604,14 @@ function mantisLookupArea(mesinName){
   return MANTIS_MESIN_AREA_MAP[key] || '';
 }
 
-/* "Support" is a pseudo-machine for work that isn't tied to a specific asset
+/* "Tambahan" is a pseudo-machine for work that isn't tied to a specific asset
    (e.g. helping production). It intentionally has no Area, which is what makes
    mantisBuildWhatsAppMessage() group it under "Tambahan pekerjaan" instead of
    under an Area/Mesin block. */
-const MANTIS_SUPPORT_MESIN = 'Support';
+const MANTIS_TAMBAHAN_MESIN = 'Tambahan';
 
-function mantisIsSupportMesin(mesinName){
-  return (mesinName || '').trim().toLowerCase() === MANTIS_SUPPORT_MESIN.toLowerCase();
+function mantisIsTambahanMesin(mesinName){
+  return (mesinName || '').trim().toLowerCase() === MANTIS_TAMBAHAN_MESIN.toLowerCase();
 }
 
 function mantisSyncAreaFromMesin(){
@@ -3628,17 +3628,17 @@ function mantisRenderMesinDropdownList(filterText){
   const matches = MANTIS_MESIN_AREA_LIST.filter(function(pair){
     return !filter || pair[0].toLowerCase().indexOf(filter) !== -1;
   });
-  const showSupport = !filter || MANTIS_SUPPORT_MESIN.toLowerCase().indexOf(filter) !== -1;
+  const showTambahan = !filter || MANTIS_TAMBAHAN_MESIN.toLowerCase().indexOf(filter) !== -1;
 
-  if(!matches.length && !showSupport){
+  if(!matches.length && !showTambahan){
     listEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--ink-3);">Tidak ditemukan.</div>';
     return;
   }
 
   let html = '';
-  if(showSupport){
-    html += '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectMesin(\'' + MANTIS_SUPPORT_MESIN + '\')">' +
-      mantisEscapeHtml(MANTIS_SUPPORT_MESIN) +
+  if(showTambahan){
+    html += '<button type="button" class="entry-meta-popover-item" onclick="mantisSelectMesin(\'' + MANTIS_TAMBAHAN_MESIN + '\')">' +
+      mantisEscapeHtml(MANTIS_TAMBAHAN_MESIN) +
       '<span style="display:block;font-size:11px;color:var(--ink-3);">Tambahan pekerjaan &mdash; bukan mesin tertentu</span>' +
       '</button>';
     if(matches.length){
@@ -4066,7 +4066,7 @@ function mantisSubmitMaintenanceEntry(){
     return;
   }
 
-  if(!fields.Area && !mantisIsSupportMesin(fields.Mesin)){
+  if(!fields.Area && !mantisIsTambahanMesin(fields.Mesin)){
     messageEl.className = 'entry-form-message error';
     messageEl.textContent = 'Mesin tidak dikenali. Pilih dari daftar yang tersedia.';
     return;
@@ -4172,7 +4172,7 @@ function mantisPublishActionsToSheet(){
 
 /* ---------- Problem & Action: format the queued actions as a WhatsApp report ----------
    Grouped Area > Mesin > Issue > Action, matching the shift-report layout used in the
-   maintenance WhatsApp group. Entries with Mesin = Support (no Area) aren't tied to a
+   maintenance WhatsApp group. Entries with Mesin = Tambahan (no Area) aren't tied to a
    machine, so they're listed at the end as plain "*<action>" lines instead - the user
    types what the action is (e.g. "Support Produksi") straight into the Action field. */
 function mantisFormatWaDate(isoDate){
