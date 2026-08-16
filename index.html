@@ -4182,7 +4182,8 @@ function mantisPublishPendingActions(){
 /* ---------- Problem & Action: format the queued actions as a WhatsApp report ----------
    Grouped Area > Mesin > Issue > Action, matching the shift-report layout used in the
    maintenance WhatsApp group. Entries with Mesin = Support (no Area) aren't tied to a
-   machine, so they're listed at the end as "*Support <action>" lines instead. */
+   machine, so they're listed at the end as plain "*<action>" lines instead - the user
+   types what the action is (e.g. "Support Produksi") straight into the Action field. */
 function mantisFormatWaDate(isoDate){
   const d = isoDate ? new Date(isoDate + 'T00:00:00') : new Date();
   if(isNaN(d.getTime())) return '';
@@ -4256,7 +4257,7 @@ function mantisBuildWhatsAppMessage(){
   if(extra.length){
     extra.forEach(function(item){
       mantisSplitActionLines(item.Action).forEach(function(actionLine){
-        lines.push('*' + MANTIS_SUPPORT_MESIN + ' ' + actionLine);
+        lines.push('*' + actionLine);
       });
     });
     lines.push('');
