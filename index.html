@@ -4111,7 +4111,13 @@ function mantisShowActionsMessage(text, isError){
   messageEl.textContent = text || '';
 }
 
-function mantisPublishPendingActions(){
+/* Shared by the "Publish to Sheet" button and the WhatsApp modal's "Buka
+   WhatsApp" button (which publishes silently in the background). resetQueue
+   controls whether the local pending list is cleared on success - the
+   WhatsApp flow keeps it so the technician still sees what's been logged
+   this shift after sharing the report. */
+function mantisPublishActionsToSheet(opts){
+  const resetQueue = !opts || opts.resetQueue !== false;
   const queue = mantisGetPendingActions();
 
   if(!queue.length){
@@ -4168,8 +4174,11 @@ function mantisPublishPendingActions(){
       mantisShowActionsMessage((data && data.error) ? data.error : 'Gagal mempublish data.', true);
       return;
     }
-    mantisSavePendingActions([]);
-    mantisRenderProblemActionTable();
+
+    if(resetQueue){
+      mantisSavePendingActions([]);
+      mantisRenderProblemActionTable();
+    }
 
     try{ sessionStorage.removeItem(MANTIS_SHEET_CACHE_PREFIX + 'Maintenance'); }catch(e){ /* storage unavailable - ignore */ }
     mantisLoadedPages.activities = false;
@@ -4179,6 +4188,10 @@ function mantisPublishPendingActions(){
     mantisRestorePublishBtn(btn);
     mantisShowActionsMessage('Gagal terhubung ke server: ' + err.message, true);
   });
+}
+
+function mantisPublishPendingActions(){
+  mantisPublishActionsToSheet({ resetQueue: true });
 }
 
 /* ---------- Problem & Action: format the queued actions as a WhatsApp report ----------
@@ -4296,7 +4309,12 @@ function mantisCloseWaModalOnBackdrop(evt){
 function mantisOpenWaShare(){
   const textarea = document.getElementById('mantisWaPreview');
   const text = textarea ? textarea.value : '';
+
+  // window.open() has to run synchronously on the click to avoid being
+  // popup-blocked, so it fires before the (async) sheet publish rather than
+  // waiting on it - the two are independent side effects of one click.
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  mantisPublishActionsToSheet({ resetQueue: false });
 }
 
 /* ---------- Settings: tabs ---------- */
