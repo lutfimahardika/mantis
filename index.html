@@ -1785,6 +1785,9 @@ textarea.entry-input{
           <div class="card-sub">Entries &amp; Records</div>
         </div>
         <div class="flex items-center" style="gap:8px;flex-wrap:wrap;row-gap:8px;">
+          <button type="button" class="pill-btn" id="mantisResetActionsBtn" title="Hapus semua action pending" onclick="mantisResetPendingActions()" style="width:32px;height:32px;padding:0;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>
+          </button>
           <button type="button" class="pill-btn" id="mantisWaPublishBtn" onclick="mantisOpenWaPublish()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>
             Publish
@@ -2255,6 +2258,7 @@ function showActivitiesTab(name){
 
   document.getElementById('activities-search-box').style.display = (name === 'records') ? '' : 'none';
   document.getElementById('mantisWaPublishBtn').style.display = (name === 'newlog') ? '' : 'none';
+  document.getElementById('mantisResetActionsBtn').style.display = (name === 'newlog') ? '' : 'none';
   document.getElementById('activities-issue-card').style.display = (name === 'newlog') ? '' : 'none';
 
   if(name === 'newlog'){
@@ -3866,6 +3870,13 @@ function mantisAddPendingAction(entry){
 function mantisRemovePendingAction(id){
   const list = mantisGetPendingActions().filter(function(item){ return item.id !== id; });
   mantisSavePendingActions(list);
+  mantisRenderProblemActionTable();
+}
+
+function mantisResetPendingActions(){
+  if(!mantisGetPendingActions().length) return;
+  if(!confirm('Hapus semua action yang belum dipublish? Tindakan ini tidak bisa dibatalkan.')) return;
+  mantisSavePendingActions([]);
   mantisRenderProblemActionTable();
 }
 
