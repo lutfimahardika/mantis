@@ -1865,7 +1865,11 @@ textarea.entry-input{
           </div>
           <div class="card-sub">Belum dipublish ke Google Sheet &mdash; dikumpulkan dulu selama shift</div>
         </div>
-        <div class="flex items-center" style="gap:8px;">
+        <div class="flex items-center" style="gap:8px;flex-wrap:wrap;row-gap:8px;">
+          <button type="button" class="pill-btn" id="mantisWaPublishBtn" onclick="mantisOpenWaPublish()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l1.3 -3.9a9 9 0 1 1 3.4 3l-4.7 .9"/><path d="M9 10h.01"/><path d="M12 10h.01"/><path d="M15 10h.01"/></svg>
+            Publish to WhatsApp
+          </button>
           <button type="button" class="pill-btn" id="mantisPublishBtn" onclick="mantisPublishPendingActions()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>
             Publish to Sheet
@@ -2113,6 +2117,37 @@ textarea.entry-input{
           <button type="button" class="btn-primary" id="mantisEntrySubmitBtn" onclick="mantisSubmitMaintenanceEntry()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
             <span id="mantisEntrySubmitLabel">Tambahkan ke Daftar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ WHATSAPP PUBLISH MODAL (preview & share the shift report) ============ -->
+  <div class="mantis-modal-overlay" id="mantisWaModalOverlay" onclick="mantisCloseWaModalOnBackdrop(event)">
+    <div class="mantis-modal" style="max-width:480px;" onclick="event.stopPropagation()">
+      <div class="mantis-modal-header">
+        <div class="card-title">Publish to WhatsApp</div>
+        <button type="button" class="mantis-modal-close-btn" onclick="mantisCloseWaModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="entry-modal-body">
+        <div class="entry-field">
+          <label class="entry-field-label" for="mantisWaPreview">Preview pesan</label>
+          <textarea id="mantisWaPreview" class="entry-input" style="min-height:280px;line-height:1.5;"></textarea>
+        </div>
+
+        <div class="entry-form-footer">
+          <div class="entry-form-message" id="mantisWaMessage"></div>
+          <button type="button" class="pill-btn" onclick="mantisCopyWaMessage()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"/></svg>
+            Copy
+          </button>
+          <button type="button" class="btn-primary" onclick="mantisOpenWaShare()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l1.3 -3.9a9 9 0 1 1 3.4 3l-4.7 .9"/><path d="M9 10h.01"/><path d="M12 10h.01"/><path d="M15 10h.01"/></svg>
+            Buka WhatsApp
           </button>
         </div>
       </div>
@@ -3968,6 +4003,10 @@ document.addEventListener('keydown', function(evt){
   }
   if(document.getElementById('mantisActionModalOverlay').classList.contains('open')){
     mantisCloseNewAction();
+    return;
+  }
+  if(document.getElementById('mantisWaModalOverlay').classList.contains('open')){
+    mantisCloseWaModal();
   }
 });
 
@@ -4121,6 +4160,146 @@ function mantisPublishPendingActions(){
     mantisRestorePublishBtn(btn);
     mantisShowActionsMessage('Gagal terhubung ke server: ' + err.message, true);
   });
+}
+
+/* ---------- Problem & Action: format the queued actions as a WhatsApp report ----------
+   Grouped Area > Mesin > Issue > Action, matching the shift-report layout used in the
+   maintenance WhatsApp group. Entries with an unrecognized Mesin (no Area match - e.g. a
+   future "Support" option) fall into a trailing "Tambahan pekerjaan" section instead of
+   being grouped under a machine. */
+function mantisFormatWaDate(isoDate){
+  const d = isoDate ? new Date(isoDate + 'T00:00:00') : new Date();
+  if(isNaN(d.getTime())) return '';
+  try{
+    return new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  }catch(e){
+    return d.toLocaleDateString();
+  }
+}
+
+function mantisGroupByOrdered(items, keyFn){
+  const order = [];
+  const groups = {};
+  items.forEach(function(item){
+    const key = keyFn(item);
+    if(!Object.prototype.hasOwnProperty.call(groups, key)){
+      groups[key] = [];
+      order.push(key);
+    }
+    groups[key].push(item);
+  });
+  return { order: order, groups: groups };
+}
+
+function mantisBuildWhatsAppMessage(){
+  const queue = mantisGetPendingActions();
+  const dateLabel = mantisFormatWaDate(document.getElementById('entryTanggal').value.trim());
+
+  const lines = [];
+  if(dateLabel){
+    lines.push(dateLabel);
+    lines.push('');
+  }
+
+  const normal = queue.filter(function(item){ return item.Area; });
+  const extra = queue.filter(function(item){ return !item.Area; });
+
+  const byArea = mantisGroupByOrdered(normal, function(item){ return item.Area; });
+  byArea.order.forEach(function(area){
+    lines.push('*' + area + '*');
+
+    const byMesin = mantisGroupByOrdered(byArea.groups[area], function(item){ return item.Mesin; });
+    byMesin.order.forEach(function(mesin){
+      lines.push('**' + mesin + '*');
+
+      let lastIssue = null;
+      byMesin.groups[mesin].forEach(function(item){
+        const issue = (item.Issue || '').trim();
+        if(issue && issue !== lastIssue){
+          lines.push('| ' + issue);
+        }
+        lastIssue = issue || null;
+        lines.push('- ' + item.Action);
+      });
+    });
+
+    lines.push('');
+  });
+
+  if(extra.length){
+    lines.push('*Tambahan pekerjaan*');
+    extra.forEach(function(item){
+      lines.push('- ' + (item.Issue ? item.Issue + ': ' : '') + item.Action);
+    });
+    lines.push('');
+  }
+
+  while(lines.length && lines[lines.length - 1] === '') lines.pop();
+
+  return lines.join('\n');
+}
+
+function mantisOpenWaPublish(){
+  const queue = mantisGetPendingActions();
+  if(!queue.length){
+    mantisShowActionsMessage('Belum ada action yang perlu dipublish.', true);
+    return;
+  }
+
+  const textarea = document.getElementById('mantisWaPreview');
+  if(textarea) textarea.value = mantisBuildWhatsAppMessage();
+
+  const messageEl = document.getElementById('mantisWaMessage');
+  if(messageEl){ messageEl.className = 'entry-form-message'; messageEl.textContent = ''; }
+
+  document.getElementById('mantisWaModalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function mantisCloseWaModal(){
+  document.getElementById('mantisWaModalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function mantisCloseWaModalOnBackdrop(evt){
+  if(evt.target === evt.currentTarget) mantisCloseWaModal();
+}
+
+function mantisShowWaMessage(text, isError){
+  const messageEl = document.getElementById('mantisWaMessage');
+  if(!messageEl) return;
+  messageEl.className = 'entry-form-message' + (isError ? ' error' : ' success');
+  messageEl.textContent = text || '';
+}
+
+function mantisCopyWaMessage(){
+  const textarea = document.getElementById('mantisWaPreview');
+  if(!textarea) return;
+  const text = textarea.value;
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text)
+      .then(function(){ mantisShowWaMessage('Teks disalin ke clipboard.', false); })
+      .catch(function(){ mantisShowWaMessage('Gagal menyalin. Salin manual dari kotak teks.', true); });
+    return;
+  }
+
+  // Clipboard API unavailable (older browser or non-HTTPS context) - fall back to the
+  // legacy select+execCommand approach so Copy still works.
+  textarea.focus();
+  textarea.select();
+  try{
+    const ok = document.execCommand('copy');
+    mantisShowWaMessage(ok ? 'Teks disalin ke clipboard.' : 'Gagal menyalin. Salin manual dari kotak teks.', !ok);
+  }catch(e){
+    mantisShowWaMessage('Gagal menyalin. Salin manual dari kotak teks.', true);
+  }
+}
+
+function mantisOpenWaShare(){
+  const textarea = document.getElementById('mantisWaPreview');
+  const text = textarea ? textarea.value : '';
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 }
 
 /* ---------- Settings: tabs ---------- */
