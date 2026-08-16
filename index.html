@@ -519,6 +519,8 @@ html,body{
 }
 .btn-primary:hover{ opacity:.92; }
 
+.btn-whatsapp{ background:#25D366; }
+
 .full-bleed-divider{
   margin:0 -20px;
   border-top:1px solid var(--line);
@@ -1784,7 +1786,7 @@ textarea.entry-input{
         </div>
         <div class="flex items-center" style="gap:8px;flex-wrap:wrap;row-gap:8px;">
           <button type="button" class="pill-btn" id="mantisWaPublishBtn" onclick="mantisOpenWaPublish()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l1.3 -3.9a9 9 0 1 1 3.4 3l-4.7 .9"/><path d="M9 10h.01"/><path d="M12 10h.01"/><path d="M15 10h.01"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>
             Publish
           </button>
           <div class="flex items-center" id="activities-search-box" style="display:none;gap:8px;">
@@ -1872,10 +1874,6 @@ textarea.entry-input{
           <div class="card-sub">Belum dipublish ke Google Sheet &mdash; dikumpulkan dulu selama shift</div>
         </div>
         <div class="flex items-center" style="gap:8px;flex-wrap:wrap;row-gap:8px;">
-          <button type="button" class="pill-btn" id="mantisPublishBtn" onclick="mantisPublishPendingActions()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>
-            Publish to Sheet
-          </button>
           <button type="button" class="btn-primary" onclick="mantisOpenNewAction()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
             New Action
@@ -2142,7 +2140,7 @@ textarea.entry-input{
         </div>
 
         <div class="entry-form-footer">
-          <button type="button" class="btn-primary" onclick="mantisOpenWaShare()">
+          <button type="button" class="btn-primary btn-whatsapp" onclick="mantisOpenWaShare()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l1.3 -3.9a9 9 0 1 1 3.4 3l-4.7 .9"/><path d="M9 10h.01"/><path d="M12 10h.01"/><path d="M15 10h.01"/></svg>
             Buka WhatsApp
           </button>
@@ -4095,14 +4093,6 @@ function mantisSubmitMaintenanceEntry(){
 }
 
 /* ---------- Problem & Action: publish queued actions to the sheet ---------- */
-const MANTIS_PUBLISH_BTN_HTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>Publish to Sheet';
-
-function mantisRestorePublishBtn(btn){
-  if(!btn) return;
-  btn.disabled = false;
-  btn.innerHTML = MANTIS_PUBLISH_BTN_HTML;
-}
-
 function mantisShowActionsMessage(text, isError){
   const messageEl = document.getElementById('mantisActionsMessage');
   if(!messageEl) return;
@@ -4111,13 +4101,12 @@ function mantisShowActionsMessage(text, isError){
   messageEl.textContent = text || '';
 }
 
-/* Shared by the "Publish to Sheet" button and the WhatsApp modal's "Buka
-   WhatsApp" button (which publishes silently in the background). resetQueue
-   controls whether the local pending list is cleared on success - the
-   WhatsApp flow keeps it so the technician still sees what's been logged
-   this shift after sharing the report. */
-function mantisPublishActionsToSheet(opts){
-  const resetQueue = !opts || opts.resetQueue !== false;
+/* Publishes the queued actions to the Sheet - called silently in the
+   background from the WhatsApp modal's "Buka WhatsApp" button (there's no
+   separate "Publish to Sheet" button anymore). The local pending list is
+   deliberately left untouched afterward, so the technician still sees
+   what's been logged this shift after sharing the report. */
+function mantisPublishActionsToSheet(){
   const queue = mantisGetPendingActions();
 
   if(!queue.length){
@@ -4143,8 +4132,6 @@ function mantisPublishActionsToSheet(opts){
     return;
   }
 
-  const btn = document.getElementById('mantisPublishBtn');
-  if(btn){ btn.disabled = true; btn.textContent = 'Mempublish...'; }
   mantisShowActionsMessage('', false);
 
   const values = queue.map(function(item){
@@ -4169,15 +4156,9 @@ function mantisPublishActionsToSheet(opts){
       values: values
     })
   }).then(function(res){ return res.json(); }).then(function(data){
-    mantisRestorePublishBtn(btn);
     if(!data || !data.success){
       mantisShowActionsMessage((data && data.error) ? data.error : 'Gagal mempublish data.', true);
       return;
-    }
-
-    if(resetQueue){
-      mantisSavePendingActions([]);
-      mantisRenderProblemActionTable();
     }
 
     try{ sessionStorage.removeItem(MANTIS_SHEET_CACHE_PREFIX + 'Maintenance'); }catch(e){ /* storage unavailable - ignore */ }
@@ -4185,13 +4166,8 @@ function mantisPublishActionsToSheet(opts){
 
     mantisShowActionsMessage((data.count || values.length) + ' action berhasil dipublish ke Google Sheet.', false);
   }).catch(function(err){
-    mantisRestorePublishBtn(btn);
     mantisShowActionsMessage('Gagal terhubung ke server: ' + err.message, true);
   });
-}
-
-function mantisPublishPendingActions(){
-  mantisPublishActionsToSheet({ resetQueue: true });
 }
 
 /* ---------- Problem & Action: format the queued actions as a WhatsApp report ----------
@@ -4314,7 +4290,7 @@ function mantisOpenWaShare(){
   // popup-blocked, so it fires before the (async) sheet publish rather than
   // waiting on it - the two are independent side effects of one click.
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-  mantisPublishActionsToSheet({ resetQueue: false });
+  mantisPublishActionsToSheet();
 }
 
 /* ---------- Settings: tabs ---------- */
