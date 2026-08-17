@@ -3691,13 +3691,37 @@ function mantisApplyShift(value){
 }
 
 let mantisTeknisiListCache = null;
+const MANTIS_TEKNISI_CACHE_KEY = MANTIS_SHEET_CACHE_PREFIX + 'TeknisiList';
+
+function mantisReadTeknisiCache(){
+  if(mantisTeknisiListCache) return mantisTeknisiListCache;
+  try{
+    const raw = sessionStorage.getItem(MANTIS_TEKNISI_CACHE_KEY);
+    if(raw) mantisTeknisiListCache = JSON.parse(raw);
+  }catch(e){ /* storage unavailable - ignore */ }
+  return mantisTeknisiListCache;
+}
 
 function mantisFetchTeknisiList(callback){
   if(!MANTIS_METER_WRITE_URL){ callback([]); return; }
   const url = MANTIS_METER_WRITE_URL + '?action=teknisiList&token=' + encodeURIComponent(MANTIS_METER_WRITE_TOKEN);
   fetch(url).then(function(res){ return res.json(); }).then(function(data){
-    callback((data && data.success && Array.isArray(data.names)) ? data.names : []);
+    const names = (data && data.success && Array.isArray(data.names)) ? data.names : [];
+    mantisTeknisiListCache = names;
+    try{ sessionStorage.setItem(MANTIS_TEKNISI_CACHE_KEY, JSON.stringify(names)); }catch(e){ /* storage unavailable/full - ignore */ }
+    callback(names);
   }).catch(function(){ callback([]); });
+}
+
+/* Fires as soon as the Entries tab is shown, well before the technician
+   actually opens the Teknisi picker - the Apps Script endpoint this hits has
+   a real cold-start delay (unlike the plain gviz reads used for every other
+   table, which are fast and already session-cached), so this pays that cost
+   quietly in the background instead of it landing right when someone's
+   waiting on the popover. */
+function mantisPrefetchTeknisiList(){
+  if(mantisReadTeknisiCache() || !MANTIS_METER_WRITE_URL) return;
+  mantisFetchTeknisiList(function(){ /* mantisFetchTeknisiList already caches the result */ });
 }
 
 function mantisRenderTeknisiCheckboxes(names){
@@ -3721,8 +3745,9 @@ function mantisPopulateTeknisiCheckboxes(){
   const container = document.getElementById('mantisTeknisiCheckboxList');
   if(!container) return;
 
-  if(mantisTeknisiListCache){
-    mantisRenderTeknisiCheckboxes(mantisTeknisiListCache);
+  const cached = mantisReadTeknisiCache();
+  if(cached){
+    mantisRenderTeknisiCheckboxes(cached);
     return;
   }
 
@@ -3733,7 +3758,6 @@ function mantisPopulateTeknisiCheckboxes(){
 
   container.innerHTML = '<div class="sheet-loading" style="padding:8px;">Memuat daftar teknisi...</div>';
   mantisFetchTeknisiList(function(names){
-    mantisTeknisiListCache = names;
     mantisRenderTeknisiCheckboxes(names);
   });
 }
@@ -3768,6 +3792,8 @@ function mantisFillDatalist(datalistId, table, colIndex){
 }
 
 function mantisPopulateEntryFormOptions(){
+  mantisPrefetchTeknisiList();
+
   const table = mantisTableCache['activity-records-container'];
   if(!table) return;
 
