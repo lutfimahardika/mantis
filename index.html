@@ -4400,15 +4400,33 @@ function mantisPublishActionsToSheet(){
     };
   });
 
+  const payload = JSON.stringify({
+    token: MANTIS_METER_WRITE_TOKEN,
+    action: 'appendRow',
+    sheet: 'Maintenance',
+    values: values
+  });
+
+  // mantisOpenWaShare() calls this right after window.open()'ing WhatsApp,
+  // which backgrounds this tab almost immediately on mobile - a plain
+  // fetch() in flight at that moment can get aborted ("Failed to fetch")
+  // before it ever reaches the server. sendBeacon is built to survive
+  // exactly that (queued by the browser to send even as the page goes
+  // away), at the cost of not getting a response back to confirm the sheet
+  // write actually succeeded server-side.
+  if(navigator.sendBeacon){
+    const queued = navigator.sendBeacon(MANTIS_METER_WRITE_URL, payload);
+    mantisShowActionsMessage(
+      queued ? (values.length + ' action sedang dipublish ke Google Sheet.') : 'Gagal mengirim ke server.',
+      !queued
+    );
+    return;
+  }
+
   fetch(MANTIS_METER_WRITE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({
-      token: MANTIS_METER_WRITE_TOKEN,
-      action: 'appendRow',
-      sheet: 'Maintenance',
-      values: values
-    })
+    body: payload
   }).then(function(res){ return res.json(); }).then(function(data){
     if(!data || !data.success){
       mantisShowActionsMessage((data && data.error) ? data.error : 'Gagal mempublish data.', true);
