@@ -29,27 +29,11 @@
  * server-side saja, responsnya cuma success/username/role, tidak pernah
  * mengembalikan password. Tidak butuh MANTIS_WRITE_TOKEN karena ini justru
  * langkah untuk mendapatkan akses.
- *
- * Foto pada "New Action"/"Edit Action" (Activities > Problem & Action) diupload
- * lewat handleUploadImage() ke folder Drive MANTIS_PHOTOS_FOLDER_NAME milik akun
- * yang men-deploy Web app ini (karena "Execute as: Me" = identitas deployer).
- * Supaya foto masuk ke Drive akun "bottomfolder@hcloud.my.id", deploy WAJIB
- * dilakukan sambil login sebagai akun tsb:
- * 1. Share spreadsheet Mantis ke bottomfolder@hcloud.my.id sebagai Editor
- *    (kalau belum).
- * 2. Login Google sebagai bottomfolder@hcloud.my.id, buka spreadsheet Mantis,
- *    lalu ikuti "Deploy steps" di atas seperti biasa (Execute as: Me, Who has
- *    access: Anyone) dari akun tsb.
- * 3. Salin Web app URL hasil deploy itu ke MANTIS_METER_WRITE_URL di index.html.
- * Link hasil upload disimpan lewat handleAppendRow() ke kolom "Link Gambar" di
- * sheet "Maintenance" - kolom ini otomatis dibuat kalau belum ada, tidak perlu
- * ditambah manual.
  */
 
 var SHEET_ID = '11-sqiV3BYqx738Rhr3Y9SF4Q7FnAGKNqMn-Gvoq6rFs';
 var MACHINE_COLUMN_LABEL = 'Nama Mesin';
 var USER_SHEET_NAME = 'User';
-var MANTIS_PHOTOS_FOLDER_NAME = 'Mantis - Problem & Action Photos';
 
 function doGet(e) {
   try {
@@ -125,10 +109,6 @@ function doPost(e) {
 
     if (body.action === 'appendRow') {
       return handleAppendRow(body);
-    }
-
-    if (body.action === 'uploadImage') {
-      return handleUploadImage(body);
     }
 
     return handleSetMeterReading(body);
@@ -218,30 +198,7 @@ function handleAppendRow(body) {
   }
 
   var lastCol = sheet.getLastColumn();
-  var headers = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
-
-  // Any key present in the incoming rows that doesn't match an existing
-  // header gets its own new column appended at the end - e.g. "Link Gambar"
-  // for the New/Edit Action photo feature - so the sheet doesn't need to be
-  // hand-edited first.
-  var headerSet = {};
-  headers.forEach(function (h) { headerSet[String(h).trim()] = true; });
-  var newHeaders = [];
-  rowsToAppend.forEach(function (entryValues) {
-    if (!entryValues || typeof entryValues !== 'object') return;
-    Object.keys(entryValues).forEach(function (key) {
-      var trimmed = String(key).trim();
-      if (trimmed && !headerSet[trimmed]) {
-        headerSet[trimmed] = true;
-        newHeaders.push(trimmed);
-      }
-    });
-  });
-  if (newHeaders.length) {
-    sheet.getRange(1, headers.length + 1, 1, newHeaders.length).setValues([newHeaders]);
-    headers = headers.concat(newHeaders);
-  }
-
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   var startRow = sheet.getLastRow() + 1;
 
   var matrix = rowsToAppend.map(function (entryValues) {
@@ -255,52 +212,6 @@ function handleAppendRow(body) {
   sheet.getRange(startRow, 1, matrix.length, headers.length).setValues(matrix);
 
   return jsonResponse({ success: true, row: startRow, count: matrix.length });
-}
-
-/**
- * Uploads one photo (base64, sent from the New/Edit Action modal) to the
- * MANTIS_PHOTOS_FOLDER_NAME folder in the Drive of whichever account this Web
- * app is deployed as, and shares it view-only "anyone with link" so the URL
- * saved in the sheet's "Link Gambar" column can be opened by anyone with
- * access to the sheet.
- */
-function handleUploadImage(body) {
-  var base64Data = (body.imageBase64 || '').toString();
-  if (!base64Data) {
-    return jsonResponse({ success: false, error: 'Missing imageBase64' });
-  }
-
-  var mimeType = (body.mimeType || 'image/jpeg').toString();
-  var commaIdx = base64Data.indexOf(',');
-  if (base64Data.slice(0, 5) === 'data:' && commaIdx !== -1) {
-    var mimeMatch = base64Data.slice(5, commaIdx).split(';')[0];
-    if (mimeMatch) mimeType = mimeMatch;
-    base64Data = base64Data.slice(commaIdx + 1);
-  }
-
-  var filename = (body.filename || ('mantis_' + new Date().getTime())).toString().trim();
-  if (filename.indexOf('.') === -1) {
-    filename += '.' + (mimeType.split('/')[1] || 'jpg');
-  }
-
-  var bytes;
-  try {
-    bytes = Utilities.base64Decode(base64Data);
-  } catch (err) {
-    return jsonResponse({ success: false, error: 'Invalid image data' });
-  }
-
-  var blob = Utilities.newBlob(bytes, mimeType, filename);
-  var file = getMantisPhotosFolder().createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-
-  return jsonResponse({ success: true, url: file.getUrl(), fileId: file.getId() });
-}
-
-function getMantisPhotosFolder() {
-  var folders = DriveApp.getFoldersByName(MANTIS_PHOTOS_FOLDER_NAME);
-  if (folders.hasNext()) return folders.next();
-  return DriveApp.createFolder(MANTIS_PHOTOS_FOLDER_NAME);
 }
 
 function parseAppendValue(value) {
