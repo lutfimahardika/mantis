@@ -3049,10 +3049,8 @@ function mantisRenderDowntimeDashboard(container, table){
     '</div>' +
   '</div>';
 
-  const lineButtonLabel = filterLine || 'Semua Line';
-  const dateButtonLabel = (filterFrom || filterTo)
-    ? (mantisFormatDowntimeShortDate(filterFrom) + ' - ' + mantisFormatDowntimeShortDate(filterTo))
-    : 'Semua Tanggal';
+  const lineButtonLabel = 'Filter';
+  const dateButtonLabel = 'Tanggal';
 
   let html = '';
 
