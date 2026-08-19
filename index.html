@@ -2756,11 +2756,20 @@ function mantisBuildParetoChartInnerSvg(){
   // (band width grows a lot, bar width didn't).
   const barW = Math.max(10, bandW * 0.6);
   const maxVal = Math.max.apply(null, shown.map(function(i){ return i.totalHours; }).concat([1]));
+  // Cumulative % against the total of every tracked section (not just the
+  // ones currently shown), so switching Top-N doesn't artificially force
+  // the line to 100% at the last visible bar - a Top-5 view genuinely
+  // shows what fraction of all downtime those 5 sections account for.
+  const grandTotal = mantisParetoItems.reduce(function(s, i){ return s + i.totalHours; }, 0) || 1;
 
-  let bars = '', labels = '';
+  let bars = '', labels = '', runningHours = 0;
+  const linePoints = [];
   shown.forEach(function(item, i){
     const cx = bandW * i + bandW / 2;
     const barH = (item.totalHours / maxVal) * plotH;
+    runningHours += item.totalHours;
+    const cumPct = runningHours / grandTotal * 100;
+    linePoints.push({ x: cx, y: padTop + plotH - (cumPct / 100) * plotH });
     const x = cx - barW / 2;
     const y = padTop + plotH - barH;
     const section = item.equipment.replace(/^\d+\.\s*/, '');
@@ -2780,10 +2789,20 @@ function mantisBuildParetoChartInnerSvg(){
     labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" fill="var(--ink-3)">' + mantisEscapeHtml(shortLabel) + '</text>';
   });
 
+  const linePointsAttr = linePoints.map(function(p){ return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+  const lineDots = linePoints.map(function(p){
+    // <ellipse>, not <circle> - a circle's single radius can't survive the
+    // SVG's non-uniform x/y stretch (see mantisApplyParetoChartScaling)
+    // without becoming an oval, so rx/ry are set independently and ry gets
+    // corrected post-render the same way the bar corners are.
+    return '<ellipse class="mantis-pareto-line-dot" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" rx="3.5" ry="3.5" data-radius-user="3.5" fill="#fff" stroke="#2E7CF6" stroke-width="2" vector-effect="non-scaling-stroke"></ellipse>';
+  }).join('');
+  const cumulativeLine = '<polyline points="' + linePointsAttr + '" fill="none" stroke="#2E7CF6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline>' + lineDots;
+
   return '<svg id="mantisParetoSvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:320px;display:block;">' +
     '<defs><pattern id="paretoDots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="0.9" fill="#E7E7E4"/></pattern></defs>' +
     '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#paretoDots)"/>' +
-    bars + labels +
+    bars + cumulativeLine + labels +
   '</svg>';
 }
 
@@ -2818,6 +2837,11 @@ function mantisApplyParetoChartScaling(){
   });
   const dotPattern = svg.querySelector('#paretoDots');
   if(dotPattern) dotPattern.setAttribute('patternTransform', 'scale(' + (1 / scaleX).toFixed(4) + ',1)');
+  svg.querySelectorAll('.mantis-pareto-line-dot').forEach(function(dot){
+    const rxUser = parseFloat(dot.getAttribute('data-radius-user') || '0');
+    if(!rxUser) return;
+    dot.setAttribute('ry', (rxUser * scaleX).toFixed(2));
+  });
 }
 
 let mantisParetoRadiusResizeBound = false;
