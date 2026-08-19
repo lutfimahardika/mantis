@@ -2671,7 +2671,11 @@ function mantisBuildParetoChartInnerSvg(){
   const W = 1000, H = 320;
   const plotH = H - padTop - padBottom;
   const bandW = W / shown.length;
-  const barW = Math.max(10, Math.min(48, bandW * 0.55));
+  // Proportional to the band rather than capped at a fixed SVG-unit width -
+  // a fixed cap looked fine with ~8+ bars but left bars looking skinny with
+  // huge gaps whenever the scroller window was narrowed to just a few items
+  // (band width grows a lot, bar width didn't).
+  const barW = Math.max(10, bandW * 0.6);
   const maxVal = Math.max.apply(null, shown.map(function(i){ return i.totalHours; }).concat([1]));
 
   let bars = '', labels = '';
