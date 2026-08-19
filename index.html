@@ -2555,7 +2555,7 @@ function mantisParseDowntimeTable(table){
     if(!currentLine || !currentDesc) return;
 
     if(detail === 'duration'){
-      currentItem = { line: currentLine, equipment: currentDesc, hours: {}, rootCause: {}, note: {}, totalHours: 0 };
+      currentItem = { line: currentLine, equipment: currentDesc, hours: {}, percent: {}, rootCause: {}, note: {}, totalHours: 0 };
       items.push(currentItem);
       dateCols.forEach(function(dc){
         const text = mantisCellText(c[dc.index]);
@@ -2567,7 +2567,13 @@ function mantisParseDowntimeTable(table){
 
     if(!currentItem) return;
 
-    if(detail === 'root cause' || detail === 'action'){
+    if(detail === 'rate'){
+      dateCols.forEach(function(dc){
+        const text = mantisCellText(c[dc.index]);
+        if(text === '') return;
+        currentItem.percent[dc.label] = parseFloat(text) || 0;
+      });
+    } else if(detail === 'root cause' || detail === 'action'){
       dateCols.forEach(function(dc){
         const text = mantisCellText(c[dc.index]);
         if(text === '') return;
@@ -2687,19 +2693,32 @@ function mantisRenderDowntimeDashboard(container, table){
   if(!topItems.length){
     html += '<div class="tab-panel-empty" style="padding:24px 0;">Belum ada data downtime yang tercatat.</div>';
   } else {
-    html += '<div class="table-wrap"><table><thead><tr><th>Line &amp; Equipment</th><th>Root Cause</th><th style="white-space:nowrap;">Total Jam</th></tr></thead><tbody>';
+    html += '<div class="table-wrap"><table><thead><tr>' +
+      '<th>Line &amp; Equipment</th>' +
+      '<th style="white-space:nowrap;">Total Jam</th>' +
+      '<th style="white-space:nowrap;">Percent</th>' +
+      '<th>Root Cause</th>' +
+      '<th>Action</th>' +
+      '</tr></thead><tbody>';
     topItems.forEach(function(item){
       const dates = Object.keys(item.hours).filter(function(d){ return item.hours[d] > 0; });
       const lastDate = dates.length ? dates[dates.length - 1] : '';
       const rootCause = lastDate ? (item.rootCause[lastDate] || '') : '';
+      const action = lastDate ? (item.note[lastDate] || '') : '';
+      const percentDates = Object.keys(item.percent);
+      const lastPercentDate = percentDates.length ? percentDates[percentDates.length - 1] : '';
+      const percentVal = lastPercentDate ? item.percent[lastPercentDate] : null;
+      const percentText = (percentVal === null || percentVal === undefined) ? '-' : (Math.round(percentVal * 100) / 100) + '%';
       html += '<tr>' +
         '<td><div class="flex items-center" style="gap:10px;">' +
           '<div class="row-icon" style="background:var(--accent-soft);">' + MANTIS_ACTION_ICON + '</div>' +
           '<div><div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.equipment) + '</div>' +
           '<div style="font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(item.line) + '</div></div>' +
         '</div></td>' +
-        '<td style="white-space:normal;max-width:320px;color:var(--ink);">' + mantisEscapeHtml(rootCause) + '</td>' +
         '<td style="white-space:nowrap;font-weight:500;">' + mantisFormatDowntimeHours(item.totalHours) + '</td>' +
+        '<td style="white-space:nowrap;">' + percentText + '</td>' +
+        '<td style="white-space:normal;max-width:240px;color:var(--ink);">' + mantisEscapeHtml(rootCause) + '</td>' +
+        '<td style="white-space:normal;max-width:240px;color:var(--ink);">' + mantisEscapeHtml(action) + '</td>' +
       '</tr>';
     });
     html += '</tbody></table></div>';
