@@ -2523,40 +2523,40 @@ function renderGvizTable(container, table, containerId){
    The "Downtime" sheet isn't a plain table: Line and Description are merged
    cells spanning 4 rows per item, so only the first row of each block has
    them filled (the rest read blank via gviz and need forward-filling). Each
-   block is one "hour" row, one "percent" row, then two "text" rows (root
-   cause, then a downtime note) - in that fixed order, with one column added
-   per day (after Unit) holding that day's value. The item's leading number
-   (e.g. "29.") is NOT a unique id - it's reused across different equipment,
-   sometimes even on the same line - so items are grouped by row position
-   (a new "hour" row starts a new item) rather than by that number. Columns
-   are located by label rather than fixed index since a stray blank column
-   has already shifted things once. */
+   block is one row per "Detail": Duration (hours), Rate (percent), Root
+   Cause and Action (the downtime note) - in that fixed order, with one
+   column added per day (after Unit) holding that day's value. The item's
+   leading number (e.g. "29.") is NOT a unique id - it's reused across
+   different equipment, sometimes even on the same line - so items are
+   grouped by row position (a "Duration" row starts a new item) rather than
+   by that number. Columns are located by label rather than fixed index
+   since a stray blank column has already shifted things once. */
 function mantisParseDowntimeTable(table){
   const lineIdx = mantisFindColIndex(table, 'Line');
   const descIdx = mantisFindColIndex(table, 'Description');
+  const detailIdx = mantisFindColIndex(table, 'Detail');
   const unitIdx = mantisFindColIndex(table, 'Unit');
-  const lastFixedIdx = Math.max(lineIdx, descIdx, unitIdx);
+  const lastFixedIdx = Math.max(lineIdx, descIdx, detailIdx, unitIdx);
 
   const dateCols = table.cols
     .map(function(c, i){ return { index: i, label: c.label || '' }; })
     .filter(function(d){ return d.index > lastFixedIdx && d.label; });
 
   const items = [];
-  let currentLine = '', currentDesc = '', currentItem = null, textSeen = 0;
+  let currentLine = '', currentDesc = '', currentItem = null;
 
   table.rows.forEach(function(r){
     const c = r.c || [];
     const lineRaw = lineIdx >= 0 ? mantisCellText(c[lineIdx]).trim() : '';
     const descRaw = descIdx >= 0 ? mantisCellText(c[descIdx]).trim() : '';
-    const unit = (unitIdx >= 0 ? mantisCellText(c[unitIdx]) : '').trim().toLowerCase();
+    const detail = (detailIdx >= 0 ? mantisCellText(c[detailIdx]) : '').trim().toLowerCase();
     if(lineRaw) currentLine = lineRaw;
     if(descRaw) currentDesc = descRaw;
     if(!currentLine || !currentDesc) return;
 
-    if(unit === 'hour'){
+    if(detail === 'duration'){
       currentItem = { line: currentLine, equipment: currentDesc, hours: {}, rootCause: {}, note: {}, totalHours: 0 };
       items.push(currentItem);
-      textSeen = 0;
       dateCols.forEach(function(dc){
         const text = mantisCellText(c[dc.index]);
         if(text === '') return;
@@ -2567,13 +2567,12 @@ function mantisParseDowntimeTable(table){
 
     if(!currentItem) return;
 
-    if(unit === 'text'){
-      textSeen++;
+    if(detail === 'root cause' || detail === 'action'){
       dateCols.forEach(function(dc){
         const text = mantisCellText(c[dc.index]);
         if(text === '') return;
-        if(textSeen === 1) currentItem.rootCause[dc.label] = text;
-        else if(textSeen === 2) currentItem.note[dc.label] = text;
+        if(detail === 'root cause') currentItem.rootCause[dc.label] = text;
+        else currentItem.note[dc.label] = text;
       });
     }
   });
@@ -2617,7 +2616,8 @@ function mantisBuildDowntimeChartSvg(dateLabels, hoursByDate){
     const y = H - padBottom - barH;
     bars += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(barH, 0).toFixed(1) + '" rx="4" fill="var(--accent)"></rect>';
     if(v > 0){
-      bars += '<text x="' + cx.toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" text-anchor="middle" font-size="12" fill="var(--ink-2)">' + v + '</text>';
+      const vLabel = Math.round(v * 100) / 100;
+      bars += '<text x="' + cx.toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" text-anchor="middle" font-size="12" fill="var(--ink-2)">' + vLabel + '</text>';
     }
     bars += '<text x="' + cx.toFixed(1) + '" y="' + (H - 6).toFixed(1) + '" text-anchor="middle" font-size="10" fill="var(--ink-3)">' + mantisEscapeHtml(d) + '</text>';
   });
@@ -3558,7 +3558,11 @@ function loadSheetTable(sheetName, containerId, handlerName, forceRefresh, onDon
   };
 
   const tqx = 'out:json;responseHandler:' + handlerName;
-  const url = 'https://docs.google.com/spreadsheets/d/' + MANTIS_SHEET_ID + '/gviz/tq?sheet=' + encodeURIComponent(sheetName) + '&tqx=' + encodeURIComponent(tqx) + '&_=' + Date.now();
+  // headers=1 pins the header row explicitly - gviz's auto-detection is
+  // unreliable on sparse/mixed sheets (seen misfiring as high as 402 "header"
+  // rows on Downtime, mangling every column label) so this can't be left to
+  // guesswork.
+  const url = 'https://docs.google.com/spreadsheets/d/' + MANTIS_SHEET_ID + '/gviz/tq?sheet=' + encodeURIComponent(sheetName) + '&headers=1&tqx=' + encodeURIComponent(tqx) + '&_=' + Date.now();
 
   const script = document.createElement('script');
   script.src = url;
