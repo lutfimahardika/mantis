@@ -1453,7 +1453,7 @@ textarea.entry-input{
       <div class="sb-divider-full" style="margin-top:8px;"></div>
 
       <div class="sb-account">
-        <svg class="sb-avatar" viewBox="0 0 34 34"><rect width="34" height="34" rx="17" fill="#E4E4E7"/><text x="17" y="21" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6B7280" id="mantisAccountInitials">-</text></svg>
+        <svg class="sb-avatar" viewBox="0 0 34 34"><rect width="34" height="34" rx="17" fill="#E4E4E7" id="mantisAccountAvatarBg"/><text x="17" y="21" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#6B7280" id="mantisAccountInitials">-</text></svg>
         <div style="min-width:0;flex:1;">
           <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="mantisAccountName">-</div>
           <div style="font-size:11px;color:var(--ink-3);" id="mantisAccountRole">-</div>
@@ -2059,6 +2059,7 @@ textarea.entry-input{
         <button class="tab-btn active" data-settings-tab="language" onclick="showSettingsTab('language')">Bahasa</button>
         <button class="tab-btn" data-settings-tab="table" onclick="showSettingsTab('table')">Table</button>
         <button class="tab-btn" data-settings-tab="chart" onclick="showSettingsTab('chart')">Chart</button>
+        <button class="tab-btn" data-settings-tab="account" onclick="showSettingsTab('account')">Akun</button>
       </div>
 
       <div class="settings-tab-panel" id="settings-tab-language" style="padding:20px;">
@@ -2112,6 +2113,11 @@ textarea.entry-input{
           </button>
         </div>
         <div class="col-pref-list" id="settings-chart-abbr-list" style="max-height:420px;overflow-y:auto;"><div class="col-pref-loading">Memuat...</div></div>
+      </div>
+
+      <div class="settings-tab-panel" id="settings-tab-account" style="display:none;padding:20px;">
+        <div class="settings-row-desc" style="margin-bottom:16px;">Pilih warna avatar yang tampil di pojok kiri bawah sidebar.</div>
+        <div id="settings-avatar-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:12px;max-width:420px;"></div>
       </div>
     </div>
   </div>
@@ -5529,6 +5535,7 @@ function showSettingsTab(name){
 
   if(name === 'table') mantisInitTableSettingsTab();
   if(name === 'chart') mantisInitChartSettingsTab();
+  if(name === 'account') mantisInitAccountSettingsTab();
 }
 
 /* ---------- Settings: language ---------- */
@@ -5717,6 +5724,50 @@ function mantisApplyAccountInfo(user){
     const isForeman = ((user && user.role) || '').trim().toLowerCase() === 'foreman';
     testPageNav.style.display = isForeman ? '' : 'none';
   }
+
+  mantisApplyAccountAvatarColor();
+}
+
+/* ---------- Settings: account avatar ---------- */
+const MANTIS_AVATAR_COLOR_KEY = 'mantisAccountAvatarColor';
+const MANTIS_AVATAR_COLORS = [
+  '#F5A623', '#6366F1', '#2E7CF6', '#16A34A', '#DC2626',
+  '#EC4899', '#F97316', '#EAB308', '#84CC16', '#10B981',
+  '#14B8A6', '#06B6D4', '#0EA5E9', '#8B5CF6', '#A855F7',
+  '#D946EF', '#F43F5E', '#64748B', '#78716C', '#0F766E'
+];
+
+function mantisGetAccountAvatarColor(){
+  try{ return localStorage.getItem(MANTIS_AVATAR_COLOR_KEY) || ''; }catch(e){ return ''; }
+}
+
+function mantisApplyAccountAvatarColor(){
+  const color = mantisGetAccountAvatarColor();
+  const bgEl = document.getElementById('mantisAccountAvatarBg');
+  const initialsEl = document.getElementById('mantisAccountInitials');
+  if(!bgEl || !initialsEl) return;
+  bgEl.setAttribute('fill', color || '#E4E4E7');
+  initialsEl.setAttribute('fill', color ? '#fff' : '#6B7280');
+}
+
+function mantisSetAccountAvatarColor(color){
+  try{ localStorage.setItem(MANTIS_AVATAR_COLOR_KEY, color); }catch(e){ /* storage unavailable - ignore */ }
+  mantisApplyAccountAvatarColor();
+  mantisInitAccountSettingsTab();
+}
+
+function mantisInitAccountSettingsTab(){
+  const grid = document.getElementById('settings-avatar-grid');
+  if(!grid) return;
+  const current = mantisGetAccountAvatarColor();
+  const initials = (document.getElementById('mantisAccountInitials') || {}).textContent || '-';
+  grid.innerHTML = MANTIS_AVATAR_COLORS.map(function(color){
+    const selected = color === current;
+    return '<button type="button" title="' + color + '" onclick="mantisSetAccountAvatarColor(\'' + color + '\')" ' +
+      'style="width:40px;height:40px;border-radius:999px;border:2px solid ' + (selected ? 'var(--ink)' : 'transparent') + ';padding:2px;background:none;cursor:pointer;box-sizing:border-box;">' +
+      '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:999px;background:' + color + ';color:#fff;font-size:12px;font-weight:600;font-family:inherit;">' + mantisEscapeHtml(initials) + '</span>' +
+    '</button>';
+  }).join('');
 }
 
 function mantisShowLoginScreen(){
