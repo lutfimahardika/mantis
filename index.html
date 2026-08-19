@@ -2690,12 +2690,10 @@ function mantisBuildParetoChartInnerSvg(){
     const x = cx - barW / 2;
     const y = padTop + plotH - barH;
     const section = item.equipment.replace(/^\d+\.\s*/, '');
-    // Scales with barW (capped at 10px) instead of a fixed radius - a fixed
-    // rx looks properly rounded on narrow Top-20 bars but barely rounded on
-    // a single wide Top-1 bar. Also capped to a fraction of this bar's own
-    // height so short bars near the tail of the Pareto (common past Top-5)
-    // don't get clamped by the SVG into a fully-round capsule.
-    const barRx = Math.min(10, barW * 0.2, Math.max(barH, 0) * 0.4);
+    // 20% of this bar's own width, rather than a fixed radius - a fixed rx
+    // looks properly rounded on narrow Top-20 bars but barely rounded on a
+    // single wide Top-1 bar.
+    const barRx = barW * 0.2;
     bars += '<rect class="mantis-pareto-bar" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(barH, 0).toFixed(1) + '" rx="' + barRx.toFixed(1) + '" ry="' + barRx.toFixed(1) + '" data-target-radius="' + barRx.toFixed(1) + '" fill="#E4E4E7" ' +
       'data-section="' + mantisEscapeHtml(section) + '" data-line="' + mantisEscapeHtml(item.line) + '" ' +
       'data-hours="' + mantisEscapeHtml(mantisFormatDowntimeHours(item.totalHours)) + '" ' +
