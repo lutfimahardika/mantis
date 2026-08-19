@@ -606,7 +606,6 @@ th:last-child, td:last-child{ padding-right:20px; }
 tbody tr{ border-bottom:1px solid var(--line-soft); transition:background 150ms; }
 tbody tr:last-child{ border-bottom:none; }
 tbody tr:hover{ background:#FCFCFB; }
-tbody tr.mantis-pareto-row-active{ background:var(--accent-soft); }
 td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 .row-icon{ width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:0 0 30px; }
 .badge{ display:inline-flex; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:500; }
@@ -2737,10 +2736,7 @@ function mantisSetParetoWindowCount(value){
 
 /* Shared by the initial Downtime dashboard render and the Top-N dropdown's
    lightweight refresh, so the "Top Downtime" table always lists exactly the
-   sections the Pareto chart is currently showing. data-section/data-line
-   match the same attributes on .mantis-pareto-bar (both derived from
-   item.equipment with its leading "N. " stripped) so hover can be
-   cross-referenced between the two. */
+   sections the Pareto chart is currently showing. */
 function mantisBuildDowntimeTopTableRowsHtml(topItems){
   return topItems.map(function(item){
     const dates = Object.keys(item.hours).filter(function(d){ return item.hours[d] > 0; });
@@ -2752,9 +2748,7 @@ function mantisBuildDowntimeTopTableRowsHtml(topItems){
     const percentVal = lastPercentDate ? item.percent[lastPercentDate] : null;
     const percentText = (percentVal === null || percentVal === undefined) ? '-' : (Math.round(percentVal * 100) / 100) + '%';
     const lineIcon = mantisGetDowntimeLineIcon(item.line);
-    const section = item.equipment.replace(/^\d+\.\s*/, '');
-    return '<tr class="mantis-pareto-row" data-section="' + mantisEscapeHtml(section) + '" data-line="' + mantisEscapeHtml(item.line) + '" ' +
-        'onmouseenter="mantisHighlightDowntimeRow(this)" onmouseleave="mantisUnhighlightDowntimeRow()">' +
+    return '<tr>' +
       '<td><div class="flex items-center" style="gap:10px;">' +
         '<div class="row-icon" style="background:' + lineIcon.bg + ';">' + lineIcon.html + '</div>' +
         '<div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.line) + '</div>' +
@@ -2772,17 +2766,6 @@ function mantisRefreshDowntimeTopTable(){
   const tbody = document.getElementById('mantisDowntimeTopTableBody');
   if(!tbody) return;
   tbody.innerHTML = mantisBuildDowntimeTopTableRowsHtml(mantisParetoItems.slice(0, mantisParetoWindowCount));
-}
-
-function mantisHighlightDowntimeRow(tr){
-  const bar = Array.prototype.find.call(document.querySelectorAll('.mantis-pareto-bar'), function(r){
-    return r.dataset.section === tr.dataset.section && r.dataset.line === tr.dataset.line;
-  });
-  if(bar) mantisShowDowntimeBarDetail(bar);
-}
-
-function mantisUnhighlightDowntimeRow(){
-  mantisHideDowntimeBarDetail();
 }
 
 function mantisBuildDowntimeParetoSvg(items){
@@ -2899,12 +2882,6 @@ function mantisShowDowntimeBarDetail(rect){
   }
   rect.setAttribute('fill', 'var(--accent)');
 
-  document.querySelectorAll('.mantis-pareto-row-active').forEach(function(tr){ tr.classList.remove('mantis-pareto-row-active'); });
-  const matchedRow = Array.prototype.find.call(document.querySelectorAll('.mantis-pareto-row'), function(tr){
-    return tr.dataset.section === rect.dataset.section && tr.dataset.line === rect.dataset.line;
-  });
-  if(matchedRow) matchedRow.classList.add('mantis-pareto-row-active');
-
   tooltip.innerHTML =
     '<div style="font-size:11px;color:#fff;opacity:.75;">' + mantisEscapeHtml(rect.dataset.line) + '</div>' +
     '<div style="font-size:12px;font-weight:600;color:#fff;margin-top:2px;">' + mantisEscapeHtml(rect.dataset.section) + '</div>' +
@@ -2936,7 +2913,6 @@ function mantisHideDowntimeBarDetail(){
     tooltip.style.display = 'none';
     const svg = document.getElementById('mantisParetoSvg');
     if(svg) svg.querySelectorAll('.mantis-pareto-bar').forEach(function(r){ r.setAttribute('fill', '#E4E4E7'); });
-    document.querySelectorAll('.mantis-pareto-row-active').forEach(function(tr){ tr.classList.remove('mantis-pareto-row-active'); });
   }
 }
 
