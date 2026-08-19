@@ -2787,6 +2787,8 @@ function mantisBuildParetoChartInnerSvg(){
   });
 
   return '<svg id="mantisParetoSvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:320px;display:block;">' +
+    '<defs><pattern id="paretoDots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="0.9" fill="#E7E7E4"/></pattern></defs>' +
+    '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#paretoDots)"/>' +
     gridLines + bars + labels +
   '</svg>';
 }
@@ -2801,8 +2803,15 @@ function mantisBuildParetoChartInnerSvg(){
    vertical stretch is always 1:1 (viewBox height == CSS height), so
    without scaling it down/up by the same factor as rx just got stretched,
    the two would no longer match in real screen pixels and the corner
-   reads as an oval instead of a circle. */
-function mantisApplyParetoBarRadius(){
+   reads as an oval instead of a circle.
+
+   The dot-grid background pattern has the same problem - its 14x14 tile
+   and r=0.9 dots are authored in viewBox units, so the same horizontal
+   stretch would squash them into ellipses on an uneven grid. Countering
+   it with a patternTransform that pre-stretches the tile by 1/scaleX
+   before the outer SVG stretch is applied cancels out to round dots on
+   an even grid again, on any screen width. */
+function mantisApplyParetoChartScaling(){
   const svg = document.getElementById('mantisParetoSvg');
   if(!svg) return;
   const renderedW = svg.getBoundingClientRect().width;
@@ -2813,6 +2822,8 @@ function mantisApplyParetoBarRadius(){
     if(!rxUser) return;
     bar.setAttribute('ry', (rxUser * scaleX).toFixed(1));
   });
+  const dotPattern = svg.querySelector('#paretoDots');
+  if(dotPattern) dotPattern.setAttribute('patternTransform', 'scale(' + (1 / scaleX).toFixed(4) + ',1)');
 }
 
 let mantisParetoRadiusResizeBound = false;
@@ -2822,14 +2833,14 @@ function mantisBindParetoRadiusResize(){
   let pending = null;
   window.addEventListener('resize', function(){
     if(pending) clearTimeout(pending);
-    pending = setTimeout(mantisApplyParetoBarRadius, 100);
+    pending = setTimeout(mantisApplyParetoChartScaling, 100);
   });
 }
 
 function mantisRefreshParetoChart(){
   const host = document.getElementById('mantisParetoChartHost');
   if(host) host.innerHTML = mantisBuildParetoChartInnerSvg();
-  mantisApplyParetoBarRadius();
+  mantisApplyParetoChartScaling();
   mantisHideDowntimeBarDetail();
 }
 
@@ -3222,7 +3233,7 @@ function mantisRenderDowntimeDashboard(container, table){
 
   container.innerHTML = html;
   mantisSyncDowntimeFilterPopovers();
-  mantisApplyParetoBarRadius();
+  mantisApplyParetoChartScaling();
   mantisBindParetoRadiusResize();
 }
 
