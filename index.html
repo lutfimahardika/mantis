@@ -2609,24 +2609,44 @@ function mantisDowntimeMetricColHtml(label, value){
   '</div>';
 }
 
-/* Downtime bar chart: items sorted by total hours descending. Capped to the
+/* Downtime bar chart: items sorted by total hours descending, capped to the
    worst MANTIS_PARETO_MAX_ITEMS so the pool stays bounded as more items
-   accumulate. Rather than squeezing every item into one view (unreadable)
-   or a fixed-width scroll strip, a small dual-handle range scroller lets
-   the user pick both which slice of that pool is visible and how many
-   items are shown at once - only the selected window is drawn, stretched
-   to fill the chart width, so bars stay a comfortable size regardless of
-   pool size. Hovering/tapping a bar highlights it and shows a detail card
-   (section, line, hours), mirroring the app's .mantis-chart-tooltip
-   pattern used on the Meters chart. */
+   accumulate. Rather than squeezing every item into one view (unreadable),
+   a dropdown next to the card title picks how many of the top items are
+   drawn (only the selected count is rendered, stretched to fill the chart
+   width, so bars stay a comfortable size regardless of pool size). Its
+   options are 1/2/3/5/10/20 filtered down to whatever doesn't exceed the
+   actual pool size, via mantisGetParetoCountOptions(). Hovering/tapping a
+   bar highlights it and shows a detail card (section, line, hours),
+   mirroring the app's .mantis-chart-tooltip pattern used on the Meters
+   chart. */
 const MANTIS_PARETO_MAX_ITEMS = 20;
-const MANTIS_PARETO_DEFAULT_WINDOW = 8;
-const MANTIS_PARETO_MIN_WINDOW = 2;
+const MANTIS_PARETO_COUNT_CHOICES = [1, 2, 3, 5, 10, 20];
+const MANTIS_PARETO_DEFAULT_COUNT = 10;
 
 let mantisParetoItems = [];
-let mantisParetoWindowStart = 0;
-let mantisParetoWindowCount = MANTIS_PARETO_DEFAULT_WINDOW;
-let mantisParetoDrag = null;
+let mantisParetoWindowCount = MANTIS_PARETO_DEFAULT_COUNT;
+
+function mantisGetParetoCountOptions(){
+  const n = mantisParetoItems.length;
+  return MANTIS_PARETO_COUNT_CHOICES.filter(function(v){ return v <= n; });
+}
+
+function mantisBuildParetoCountSelectHtml(){
+  const options = mantisGetParetoCountOptions();
+  if(options.length <= 1) return '';
+
+  const optionsHtml = options.map(function(v){
+    return '<option value="' + v + '"' + (v === mantisParetoWindowCount ? ' selected' : '') + '>' + v + ' bar</option>';
+  }).join('');
+
+  return '<select id="mantisParetoCountSelect" class="pill-btn" onchange="mantisSetParetoWindowCount(this.value)">' + optionsHtml + '</select>';
+}
+
+function mantisSetParetoWindowCount(value){
+  mantisParetoWindowCount = parseInt(value, 10) || MANTIS_PARETO_DEFAULT_COUNT;
+  mantisRefreshParetoChart();
+}
 
 function mantisBuildDowntimeParetoSvg(items){
   const withHours = items.filter(function(i){ return i.totalHours > 0; })
@@ -2638,37 +2658,17 @@ function mantisBuildDowntimeParetoSvg(items){
     return '<div class="tab-panel-empty" style="padding:24px 0;">Belum ada data downtime.</div>';
   }
 
-  mantisParetoWindowStart = 0;
-  mantisParetoWindowCount = Math.min(MANTIS_PARETO_DEFAULT_WINDOW, mantisParetoItems.length);
+  const options = mantisGetParetoCountOptions();
+  mantisParetoWindowCount = options.filter(function(v){ return v <= MANTIS_PARETO_DEFAULT_COUNT; }).pop() || options[options.length - 1] || mantisParetoItems.length;
 
   return '<div class="mantis-pareto-wrap" style="position:relative;">' +
     '<div id="mantisParetoChartHost">' + mantisBuildParetoChartInnerSvg() + '</div>' +
-    mantisBuildParetoScrollerHtml() +
     '<div class="mantis-chart-tooltip mantis-pareto-tooltip" id="mantisParetoTooltip"></div>' +
   '</div>';
 }
 
-/* Kept deliberately understated (thin neutral track, small gray handles)
-   rather than an accent-colored control, since it's a secondary navigation
-   aid sitting right under the chart - it shouldn't compete for attention
-   with the bars themselves. */
-function mantisBuildParetoScrollerHtml(){
-  const n = mantisParetoItems.length;
-  if(n <= mantisParetoWindowCount) return '';
-
-  const startPct = (mantisParetoWindowStart / n) * 100;
-  const widthPct = (mantisParetoWindowCount / n) * 100;
-
-  return '<div class="mantis-pareto-scroller" id="mantisParetoScroller" style="position:relative;height:8px;margin:14px 2px 4px 2px;background:var(--line-soft);border-radius:999px;touch-action:none;">' +
-    '<div class="mantis-pareto-scroller-window" id="mantisParetoScrollerWindow" style="position:absolute;top:0;bottom:0;left:' + startPct.toFixed(2) + '%;width:' + widthPct.toFixed(2) + '%;background:#D9D9D6;border-radius:999px;cursor:grab;box-sizing:border-box;" onpointerdown="mantisParetoScrollerPointerDown(event,\'pan\')">' +
-      '<div class="mantis-pareto-scroller-handle" style="position:absolute;left:-1px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--ink-3);border:2px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,.2);cursor:ew-resize;" onpointerdown="event.stopPropagation();mantisParetoScrollerPointerDown(event,\'start\')"></div>' +
-      '<div class="mantis-pareto-scroller-handle" style="position:absolute;right:-1px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--ink-3);border:2px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,.2);cursor:ew-resize;" onpointerdown="event.stopPropagation();mantisParetoScrollerPointerDown(event,\'end\')"></div>' +
-    '</div>' +
-  '</div>';
-}
-
 function mantisBuildParetoChartInnerSvg(){
-  const shown = mantisParetoItems.slice(mantisParetoWindowStart, mantisParetoWindowStart + mantisParetoWindowCount);
+  const shown = mantisParetoItems.slice(0, mantisParetoWindowCount);
   if(!shown.length) return '';
 
   const padTop = 20, padBottom = 90;
@@ -2713,56 +2713,7 @@ function mantisBuildParetoChartInnerSvg(){
 function mantisRefreshParetoChart(){
   const host = document.getElementById('mantisParetoChartHost');
   if(host) host.innerHTML = mantisBuildParetoChartInnerSvg();
-
-  const scrollerWindow = document.getElementById('mantisParetoScrollerWindow');
-  const n = mantisParetoItems.length;
-  if(scrollerWindow && n){
-    scrollerWindow.style.left = ((mantisParetoWindowStart / n) * 100).toFixed(2) + '%';
-    scrollerWindow.style.width = ((mantisParetoWindowCount / n) * 100).toFixed(2) + '%';
-  }
   mantisHideDowntimeBarDetail();
-}
-
-function mantisParetoScrollerPointerDown(evt, mode){
-  evt.preventDefault();
-  const scroller = document.getElementById('mantisParetoScroller');
-  if(!scroller) return;
-  mantisParetoDrag = {
-    mode: mode,
-    startClientX: evt.clientX,
-    trackWidth: scroller.getBoundingClientRect().width,
-    windowStart: mantisParetoWindowStart,
-    windowCount: mantisParetoWindowCount,
-    n: mantisParetoItems.length
-  };
-  document.addEventListener('pointermove', mantisParetoScrollerPointerMove);
-  document.addEventListener('pointerup', mantisParetoScrollerPointerUp);
-}
-
-function mantisParetoScrollerPointerMove(evt){
-  if(!mantisParetoDrag || !mantisParetoDrag.trackWidth) return;
-  const d = mantisParetoDrag;
-  const deltaItems = ((evt.clientX - d.startClientX) / d.trackWidth) * d.n;
-
-  if(d.mode === 'pan'){
-    mantisParetoWindowStart = Math.max(0, Math.min(Math.round(d.windowStart + deltaItems), d.n - d.windowCount));
-  } else if(d.mode === 'start'){
-    const end = d.windowStart + d.windowCount;
-    const newStart = Math.max(0, Math.min(Math.round(d.windowStart + deltaItems), end - MANTIS_PARETO_MIN_WINDOW));
-    mantisParetoWindowStart = newStart;
-    mantisParetoWindowCount = end - newStart;
-  } else if(d.mode === 'end'){
-    const newEnd = Math.max(d.windowStart + MANTIS_PARETO_MIN_WINDOW, Math.min(Math.round(d.windowStart + d.windowCount + deltaItems), d.n));
-    mantisParetoWindowCount = newEnd - d.windowStart;
-  }
-
-  mantisRefreshParetoChart();
-}
-
-function mantisParetoScrollerPointerUp(){
-  mantisParetoDrag = null;
-  document.removeEventListener('pointermove', mantisParetoScrollerPointerMove);
-  document.removeEventListener('pointerup', mantisParetoScrollerPointerUp);
 }
 
 function mantisShowDowntimeBarDetail(rect){
@@ -3098,11 +3049,15 @@ function mantisRenderDowntimeDashboard(container, table){
   html += '</div>';
 
   // ---- Card 2: Grafik (Pareto) ----
+  const paretoChartHtml = mantisBuildDowntimeParetoSvg(items);
   html += '<div class="card" style="padding:0;overflow:hidden;">';
-  html += '<div style="padding:20px;"><div class="card-title">Grafik Downtime</div><div class="card-sub">Total Jam per Equipment</div></div>';
+  html += '<div style="padding:20px;" class="flex items-center justify-between">' +
+    '<div><div class="card-title">Grafik Downtime</div><div class="card-sub">Total Jam per Equipment</div></div>' +
+    mantisBuildParetoCountSelectHtml() +
+  '</div>';
   html += '<div class="full-bleed-divider" style="margin:0;"></div>';
   html += '<div style="padding:20px;">';
-  html += mantisBuildDowntimeParetoSvg(items);
+  html += paretoChartHtml;
   html += '</div>';
   html += '</div>';
 
