@@ -6,6 +6,13 @@
 <title>Mantis — Maintenance Dashboard</title>
 <meta name="description" content="Mantis maintenance management dashboard" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#FF7034">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mantis">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -6054,6 +6061,16 @@ function mantisLogout(){
 }
 
 mantisCheckAuth();
+
+/* ---------- PWA: app shell service worker ----------
+   file:// (and plain http) origins don't support service workers at all -
+   this is a no-op there and only actually registers once the app is served
+   over https (GitHub Pages) or localhost. */
+if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){ /* offline shell just won't be available */ });
+  });
+}
 </script>
 </body>
 </html>
