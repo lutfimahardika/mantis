@@ -2746,7 +2746,7 @@ function mantisBuildParetoChartInnerSvg(){
   const shown = mantisParetoItems.slice(0, mantisParetoWindowCount);
   if(!shown.length) return '';
 
-  const padTop = 20, padBottom = 90;
+  const padTop = 20, padBottom = 30;
   const W = MANTIS_PARETO_VIEWBOX_W, H = 320;
   const plotH = H - padTop - padBottom;
   const bandW = W / shown.length;
@@ -2776,8 +2776,8 @@ function mantisBuildParetoChartInnerSvg(){
       'onmouseenter="mantisShowDowntimeBarDetail(this)" onmouseleave="mantisHideDowntimeBarDetail()" onclick="mantisShowDowntimeBarDetail(this)"></rect>';
 
     const shortLabel = MANTIS_DOWNTIME_ABBR[section.trim()] || (section.length > 16 ? section.slice(0, 15) + '…' : section);
-    const labelY = padTop + plotH + 14;
-    labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="end" font-size="10" fill="var(--ink-3)" transform="rotate(-45 ' + cx.toFixed(1) + ' ' + labelY.toFixed(1) + ')">' + mantisEscapeHtml(shortLabel) + '</text>';
+    const labelY = padTop + plotH + 16;
+    labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="middle" font-size="10" fill="var(--ink-3)">' + mantisEscapeHtml(shortLabel) + '</text>';
   });
 
   let gridLines = '';
