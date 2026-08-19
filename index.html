@@ -2662,6 +2662,82 @@ function mantisBuildDowntimeParetoSvg(items){
     '</svg>';
 }
 
+/* ---------- Downtime filters (Line + date range/week) ---------- */
+let mantisDowntimeFilters = { line: '', dateFrom: '', dateTo: '' };
+const MANTIS_MONTH_ABBR = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+
+function mantisDowntimeDateLabelToIso(label){
+  const parts = (label || '').trim().split(/\s+/);
+  if(parts.length !== 3) return '';
+  const day = parseInt(parts[0], 10);
+  const mon = MANTIS_MONTH_ABBR[parts[1].toLowerCase().slice(0, 3)];
+  let year = parseInt(parts[2], 10);
+  if(isNaN(day) || mon === undefined || isNaN(year)) return '';
+  if(year < 100) year += 2000;
+  return year + '-' + String(mon + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+}
+
+function mantisFormatIsoDate(d){
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+/* Returns a copy of a parsed Downtime item with hours/percent/rootCause/note
+   restricted to only the dates in allowedDateSet, and totalHours
+   recomputed to match - so every downstream consumer (summary totals, the
+   Pareto chart, the Top Downtime table) automatically respects the active
+   date filter without needing its own date-range logic. */
+function mantisFilterDowntimeItemDates(item, allowedDateSet){
+  function pick(obj){
+    const out = {};
+    Object.keys(obj).forEach(function(k){ if(allowedDateSet[k]) out[k] = obj[k]; });
+    return out;
+  }
+  const hours = pick(item.hours);
+  const totalHours = Object.keys(hours).reduce(function(s, d){ return s + (hours[d] || 0); }, 0);
+  return {
+    line: item.line,
+    equipment: item.equipment,
+    hours: hours,
+    percent: pick(item.percent),
+    rootCause: pick(item.rootCause),
+    note: pick(item.note),
+    totalHours: totalHours
+  };
+}
+
+function mantisRerenderDowntimeDashboard(){
+  const table = mantisTableCache['downtime-table-container'];
+  const container = document.getElementById('downtime-table-container');
+  if(table && container) mantisRenderDowntimeDashboard(container, table);
+}
+
+function mantisApplyDowntimeFilters(){
+  const lineSel = document.getElementById('mantisDowntimeLineFilter');
+  const fromInput = document.getElementById('mantisDowntimeDateFrom');
+  const toInput = document.getElementById('mantisDowntimeDateTo');
+  mantisDowntimeFilters.line = lineSel ? lineSel.value : '';
+  mantisDowntimeFilters.dateFrom = fromInput ? fromInput.value : '';
+  mantisDowntimeFilters.dateTo = toInput ? toInput.value : '';
+  mantisRerenderDowntimeDashboard();
+}
+
+function mantisResetDowntimeFilters(){
+  mantisDowntimeFilters = { line: '', dateFrom: '', dateTo: '' };
+  mantisRerenderDowntimeDashboard();
+}
+
+function mantisSetDowntimeThisWeek(){
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + (day === 0 ? -6 : 1) - day);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  mantisDowntimeFilters.dateFrom = mantisFormatIsoDate(monday);
+  mantisDowntimeFilters.dateTo = mantisFormatIsoDate(sunday);
+  mantisRerenderDowntimeDashboard();
+}
+
 function mantisRenderDowntimeDashboard(container, table){
   if(!table || !table.cols || !table.rows){
     container.innerHTML = '<div class="sheet-error">Data tidak ditemukan pada sheet.</div>';
@@ -2669,7 +2745,37 @@ function mantisRenderDowntimeDashboard(container, table){
   }
 
   const parsed = mantisParseDowntimeTable(table);
-  const items = parsed.items;
+  const allItems = parsed.items;
+
+  const allLines = [];
+  allItems.forEach(function(item){ if(allLines.indexOf(item.line) === -1) allLines.push(item.line); });
+  const preferredLineOrder = ['tetra pak line 1', 'sig 1', 'sig 2', 'sig 3'];
+  const orderedLines = [];
+  preferredLineOrder.forEach(function(key){
+    const match = allLines.find(function(l){ return l.toLowerCase() === key; });
+    if(match) orderedLines.push(match);
+  });
+  allLines.forEach(function(l){ if(orderedLines.indexOf(l) === -1) orderedLines.push(l); });
+
+  const isoDates = parsed.dateLabels.map(mantisDowntimeDateLabelToIso).filter(Boolean).sort();
+  const minDateIso = isoDates.length ? isoDates[0] : '';
+  const maxDateIso = isoDates.length ? isoDates[isoDates.length - 1] : '';
+
+  const filterLine = mantisDowntimeFilters.line;
+  const filterFrom = mantisDowntimeFilters.dateFrom;
+  const filterTo = mantisDowntimeFilters.dateTo;
+
+  const allowedDateSet = {};
+  parsed.dateLabels.forEach(function(label){
+    const iso = mantisDowntimeDateLabelToIso(label);
+    if(filterFrom && (!iso || iso < filterFrom)) return;
+    if(filterTo && (!iso || iso > filterTo)) return;
+    allowedDateSet[label] = true;
+  });
+
+  const items = allItems
+    .filter(function(item){ return !filterLine || item.line === filterLine; })
+    .map(function(item){ return mantisFilterDowntimeItemDates(item, allowedDateSet); });
 
   let totalHours = 0, incidents = 0;
   const lineHours = {};
@@ -2693,6 +2799,20 @@ function mantisRenderDowntimeDashboard(container, table){
     .sort(function(a, b){ return b.totalHours - a.totalHours; })
     .slice(0, 8);
 
+  let lineOptionsHtml = '<option value="">Semua Line</option>';
+  orderedLines.forEach(function(l){
+    lineOptionsHtml += '<option value="' + mantisEscapeHtml(l) + '"' + (filterLine === l ? ' selected' : '') + '>' + mantisEscapeHtml(l) + '</option>';
+  });
+
+  const filterRowHtml = '<div style="padding:0 20px 16px 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">' +
+    '<select id="mantisDowntimeLineFilter" class="pill-btn" onchange="mantisApplyDowntimeFilters()">' + lineOptionsHtml + '</select>' +
+    '<input type="date" id="mantisDowntimeDateFrom" class="pill-btn" value="' + mantisEscapeHtml(filterFrom) + '" min="' + minDateIso + '" max="' + maxDateIso + '" onchange="mantisApplyDowntimeFilters()">' +
+    '<span style="color:var(--ink-3);font-size:12px;">s/d</span>' +
+    '<input type="date" id="mantisDowntimeDateTo" class="pill-btn" value="' + mantisEscapeHtml(filterTo) + '" min="' + minDateIso + '" max="' + maxDateIso + '" onchange="mantisApplyDowntimeFilters()">' +
+    '<button type="button" class="pill-btn" onclick="mantisSetDowntimeThisWeek()">Minggu Ini</button>' +
+    '<button type="button" class="pill-btn" onclick="mantisResetDowntimeFilters()">Reset</button>' +
+  '</div>';
+
   let html = '';
 
   // ---- Card 1: Ringkasan Downtime ----
@@ -2703,6 +2823,7 @@ function mantisRenderDowntimeDashboard(container, table){
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>' +
     '</button>' +
   '</div>';
+  html += filterRowHtml;
   html += '<div class="full-bleed-divider" style="margin:0;"></div>';
   html += '<div style="padding:20px;">';
   html += '<div class="metric-grid">';
