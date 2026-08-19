@@ -2696,7 +2696,7 @@ function mantisBuildParetoChartInnerSvg(){
     // height so short bars near the tail of the Pareto (common past Top-5)
     // don't get clamped by the SVG into a fully-round capsule.
     const barRx = Math.min(10, barW * 0.2, Math.max(barH, 0) * 0.4);
-    bars += '<rect class="mantis-pareto-bar" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(barH, 0).toFixed(1) + '" rx="' + barRx.toFixed(1) + '" ry="' + barRx.toFixed(1) + '" data-target-radius="' + barRx.toFixed(1) + '" fill="#E4E4E7" ' +
+    bars += '<rect class="mantis-pareto-bar" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(barH, 0).toFixed(1) + '" rx="' + barRx.toFixed(1) + '" ry="' + barRx.toFixed(1) + '" data-radius-user="' + barRx.toFixed(1) + '" fill="#E4E4E7" ' +
       'data-section="' + mantisEscapeHtml(section) + '" data-line="' + mantisEscapeHtml(item.line) + '" ' +
       'data-hours="' + mantisEscapeHtml(mantisFormatDowntimeHours(item.totalHours)) + '" ' +
       'onmouseenter="mantisShowDowntimeBarDetail(this)" onmouseleave="mantisHideDowntimeBarDetail()" onclick="mantisShowDowntimeBarDetail(this)"></rect>';
@@ -2719,11 +2719,15 @@ function mantisBuildParetoChartInnerSvg(){
 
 /* preserveAspectRatio="none" stretches the SVG's X and Y axes by different
    factors (viewBox width 1000 vs. whatever the container is actually
-   rendered at in pixels, against a fixed 320px height) so a single rx="ry"
-   value - correct in viewBox units - comes out as an oval, not a circle,
-   once the browser applies that non-uniform stretch. rx is corrected here
-   for the actual horizontal stretch (getBoundingClientRect / viewBox width);
-   ry is left as the target pixel value since the height stretch is always 1:1. */
+   rendered at in pixels, against a fixed 320px height). rx is left as the
+   raw viewBox-unit value computed from barW - since it's already
+   proportional to the bar's own width, the horizontal stretch keeps it at
+   the same percentage of the bar's on-screen width on any device, mobile
+   or desktop, with no correction needed. ry needs correcting though: the
+   vertical stretch is always 1:1 (viewBox height == CSS height), so
+   without scaling it down/up by the same factor as rx just got stretched,
+   the two would no longer match in real screen pixels and the corner
+   reads as an oval instead of a circle. */
 function mantisApplyParetoBarRadius(){
   const svg = document.getElementById('mantisParetoSvg');
   if(!svg) return;
@@ -2731,10 +2735,9 @@ function mantisApplyParetoBarRadius(){
   if(!renderedW) return;
   const scaleX = renderedW / MANTIS_PARETO_VIEWBOX_W;
   svg.querySelectorAll('.mantis-pareto-bar').forEach(function(bar){
-    const targetPx = parseFloat(bar.getAttribute('data-target-radius') || '0');
-    if(!targetPx) return;
-    bar.setAttribute('ry', targetPx.toFixed(1));
-    bar.setAttribute('rx', (targetPx / scaleX).toFixed(1));
+    const rxUser = parseFloat(bar.getAttribute('data-radius-user') || '0');
+    if(!rxUser) return;
+    bar.setAttribute('ry', (rxUser * scaleX).toFixed(1));
   });
 }
 
