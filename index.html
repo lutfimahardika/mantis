@@ -606,6 +606,7 @@ th:last-child, td:last-child{ padding-right:20px; }
 tbody tr{ border-bottom:1px solid var(--line-soft); transition:background 150ms; }
 tbody tr:last-child{ border-bottom:none; }
 tbody tr:hover{ background:#FCFCFB; }
+tbody tr.mantis-pareto-row-active{ background:var(--accent-soft); }
 td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 .row-icon{ width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:0 0 30px; }
 .badge{ display:inline-flex; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:500; }
@@ -2731,6 +2732,57 @@ function mantisBuildParetoCountSelectHtml(){
 function mantisSetParetoWindowCount(value){
   mantisParetoWindowCount = parseInt(value, 10) || MANTIS_PARETO_DEFAULT_COUNT;
   mantisRefreshParetoChart();
+  mantisRefreshDowntimeTopTable();
+}
+
+/* Shared by the initial Downtime dashboard render and the Top-N dropdown's
+   lightweight refresh, so the "Top Downtime" table always lists exactly the
+   sections the Pareto chart is currently showing. data-section/data-line
+   match the same attributes on .mantis-pareto-bar (both derived from
+   item.equipment with its leading "N. " stripped) so hover can be
+   cross-referenced between the two. */
+function mantisBuildDowntimeTopTableRowsHtml(topItems){
+  return topItems.map(function(item){
+    const dates = Object.keys(item.hours).filter(function(d){ return item.hours[d] > 0; });
+    const lastDate = dates.length ? dates[dates.length - 1] : '';
+    const rootCause = lastDate ? (item.rootCause[lastDate] || '') : '';
+    const action = lastDate ? (item.note[lastDate] || '') : '';
+    const percentDates = Object.keys(item.percent);
+    const lastPercentDate = percentDates.length ? percentDates[percentDates.length - 1] : '';
+    const percentVal = lastPercentDate ? item.percent[lastPercentDate] : null;
+    const percentText = (percentVal === null || percentVal === undefined) ? '-' : (Math.round(percentVal * 100) / 100) + '%';
+    const lineIcon = mantisGetDowntimeLineIcon(item.line);
+    const section = item.equipment.replace(/^\d+\.\s*/, '');
+    return '<tr class="mantis-pareto-row" data-section="' + mantisEscapeHtml(section) + '" data-line="' + mantisEscapeHtml(item.line) + '" ' +
+        'onmouseenter="mantisHighlightDowntimeRow(this)" onmouseleave="mantisUnhighlightDowntimeRow()">' +
+      '<td><div class="flex items-center" style="gap:10px;">' +
+        '<div class="row-icon" style="background:' + lineIcon.bg + ';">' + lineIcon.html + '</div>' +
+        '<div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.line) + '</div>' +
+      '</div></td>' +
+      '<td style="color:var(--ink);">' + mantisEscapeHtml(item.equipment) + '</td>' +
+      '<td style="white-space:nowrap;font-weight:500;">' + mantisFormatDowntimeHours(item.totalHours) + '</td>' +
+      '<td style="white-space:nowrap;">' + percentText + '</td>' +
+      '<td style="white-space:normal;max-width:240px;color:var(--ink);">' + mantisEscapeHtml(rootCause) + '</td>' +
+      '<td style="white-space:normal;max-width:240px;color:var(--ink);">' + mantisEscapeHtml(action) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function mantisRefreshDowntimeTopTable(){
+  const tbody = document.getElementById('mantisDowntimeTopTableBody');
+  if(!tbody) return;
+  tbody.innerHTML = mantisBuildDowntimeTopTableRowsHtml(mantisParetoItems.slice(0, mantisParetoWindowCount));
+}
+
+function mantisHighlightDowntimeRow(tr){
+  const bar = Array.prototype.find.call(document.querySelectorAll('.mantis-pareto-bar'), function(r){
+    return r.dataset.section === tr.dataset.section && r.dataset.line === tr.dataset.line;
+  });
+  if(bar) mantisShowDowntimeBarDetail(bar);
+}
+
+function mantisUnhighlightDowntimeRow(){
+  mantisHideDowntimeBarDetail();
 }
 
 function mantisBuildDowntimeParetoSvg(items){
@@ -2847,6 +2899,12 @@ function mantisShowDowntimeBarDetail(rect){
   }
   rect.setAttribute('fill', 'var(--accent)');
 
+  document.querySelectorAll('.mantis-pareto-row-active').forEach(function(tr){ tr.classList.remove('mantis-pareto-row-active'); });
+  const matchedRow = Array.prototype.find.call(document.querySelectorAll('.mantis-pareto-row'), function(tr){
+    return tr.dataset.section === rect.dataset.section && tr.dataset.line === rect.dataset.line;
+  });
+  if(matchedRow) matchedRow.classList.add('mantis-pareto-row-active');
+
   tooltip.innerHTML =
     '<div style="font-size:11px;color:#fff;opacity:.75;">' + mantisEscapeHtml(rect.dataset.line) + '</div>' +
     '<div style="font-size:12px;font-weight:600;color:#fff;margin-top:2px;">' + mantisEscapeHtml(rect.dataset.section) + '</div>' +
@@ -2878,6 +2936,7 @@ function mantisHideDowntimeBarDetail(){
     tooltip.style.display = 'none';
     const svg = document.getElementById('mantisParetoSvg');
     if(svg) svg.querySelectorAll('.mantis-pareto-bar').forEach(function(r){ r.setAttribute('fill', '#E4E4E7'); });
+    document.querySelectorAll('.mantis-pareto-row-active').forEach(function(tr){ tr.classList.remove('mantis-pareto-row-active'); });
   }
 }
 
@@ -3083,10 +3142,6 @@ function mantisRenderDowntimeDashboard(container, table){
     if(lineHours[l] > topLineHours){ topLine = l; topLineHours = lineHours[l]; }
   });
 
-  const topItems = items.filter(function(i){ return i.totalHours > 0; })
-    .sort(function(a, b){ return b.totalHours - a.totalHours; })
-    .slice(0, 8);
-
   let lineItemsHtml = '<button type="button" class="entry-meta-popover-item' + (!filterLine ? ' selected' : '') + '" onclick="mantisSetDowntimeLineFilter(\'\')">Semua Line</button>';
   orderedLines.forEach(function(l){
     lineItemsHtml += '<button type="button" class="entry-meta-popover-item' + (filterLine === l ? ' selected' : '') + '" onclick="mantisSetDowntimeLineFilter(\'' + l.replace(/'/g, "\\'") + '\')">' + mantisEscapeHtml(l) + '</button>';
@@ -3172,6 +3227,12 @@ function mantisRenderDowntimeDashboard(container, table){
 
   // ---- Card 2: Grafik (Pareto) ----
   const paretoChartHtml = mantisBuildDowntimeParetoSvg(items);
+  // mantisParetoItems is already this same list (filter totalHours>0, sort
+  // desc) as a side effect of the call above - reusing it instead of
+  // re-deriving from items keeps the table in lockstep with the chart's
+  // Top-N selection, including on the lightweight dropdown-only refresh
+  // (mantisRefreshDowntimeTopTable) that doesn't re-run this function.
+  const topItems = mantisParetoItems.slice(0, mantisParetoWindowCount);
   html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="padding:20px;" class="flex items-center justify-between">' +
     '<div><div class="card-title">Grafik Downtime</div><div class="card-sub">Total Jam per Equipment</div></div>' +
@@ -3197,30 +3258,7 @@ function mantisRenderDowntimeDashboard(container, table){
       '<th style="white-space:nowrap;">Percent</th>' +
       '<th>Root Cause</th>' +
       '<th>Action</th>' +
-      '</tr></thead><tbody>';
-    topItems.forEach(function(item){
-      const dates = Object.keys(item.hours).filter(function(d){ return item.hours[d] > 0; });
-      const lastDate = dates.length ? dates[dates.length - 1] : '';
-      const rootCause = lastDate ? (item.rootCause[lastDate] || '') : '';
-      const action = lastDate ? (item.note[lastDate] || '') : '';
-      const percentDates = Object.keys(item.percent);
-      const lastPercentDate = percentDates.length ? percentDates[percentDates.length - 1] : '';
-      const percentVal = lastPercentDate ? item.percent[lastPercentDate] : null;
-      const percentText = (percentVal === null || percentVal === undefined) ? '-' : (Math.round(percentVal * 100) / 100) + '%';
-      const lineIcon = mantisGetDowntimeLineIcon(item.line);
-      html += '<tr>' +
-        '<td><div class="flex items-center" style="gap:10px;">' +
-          '<div class="row-icon" style="background:' + lineIcon.bg + ';">' + lineIcon.html + '</div>' +
-          '<div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.line) + '</div>' +
-        '</div></td>' +
-        '<td style="color:var(--ink);">' + mantisEscapeHtml(item.equipment) + '</td>' +
-        '<td style="white-space:nowrap;font-weight:500;">' + mantisFormatDowntimeHours(item.totalHours) + '</td>' +
-        '<td style="white-space:nowrap;">' + percentText + '</td>' +
-        '<td style="white-space:normal;max-width:240px;color:var(--ink);">' + mantisEscapeHtml(rootCause) + '</td>' +
-        '<td style="white-space:normal;max-width:240px;color:var(--ink);">' + mantisEscapeHtml(action) + '</td>' +
-      '</tr>';
-    });
-    html += '</tbody></table></div>';
+      '</tr></thead><tbody id="mantisDowntimeTopTableBody">' + mantisBuildDowntimeTopTableRowsHtml(topItems) + '</tbody></table></div>';
   }
   html += '</div>';
 
