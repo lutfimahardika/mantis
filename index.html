@@ -2637,7 +2637,7 @@ function mantisBuildParetoCountSelectHtml(){
   if(options.length <= 1) return '';
 
   const optionsHtml = options.map(function(v){
-    return '<option value="' + v + '"' + (v === mantisParetoWindowCount ? ' selected' : '') + '>' + v + ' bar</option>';
+    return '<option value="' + v + '"' + (v === mantisParetoWindowCount ? ' selected' : '') + '>Top-' + v + '</option>';
   }).join('');
 
   return '<select id="mantisParetoCountSelect" class="pill-btn" onchange="mantisSetParetoWindowCount(this.value)">' + optionsHtml + '</select>';
