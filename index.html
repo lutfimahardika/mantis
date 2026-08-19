@@ -3130,7 +3130,7 @@ function mantisRenderDowntimeDashboard(container, table){
   const dateButtonLabel = 'Tanggal';
   const lineFilterActive = !!filterLine;
   const dateFilterActive = !!(filterFrom || filterTo);
-  const activeDotHtml = '<span style="position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:1.5px solid #fff;"></span>';
+  const activeIconAttrs = ' fill="rgba(245,166,35,0.18)" style="stroke:var(--accent);"';
 
   let html = '';
 
@@ -3139,15 +3139,13 @@ function mantisRenderDowntimeDashboard(container, table){
   html += '<div style="padding:20px;flex-wrap:wrap;gap:10px;" class="flex items-center justify-between">' +
     '<div><div class="card-title">Ringkasan Downtime</div><div class="card-sub">Data Downtime</div></div>' +
     '<div class="flex items-center" style="gap:8px;flex-wrap:wrap;">' +
-      '<button type="button" class="pill-btn" id="mantisDowntimeLineFilterBtn" style="position:relative;' + (lineFilterActive ? 'border-color:var(--accent);background:var(--accent-soft);' : '') + '" onclick="mantisToggleDowntimeLinePopover(event)">' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></svg>' +
+      '<button type="button" class="pill-btn" id="mantisDowntimeLineFilterBtn" onclick="mantisToggleDowntimeLinePopover(event)">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (lineFilterActive ? activeIconAttrs : '') + '><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></svg>' +
         mantisEscapeHtml(lineButtonLabel) +
-        (lineFilterActive ? activeDotHtml : '') +
       '</button>' +
-      '<button type="button" class="pill-btn" id="mantisDowntimeDateFilterBtn" style="position:relative;' + (dateFilterActive ? 'border-color:var(--accent);background:var(--accent-soft);' : '') + '" onclick="mantisToggleDowntimeDatePopover(event)">' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M11 15h1"/><path d="M12 15v3"/></svg>' +
+      '<button type="button" class="pill-btn" id="mantisDowntimeDateFilterBtn" onclick="mantisToggleDowntimeDatePopover(event)">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (dateFilterActive ? activeIconAttrs : '') + '><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M11 15h1"/><path d="M12 15v3"/></svg>' +
         mantisEscapeHtml(dateButtonLabel) +
-        (dateFilterActive ? activeDotHtml : '') +
       '</button>' +
       '<button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet(\'downtime-table-container\')">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>' +
