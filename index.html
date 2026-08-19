@@ -2642,12 +2642,16 @@ function mantisBuildDowntimeParetoSvg(items){
   mantisParetoWindowCount = Math.min(MANTIS_PARETO_DEFAULT_WINDOW, mantisParetoItems.length);
 
   return '<div class="mantis-pareto-wrap" style="position:relative;">' +
-    mantisBuildParetoScrollerHtml() +
     '<div id="mantisParetoChartHost">' + mantisBuildParetoChartInnerSvg() + '</div>' +
+    mantisBuildParetoScrollerHtml() +
     '<div class="mantis-chart-tooltip mantis-pareto-tooltip" id="mantisParetoTooltip"></div>' +
   '</div>';
 }
 
+/* Kept deliberately understated (thin neutral track, small gray handles)
+   rather than an accent-colored control, since it's a secondary navigation
+   aid sitting right under the chart - it shouldn't compete for attention
+   with the bars themselves. */
 function mantisBuildParetoScrollerHtml(){
   const n = mantisParetoItems.length;
   if(n <= mantisParetoWindowCount) return '';
@@ -2655,10 +2659,10 @@ function mantisBuildParetoScrollerHtml(){
   const startPct = (mantisParetoWindowStart / n) * 100;
   const widthPct = (mantisParetoWindowCount / n) * 100;
 
-  return '<div class="mantis-pareto-scroller" id="mantisParetoScroller" style="position:relative;height:22px;margin:0 2px 18px 2px;background:var(--line-soft);border-radius:999px;touch-action:none;">' +
-    '<div class="mantis-pareto-scroller-window" id="mantisParetoScrollerWindow" style="position:absolute;top:0;bottom:0;left:' + startPct.toFixed(2) + '%;width:' + widthPct.toFixed(2) + '%;background:var(--accent-soft);border:2px solid var(--accent);border-radius:999px;cursor:grab;box-sizing:border-box;" onpointerdown="mantisParetoScrollerPointerDown(event,\'pan\')">' +
-      '<div class="mantis-pareto-scroller-handle" style="position:absolute;left:-2px;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:50%;background:var(--accent);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:ew-resize;" onpointerdown="event.stopPropagation();mantisParetoScrollerPointerDown(event,\'start\')"></div>' +
-      '<div class="mantis-pareto-scroller-handle" style="position:absolute;right:-2px;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:50%;background:var(--accent);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:ew-resize;" onpointerdown="event.stopPropagation();mantisParetoScrollerPointerDown(event,\'end\')"></div>' +
+  return '<div class="mantis-pareto-scroller" id="mantisParetoScroller" style="position:relative;height:8px;margin:14px 2px 4px 2px;background:var(--line-soft);border-radius:999px;touch-action:none;">' +
+    '<div class="mantis-pareto-scroller-window" id="mantisParetoScrollerWindow" style="position:absolute;top:0;bottom:0;left:' + startPct.toFixed(2) + '%;width:' + widthPct.toFixed(2) + '%;background:#D9D9D6;border-radius:999px;cursor:grab;box-sizing:border-box;" onpointerdown="mantisParetoScrollerPointerDown(event,\'pan\')">' +
+      '<div class="mantis-pareto-scroller-handle" style="position:absolute;left:-1px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--ink-3);border:2px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,.2);cursor:ew-resize;" onpointerdown="event.stopPropagation();mantisParetoScrollerPointerDown(event,\'start\')"></div>' +
+      '<div class="mantis-pareto-scroller-handle" style="position:absolute;right:-1px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--ink-3);border:2px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,.2);cursor:ew-resize;" onpointerdown="event.stopPropagation();mantisParetoScrollerPointerDown(event,\'end\')"></div>' +
     '</div>' +
   '</div>';
 }
