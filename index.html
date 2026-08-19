@@ -981,6 +981,48 @@ textarea.entry-input{
 .entry-mesin-toggle:hover{ color:var(--ink); }
 .entry-mesin-toggle.open{ transform:rotate(180deg); color:var(--accent); }
 
+.entry-photo-btn{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  height:36px;
+  padding:0 12px;
+  border:1px dashed var(--line);
+  border-radius:10px;
+  background:transparent;
+  color:var(--ink-2);
+  font-family:inherit;
+  font-size:12.5px;
+  cursor:pointer;
+  transition:border-color 150ms,color 150ms;
+}
+.entry-photo-btn:hover{ border-color:var(--accent); color:var(--accent); }
+.entry-photo-preview{ display:flex; align-items:center; gap:10px; }
+.entry-photo-preview img{
+  width:56px;
+  height:56px;
+  object-fit:cover;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:#f2f2f2;
+}
+.entry-photo-remove{
+  width:26px;
+  height:26px;
+  flex:0 0 auto;
+  border:none;
+  border-radius:8px;
+  background:transparent;
+  color:var(--ink-3);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+.entry-photo-remove:hover{ color:var(--red); background:#FEF2F2; }
+.entry-photo-status{ font-size:11.5px; color:var(--ink-3); }
+.entry-photo-status.error{ color:var(--red); }
+
 .entry-form-footer{
   display:flex;
   align-items:center;
@@ -2220,6 +2262,22 @@ textarea.entry-input{
           <textarea id="entryAction" class="entry-input" placeholder="Tindakan perbaikan yang dilakukan"></textarea>
         </div>
 
+        <div class="entry-field" style="border:none;background:transparent;padding:0;gap:8px;">
+          <label class="entry-field-label">Foto Laporan (opsional)</label>
+          <button type="button" class="entry-photo-btn" id="entryPhotoBtn" onclick="mantisOpenActionPhotoPicker()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><circle cx="12" cy="13" r="3"/></svg>
+            Ambil/Pilih Foto
+          </button>
+          <div class="entry-photo-preview" id="entryPhotoPreview" style="display:none;">
+            <img id="entryPhotoThumb" src="" alt="Foto laporan">
+            <button type="button" class="entry-photo-remove" title="Hapus foto" onclick="mantisRemoveActionPhoto()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="entry-photo-status" id="entryPhotoStatus"></div>
+          <input type="file" id="entryPhotoFileInput" accept="image/*" capture="environment" style="display:none;" onchange="mantisHandleActionPhotoFile(event)">
+        </div>
+
         <div class="entry-form-footer">
           <div class="entry-form-message" id="mantisEntryMessage"></div>
           <button type="button" class="btn-primary" id="mantisEntrySubmitBtn" onclick="mantisSubmitMaintenanceEntry()">
@@ -2303,6 +2361,12 @@ const MANTIS_SHEET_ID = '11-sqiV3BYqx738Rhr3Y9SF4Q7FnAGKNqMn-Gvoq6rFs';
    Isi kedua nilai ini setelah deploy Apps Script (lihat apps-script/Code.gs). */
 const MANTIS_METER_WRITE_URL = 'https://script.google.com/macros/s/AKfycbw70i8V3UKaIi3jd-E8m8tIblUaBjcQ07nHl7mcK3GDjS5u3h9hXbWyihTqdB6W4koG/exec';
 const MANTIS_METER_WRITE_TOKEN = '0502f1eebcf46081d755f09ddb9d0c1e';
+
+/* Apps Script Web App terpisah yang menyimpan foto laporan ke Google Drive
+   akun bottomfolder@hcloud.my.id (bukan akun pemilik Sheet). Isi kedua nilai
+   ini setelah deploy Apps Script (lihat apps-script/DriveUpload.gs). */
+const MANTIS_DRIVE_UPLOAD_URL = '';
+const MANTIS_DRIVE_UPLOAD_TOKEN = '';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -5129,9 +5193,12 @@ function mantisRenderProblemActionTable(){
   items.forEach(function(item){
     const areaIcon = mantisGetAreaIconHtml(item.Area);
     html += '<tr>';
+    const photoLinkHtml = item.Link ?
+      ' <a href="' + mantisEscapeHtml(item.Link) + '" target="_blank" rel="noopener" title="Lihat foto laporan" style="display:inline-flex;vertical-align:-3px;color:var(--accent);" onclick="event.stopPropagation()">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><circle cx="12" cy="13" r="3"/></svg></a>' : '';
     html += '<td><div class="flex items-center" style="gap:10px;">' +
       '<div class="row-icon" style="background:' + areaIcon.bg + ';">' + areaIcon.html + '</div>' +
-      '<div><div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.Mesin) + '</div>' +
+      '<div><div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.Mesin) + photoLinkHtml + '</div>' +
       '<div style="font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(item.Area || 'Tambahan pekerjaan') + '</div></div>' +
       '</div></td>';
     html += '<td style="white-space:normal;max-width:260px;color:var(--ink);">' + mantisEscapeHtml(item.Issue) + '</td>';
@@ -5160,6 +5227,120 @@ function mantisOpenActionModal(){
   if(areaInput) areaInput.focus({ preventScroll: true });
 }
 
+/* ---------- New Action: report photo attach & upload to Drive ---------- */
+let mantisActionPhoto = null; // { url, previewUrl } once uploaded (or restored while editing)
+let mantisActionPhotoUploading = false;
+
+function mantisSetActionPhotoStatus(text, isError){
+  const status = document.getElementById('entryPhotoStatus');
+  if(!status) return;
+  status.textContent = text || '';
+  status.className = 'entry-photo-status' + (isError ? ' error' : '');
+}
+
+function mantisShowActionPhotoPreview(src){
+  const preview = document.getElementById('entryPhotoPreview');
+  const btn = document.getElementById('entryPhotoBtn');
+  const thumb = document.getElementById('entryPhotoThumb');
+  if(thumb) thumb.src = src;
+  if(preview) preview.style.display = '';
+  if(btn) btn.style.display = 'none';
+}
+
+function mantisResetActionPhoto(){
+  mantisActionPhoto = null;
+  mantisActionPhotoUploading = false;
+  const preview = document.getElementById('entryPhotoPreview');
+  const btn = document.getElementById('entryPhotoBtn');
+  const thumb = document.getElementById('entryPhotoThumb');
+  if(preview) preview.style.display = 'none';
+  if(btn) btn.style.display = '';
+  if(thumb) thumb.src = '';
+  mantisSetActionPhotoStatus('', false);
+}
+
+function mantisRemoveActionPhoto(){
+  mantisResetActionPhoto();
+}
+
+function mantisOpenActionPhotoPicker(){
+  const input = document.getElementById('entryPhotoFileInput');
+  if(input) input.click();
+}
+
+/* Drive share links (https://drive.google.com/file/d/<id>/view) render an HTML
+   viewer page, not a raw image - extract the file id to build a thumbnail URL
+   usable as an <img src> when restoring a photo already uploaded earlier. */
+function mantisDriveThumbUrl(link){
+  const match = /\/d\/([^/]+)/.exec(link || '');
+  return match ? ('https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w200') : link;
+}
+
+function mantisResizeImageToDataUrl(file, maxDim, quality){
+  return new Promise(function(resolve, reject){
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = function(){
+      URL.revokeObjectURL(objectUrl);
+      let w = img.naturalWidth, h = img.naturalHeight;
+      const scale = Math.min(1, maxDim / Math.max(w, h));
+      w = Math.max(1, Math.round(w * scale));
+      h = Math.max(1, Math.round(h * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = function(){ URL.revokeObjectURL(objectUrl); reject(new Error('Gagal membaca gambar.')); };
+    img.src = objectUrl;
+  });
+}
+
+/* Uploads straight from the file picker, before the entry itself is saved -
+   keeps only the resulting Drive URL in the pending-actions list (localStorage)
+   instead of the full base64 image, which would blow past its storage quota. */
+function mantisHandleActionPhotoFile(evt){
+  const file = evt.target.files && evt.target.files[0];
+  evt.target.value = '';
+  if(!file) return;
+
+  mantisActionPhoto = null;
+  mantisActionPhotoUploading = true;
+
+  mantisResizeImageToDataUrl(file, 1600, 0.75).then(function(dataUrl){
+    mantisShowActionPhotoPreview(dataUrl);
+    mantisSetActionPhotoStatus('Mengunggah foto...', false);
+
+    if(!MANTIS_DRIVE_UPLOAD_URL){
+      mantisActionPhotoUploading = false;
+      mantisSetActionPhotoStatus('Upload foto belum dikonfigurasi (isi MANTIS_DRIVE_UPLOAD_URL di index.html).', true);
+      return;
+    }
+
+    return fetch(MANTIS_DRIVE_UPLOAD_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        token: MANTIS_DRIVE_UPLOAD_TOKEN,
+        filename: 'laporan_' + Date.now() + '.jpg',
+        mimeType: 'image/jpeg',
+        data: dataUrl.split(',')[1]
+      })
+    }).then(function(res){ return res.json(); }).then(function(data){
+      mantisActionPhotoUploading = false;
+      if(!data || !data.success){
+        mantisSetActionPhotoStatus((data && data.error) ? data.error : 'Gagal mengunggah foto.', true);
+        return;
+      }
+      mantisActionPhoto = { url: data.url, previewUrl: dataUrl };
+      mantisSetActionPhotoStatus('Foto berhasil diunggah.', false);
+    });
+  }).catch(function(err){
+    mantisActionPhotoUploading = false;
+    mantisSetActionPhotoStatus(err.message || 'Gagal memproses foto.', true);
+  });
+}
+
 function mantisOpenNewAction(){
   mantisEditingActionId = null;
 
@@ -5167,6 +5348,7 @@ function mantisOpenNewAction(){
   document.getElementById('entryMesin').value = '';
   document.getElementById('entryIssue').value = '';
   document.getElementById('entryAction').value = '';
+  mantisResetActionPhoto();
 
   const titleEl = document.getElementById('mantisNewActionTitle');
   if(titleEl) titleEl.textContent = 'New Action';
@@ -5189,6 +5371,12 @@ function mantisEditPendingAction(id){
   document.getElementById('entryMesin').value = item.Mesin || '';
   document.getElementById('entryIssue').value = item.Issue || '';
   document.getElementById('entryAction').value = item.Action || '';
+
+  mantisResetActionPhoto();
+  if(item.Link){
+    mantisActionPhoto = { url: item.Link, previewUrl: item.Link };
+    mantisShowActionPhotoPreview(mantisDriveThumbUrl(item.Link));
+  }
 
   const titleEl = document.getElementById('mantisNewActionTitle');
   if(titleEl) titleEl.textContent = 'Edit Action';
@@ -5248,6 +5436,12 @@ function mantisSubmitMaintenanceEntry(){
   messageEl.className = 'entry-form-message';
   messageEl.textContent = '';
 
+  if(mantisActionPhotoUploading){
+    messageEl.className = 'entry-form-message error';
+    messageEl.textContent = 'Tunggu proses upload foto selesai.';
+    return;
+  }
+
   const mesinValue = document.getElementById('entryMesin').value.trim();
   const areaValue = mantisLookupArea(mesinValue);
   document.getElementById('entryArea').value = areaValue;
@@ -5256,7 +5450,8 @@ function mantisSubmitMaintenanceEntry(){
     Area: areaValue,
     Mesin: mesinValue,
     Issue: document.getElementById('entryIssue').value.trim(),
-    Action: document.getElementById('entryAction').value.trim()
+    Action: document.getElementById('entryAction').value.trim(),
+    Link: mantisActionPhoto ? mantisActionPhoto.url : ''
   };
 
   if(!fields.Mesin || !fields.Action){
@@ -5346,7 +5541,8 @@ function mantisPublishActionsToSheet(){
       Area: item.Area,
       Mesin: item.Mesin,
       Issue: item.Issue,
-      Action: item.Action
+      Action: item.Action,
+      Link: item.Link || ''
     };
   });
 
