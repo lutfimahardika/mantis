@@ -4437,23 +4437,18 @@ function mantisPublishActionsToSheet(){
   // mantisOpenWaShare() calls this right after window.open()'ing WhatsApp,
   // which backgrounds this tab almost immediately on mobile - a plain
   // fetch() in flight at that moment can get aborted ("Failed to fetch")
-  // before it ever reaches the server. sendBeacon is built to survive
-  // exactly that (queued by the browser to send even as the page goes
-  // away), at the cost of not getting a response back to confirm the sheet
-  // write actually succeeded server-side.
-  if(navigator.sendBeacon){
-    const queued = navigator.sendBeacon(MANTIS_METER_WRITE_URL, payload);
-    mantisShowActionsMessage(
-      queued ? (values.length + ' action sedang dipublish ke Google Sheet.') : 'Gagal mengirim ke server.',
-      !queued
-    );
-    return;
-  }
-
+  // before it ever reaches the server. keepalive keeps the request alive
+  // past that. (navigator.sendBeacon() looks like the textbook fix here,
+  // but Apps Script /exec URLs always 302-redirect to googleusercontent.com
+  // for the actual response, and sendBeacon can't follow redirects - it
+  // fails silently with no way to detect it, so rows never actually landed
+  // in the sheet. fetch(keepalive) is a real request and follows redirects
+  // like normal.)
   fetch(MANTIS_METER_WRITE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: payload
+    body: payload,
+    keepalive: true
   }).then(function(res){ return res.json(); }).then(function(data){
     if(!data || !data.success){
       mantisShowActionsMessage((data && data.error) ? data.error : 'Gagal mempublish data.', true);
