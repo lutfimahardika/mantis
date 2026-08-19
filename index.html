@@ -2711,11 +2711,38 @@ function mantisRerenderDowntimeDashboard(){
   if(table && container) mantisRenderDowntimeDashboard(container, table);
 }
 
-function mantisApplyDowntimeFilters(){
-  const lineSel = document.getElementById('mantisDowntimeLineFilter');
+/* The filter popover lives inside the container that mantisRenderDowntimeDashboard
+   regenerates on every change, so its open/closed state has to be tracked
+   here rather than read off the (about-to-be-replaced) DOM, and reapplied
+   after each re-render via mantisSyncDowntimeFilterPopover(). */
+let mantisDowntimeFilterPopoverOpen = false;
+
+function mantisToggleDowntimeFilterPopover(evt){
+  if(evt) evt.stopPropagation();
+  mantisDowntimeFilterPopoverOpen = !mantisDowntimeFilterPopoverOpen;
+  mantisSyncDowntimeFilterPopover();
+}
+
+function mantisSyncDowntimeFilterPopover(){
+  const popover = document.getElementById('mantisDowntimeFilterPopover');
+  const btn = document.getElementById('mantisDowntimeFilterBtn');
+  if(!popover || !btn) return;
+  if(mantisDowntimeFilterPopoverOpen){
+    popover.classList.add('open');
+    mantisPositionPopover(popover, btn);
+  } else {
+    popover.classList.remove('open');
+  }
+}
+
+function mantisSetDowntimeLineFilter(value){
+  mantisDowntimeFilters.line = value;
+  mantisRerenderDowntimeDashboard();
+}
+
+function mantisApplyDowntimeDateInputs(){
   const fromInput = document.getElementById('mantisDowntimeDateFrom');
   const toInput = document.getElementById('mantisDowntimeDateTo');
-  mantisDowntimeFilters.line = lineSel ? lineSel.value : '';
   mantisDowntimeFilters.dateFrom = fromInput ? fromInput.value : '';
   mantisDowntimeFilters.dateTo = toInput ? toInput.value : '';
   mantisRerenderDowntimeDashboard();
@@ -2723,6 +2750,15 @@ function mantisApplyDowntimeFilters(){
 
 function mantisResetDowntimeFilters(){
   mantisDowntimeFilters = { line: '', dateFrom: '', dateTo: '' };
+  mantisRerenderDowntimeDashboard();
+}
+
+function mantisSetDowntimeLastNDays(daysBack){
+  const to = new Date();
+  const from = new Date(to);
+  from.setDate(to.getDate() - daysBack);
+  mantisDowntimeFilters.dateFrom = mantisFormatIsoDate(from);
+  mantisDowntimeFilters.dateTo = mantisFormatIsoDate(to);
   mantisRerenderDowntimeDashboard();
 }
 
@@ -2735,6 +2771,15 @@ function mantisSetDowntimeThisWeek(){
   sunday.setDate(monday.getDate() + 6);
   mantisDowntimeFilters.dateFrom = mantisFormatIsoDate(monday);
   mantisDowntimeFilters.dateTo = mantisFormatIsoDate(sunday);
+  mantisRerenderDowntimeDashboard();
+}
+
+function mantisSetDowntimeThisMonth(){
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  mantisDowntimeFilters.dateFrom = mantisFormatIsoDate(first);
+  mantisDowntimeFilters.dateTo = mantisFormatIsoDate(last);
   mantisRerenderDowntimeDashboard();
 }
 
@@ -2799,18 +2844,50 @@ function mantisRenderDowntimeDashboard(container, table){
     .sort(function(a, b){ return b.totalHours - a.totalHours; })
     .slice(0, 8);
 
-  let lineOptionsHtml = '<option value="">Semua Line</option>';
+  let lineItemsHtml = '<button type="button" class="entry-meta-popover-item' + (!filterLine ? ' selected' : '') + '" onclick="mantisSetDowntimeLineFilter(\'\')">Semua Line</button>';
   orderedLines.forEach(function(l){
-    lineOptionsHtml += '<option value="' + mantisEscapeHtml(l) + '"' + (filterLine === l ? ' selected' : '') + '>' + mantisEscapeHtml(l) + '</option>';
+    lineItemsHtml += '<button type="button" class="entry-meta-popover-item' + (filterLine === l ? ' selected' : '') + '" onclick="mantisSetDowntimeLineFilter(\'' + l.replace(/'/g, "\\'") + '\')">' + mantisEscapeHtml(l) + '</button>';
   });
 
-  const filterRowHtml = '<div style="padding:0 20px 16px 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">' +
-    '<select id="mantisDowntimeLineFilter" class="pill-btn" onchange="mantisApplyDowntimeFilters()">' + lineOptionsHtml + '</select>' +
-    '<input type="date" id="mantisDowntimeDateFrom" class="pill-btn" value="' + mantisEscapeHtml(filterFrom) + '" min="' + minDateIso + '" max="' + maxDateIso + '" onchange="mantisApplyDowntimeFilters()">' +
-    '<span style="color:var(--ink-3);font-size:12px;">s/d</span>' +
-    '<input type="date" id="mantisDowntimeDateTo" class="pill-btn" value="' + mantisEscapeHtml(filterTo) + '" min="' + minDateIso + '" max="' + maxDateIso + '" onchange="mantisApplyDowntimeFilters()">' +
-    '<button type="button" class="pill-btn" onclick="mantisSetDowntimeThisWeek()">Minggu Ini</button>' +
-    '<button type="button" class="pill-btn" onclick="mantisResetDowntimeFilters()">Reset</button>' +
+  const presetDefs = [
+    { label: 'Hari Ini', fn: 'mantisSetDowntimeLastNDays(0)' },
+    { label: '3 Hari Terakhir', fn: 'mantisSetDowntimeLastNDays(2)' },
+    { label: '7 Hari Terakhir', fn: 'mantisSetDowntimeLastNDays(6)' },
+    { label: '30 Hari Terakhir', fn: 'mantisSetDowntimeLastNDays(29)' },
+    { label: 'Minggu Ini', fn: 'mantisSetDowntimeThisWeek()' },
+    { label: 'Bulan Ini', fn: 'mantisSetDowntimeThisMonth()' }
+  ];
+  let presetItemsHtml = '';
+  presetDefs.forEach(function(p){
+    presetItemsHtml += '<button type="button" class="entry-meta-popover-item" onclick="' + p.fn + '">' + p.label + '</button>';
+  });
+
+  const hasActiveFilter = !!(filterLine || filterFrom || filterTo);
+  const filterBadgeHtml = hasActiveFilter ? '<span class="badge" style="background:var(--accent-soft);color:var(--accent);padding:1px 7px;">On</span>' : '';
+
+  const filterPopoverHtml = '<div class="entry-meta-popover" id="mantisDowntimeFilterPopover" style="min-width:520px;padding:12px;" onclick="event.stopPropagation()">' +
+    '<div class="flex" style="align-items:stretch;">' +
+      '<div style="flex:0 0 150px;border-right:1px solid var(--line);padding-right:10px;">' +
+        '<div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;padding:2px 10px 8px;">Line</div>' +
+        '<div class="entry-meta-popover-list" style="max-height:none;">' + lineItemsHtml + '</div>' +
+      '</div>' +
+      '<div style="flex:0 0 150px;border-right:1px solid var(--line);padding:0 10px;">' +
+        '<div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;padding:2px 10px 8px;">Periode</div>' +
+        '<div class="entry-meta-popover-list" style="max-height:none;">' + presetItemsHtml + '</div>' +
+      '</div>' +
+      '<div style="flex:1;min-width:200px;padding-left:10px;">' +
+        '<div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;padding:2px 10px 8px;">Rentang Tanggal</div>' +
+        '<div style="padding:0 10px;display:flex;flex-direction:column;gap:10px;">' +
+          '<label style="font-size:11px;color:var(--ink-3);display:block;">Dari' +
+            '<input type="date" id="mantisDowntimeDateFrom" style="display:block;width:100%;margin-top:4px;height:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;font-family:inherit;" value="' + mantisEscapeHtml(filterFrom) + '" min="' + minDateIso + '" max="' + maxDateIso + '" onchange="mantisApplyDowntimeDateInputs()">' +
+          '</label>' +
+          '<label style="font-size:11px;color:var(--ink-3);display:block;">Sampai' +
+            '<input type="date" id="mantisDowntimeDateTo" style="display:block;width:100%;margin-top:4px;height:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;font-family:inherit;" value="' + mantisEscapeHtml(filterTo) + '" min="' + minDateIso + '" max="' + maxDateIso + '" onchange="mantisApplyDowntimeDateInputs()">' +
+          '</label>' +
+          '<button type="button" class="pill-btn" style="justify-content:center;" onclick="mantisResetDowntimeFilters()">Reset Filter</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
   '</div>';
 
   let html = '';
@@ -2819,11 +2896,17 @@ function mantisRenderDowntimeDashboard(container, table){
   html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="padding:20px;" class="flex items-center justify-between">' +
     '<div><div class="card-title">Ringkasan Downtime</div><div class="card-sub">Data Downtime</div></div>' +
-    '<button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet(\'downtime-table-container\')" style="width:32px;height:32px;padding:0;justify-content:center;">' +
-      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>' +
-    '</button>' +
+    '<div class="flex items-center" style="gap:8px;">' +
+      '<button type="button" class="pill-btn" id="mantisDowntimeFilterBtn" onclick="mantisToggleDowntimeFilterPopover(event)">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></svg>' +
+        'Filter' + filterBadgeHtml +
+      '</button>' +
+      '<button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet(\'downtime-table-container\')" style="width:32px;height:32px;padding:0;justify-content:center;">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>' +
+      '</button>' +
+    '</div>' +
   '</div>';
-  html += filterRowHtml;
+  html += filterPopoverHtml;
   html += '<div class="full-bleed-divider" style="margin:0;"></div>';
   html += '<div style="padding:20px;">';
   html += '<div class="metric-grid">';
@@ -2886,6 +2969,7 @@ function mantisRenderDowntimeDashboard(container, table){
   html += '</div>';
 
   container.innerHTML = html;
+  mantisSyncDowntimeFilterPopover();
 }
 
 function renderGvizTableRows(containerId){
@@ -4038,6 +4122,7 @@ function mantisCloseAllMetaPopovers(){
   document.querySelectorAll('.entry-meta-popover.open').forEach(function(p){ p.classList.remove('open'); });
   const mesinToggle = document.querySelector('.entry-mesin-toggle');
   if(mesinToggle) mesinToggle.classList.remove('open');
+  mantisDowntimeFilterPopoverOpen = false;
 }
 
 function mantisPositionPopover(popover, anchorEl){
