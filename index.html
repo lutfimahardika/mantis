@@ -5694,13 +5694,19 @@ function mantisGetAuthUser(){
   }catch(e){ return null; }
 }
 
+function mantisToSentenceCase(text){
+  const trimmed = (text || '').trim();
+  if(!trimmed) return '';
+  return trimmed[0].toUpperCase() + trimmed.slice(1).toLowerCase();
+}
+
 function mantisApplyAccountInfo(user){
   const name = (user && user.username) || '-';
   const nameEl = document.getElementById('mantisAccountName');
   const roleEl = document.getElementById('mantisAccountRole');
   const initialsEl = document.getElementById('mantisAccountInitials');
   if(nameEl) nameEl.textContent = name;
-  if(roleEl) roleEl.textContent = (user && user.role) || '-';
+  if(roleEl) roleEl.textContent = mantisToSentenceCase((user && user.role) || '') || '-';
   if(initialsEl){
     const initials = name.trim().split(/\s+/).map(function(w){ return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
     initialsEl.textContent = initials || '-';
