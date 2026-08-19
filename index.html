@@ -1100,7 +1100,7 @@ textarea.entry-input{
 .mantis-chart-line{ stroke-width:2; }
 
 @media (min-width:769px){
-  .mantis-chart-wrap::before{
+  .mantis-chart-wrap::before, .mantis-pareto-wrap::before{
     background-image:radial-gradient(circle, #E7E7E4 0.7px, transparent 0.85px);
     background-size:11px 11px;
   }
@@ -1158,6 +1158,16 @@ textarea.entry-input{
 }
 .mantis-pareto-tooltip::after{ display:none; }
 .mantis-pareto-bar{ cursor:pointer; transition:fill 120ms; }
+.mantis-pareto-wrap{ position:relative; }
+.mantis-pareto-wrap::before{
+  content:'';
+  position:absolute; inset:0;
+  z-index:0;
+  background-image:radial-gradient(circle, #E7E7E4 1px, transparent 1.15px);
+  background-size:14px 14px;
+  pointer-events:none;
+}
+.mantis-pareto-wrap svg{ position:relative; z-index:1; }
 
 /* ---------- Responsive ---------- */
 @media (max-width:1100px){
@@ -2736,7 +2746,7 @@ function mantisBuildDowntimeParetoSvg(items){
   const options = mantisGetParetoCountOptions();
   mantisParetoWindowCount = options.filter(function(v){ return v <= MANTIS_PARETO_DEFAULT_COUNT; }).pop() || options[options.length - 1] || mantisParetoItems.length;
 
-  return '<div class="mantis-pareto-wrap" style="position:relative;">' +
+  return '<div class="mantis-pareto-wrap">' +
     '<div id="mantisParetoChartHost">' + mantisBuildParetoChartInnerSvg() + '</div>' +
     '<div class="mantis-chart-tooltip mantis-pareto-tooltip" id="mantisParetoTooltip"></div>' +
   '</div>';
@@ -2789,21 +2799,22 @@ function mantisBuildParetoChartInnerSvg(){
     labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" fill="var(--ink-3)">' + mantisEscapeHtml(shortLabel) + '</text>';
   });
 
-  const linePointsAttr = linePoints.map(function(p){ return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
-  const lineDots = linePoints.map(function(p){
-    // <ellipse>, not <circle> - a circle's single radius can't survive the
-    // SVG's non-uniform x/y stretch (see mantisApplyParetoChartScaling)
-    // without becoming an oval, so rx/ry are set independently and ry gets
-    // corrected post-render the same way the bar corners are.
-    return '<ellipse class="mantis-pareto-line-dot" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" rx="3.5" ry="3.5" data-radius-user="3.5" fill="#fff" stroke="#2E7CF6" stroke-width="2" vector-effect="non-scaling-stroke"></ellipse>';
+  // Same smoothing + marker technique as the Meters detail chart
+  // (mantisBuildMeterReadingsChartHtml): a Catmull-Rom path plus HTML
+  // <span class="mantis-chart-dot"> markers positioned by percentage,
+  // rather than SVG shapes - sidesteps the SVG's non-uniform x/y stretch
+  // entirely instead of correcting for it post-render.
+  const cumulativeLinePath = '<path class="mantis-chart-line" d="' + mantisSmoothLinePath(linePoints) + '" fill="none" stroke="#2E7CF6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>';
+  const lineDotsHtml = linePoints.map(function(p){
+    const leftPct = (p.x / W * 100).toFixed(2);
+    const topPct = (p.y / H * 100).toFixed(2);
+    return '<span class="mantis-chart-dot" style="left:' + leftPct + '%;top:' + topPct + '%;border-color:#2E7CF6;"></span>';
   }).join('');
-  const cumulativeLine = '<polyline points="' + linePointsAttr + '" fill="none" stroke="#2E7CF6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline>' + lineDots;
 
   return '<svg id="mantisParetoSvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:320px;display:block;">' +
-    '<defs><pattern id="paretoDots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="0.9" fill="#E7E7E4"/></pattern></defs>' +
-    '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#paretoDots)"/>' +
-    bars + cumulativeLine + labels +
-  '</svg>';
+    bars + cumulativeLinePath + labels +
+  '</svg>' +
+  '<div class="mantis-chart-markers">' + lineDotsHtml + '</div>';
 }
 
 /* preserveAspectRatio="none" stretches the SVG's X and Y axes by different
@@ -2816,14 +2827,7 @@ function mantisBuildParetoChartInnerSvg(){
    vertical stretch is always 1:1 (viewBox height == CSS height), so
    without scaling it down/up by the same factor as rx just got stretched,
    the two would no longer match in real screen pixels and the corner
-   reads as an oval instead of a circle.
-
-   The dot-grid background pattern has the same problem - its 14x14 tile
-   and r=0.9 dots are authored in viewBox units, so the same horizontal
-   stretch would squash them into ellipses on an uneven grid. Countering
-   it with a patternTransform that pre-stretches the tile by 1/scaleX
-   before the outer SVG stretch is applied cancels out to round dots on
-   an even grid again, on any screen width. */
+   reads as an oval instead of a circle. */
 function mantisApplyParetoChartScaling(){
   const svg = document.getElementById('mantisParetoSvg');
   if(!svg) return;
@@ -2834,13 +2838,6 @@ function mantisApplyParetoChartScaling(){
     const rxUser = parseFloat(bar.getAttribute('data-radius-user') || '0');
     if(!rxUser) return;
     bar.setAttribute('ry', (rxUser * scaleX).toFixed(1));
-  });
-  const dotPattern = svg.querySelector('#paretoDots');
-  if(dotPattern) dotPattern.setAttribute('patternTransform', 'scale(' + (1 / scaleX).toFixed(4) + ',1)');
-  svg.querySelectorAll('.mantis-pareto-line-dot').forEach(function(dot){
-    const rxUser = parseFloat(dot.getAttribute('data-radius-user') || '0');
-    if(!rxUser) return;
-    dot.setAttribute('ry', (rxUser * scaleX).toFixed(2));
   });
 }
 
