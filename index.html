@@ -2058,6 +2058,7 @@ textarea.entry-input{
       <div class="tab-row">
         <button class="tab-btn active" data-settings-tab="language" onclick="showSettingsTab('language')">Bahasa</button>
         <button class="tab-btn" data-settings-tab="table" onclick="showSettingsTab('table')">Table</button>
+        <button class="tab-btn" data-settings-tab="chart" onclick="showSettingsTab('chart')">Chart</button>
       </div>
 
       <div class="settings-tab-panel" id="settings-tab-language" style="padding:20px;">
@@ -2100,6 +2101,17 @@ textarea.entry-input{
           <div class="settings-table-group-title">Orders</div>
           <div class="col-pref-list" id="colprefs-po-table-container"><div class="col-pref-loading">Memuat kolom...</div></div>
         </div>
+      </div>
+
+      <div class="settings-tab-panel" id="settings-tab-chart" style="display:none;padding:20px;">
+        <div class="flex items-start justify-between" style="gap:16px;margin-bottom:16px;">
+          <div class="card-sub" style="margin-bottom:0;">Atur singkatan 4-huruf yang tampil sebagai label sumbu-X pada Grafik Downtime, per nama Line/Section.</div>
+          <button type="button" class="pill-btn" style="flex:0 0 auto;" onclick="mantisResetDowntimeAbbrOverrides()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.05 11a8 8 0 1 1 .5 4m-.5 5v-5h5"/></svg>
+            Reset
+          </button>
+        </div>
+        <div class="col-pref-list" id="settings-chart-abbr-list" style="max-height:420px;overflow-y:auto;"><div class="col-pref-loading">Memuat...</div></div>
       </div>
     </div>
   </div>
@@ -2709,6 +2721,54 @@ const MANTIS_DOWNTIME_ABBR = {
   'Steam Injection': 'SINJ'
 };
 
+/* User-editable overrides for MANTIS_DOWNTIME_ABBR, set from Settings >
+   Chart. Stored client-side only (localStorage) - there's no backend field
+   for this, so it doesn't sync across devices/browsers. */
+const MANTIS_DOWNTIME_ABBR_OVERRIDES_KEY = 'mantisDowntimeAbbrOverrides';
+let mantisDowntimeAbbrOverrides = {};
+(function mantisLoadDowntimeAbbrOverrides(){
+  try{
+    const raw = localStorage.getItem(MANTIS_DOWNTIME_ABBR_OVERRIDES_KEY);
+    mantisDowntimeAbbrOverrides = raw ? JSON.parse(raw) : {};
+  }catch(e){ mantisDowntimeAbbrOverrides = {}; }
+})();
+
+function mantisGetDowntimeAbbr(section){
+  return mantisDowntimeAbbrOverrides[section] || MANTIS_DOWNTIME_ABBR[section] || '';
+}
+
+function mantisSetDowntimeAbbr(section, value){
+  const code = (value || '').trim().toUpperCase().slice(0, 6);
+  if(!code || code === MANTIS_DOWNTIME_ABBR[section]){
+    delete mantisDowntimeAbbrOverrides[section];
+  } else {
+    mantisDowntimeAbbrOverrides[section] = code;
+  }
+  try{ localStorage.setItem(MANTIS_DOWNTIME_ABBR_OVERRIDES_KEY, JSON.stringify(mantisDowntimeAbbrOverrides)); }catch(e){ /* storage unavailable - ignore */ }
+  mantisRefreshParetoChart();
+}
+
+function mantisResetDowntimeAbbrOverrides(){
+  mantisDowntimeAbbrOverrides = {};
+  try{ localStorage.removeItem(MANTIS_DOWNTIME_ABBR_OVERRIDES_KEY); }catch(e){ /* storage unavailable - ignore */ }
+  mantisInitChartSettingsTab();
+  mantisRefreshParetoChart();
+}
+
+function mantisInitChartSettingsTab(){
+  const container = document.getElementById('settings-chart-abbr-list');
+  if(!container) return;
+  const names = Object.keys(MANTIS_DOWNTIME_ABBR).sort(function(a, b){ return a.localeCompare(b); });
+  container.innerHTML = names.map(function(name){
+    return '<div class="col-pref-item">' +
+      '<div style="flex:1;font-size:13px;color:var(--ink);">' + mantisEscapeHtml(name) + '</div>' +
+      '<input type="text" class="settings-select" style="width:76px;text-align:center;text-transform:uppercase;flex:0 0 auto;" maxlength="6" ' +
+        'value="' + mantisEscapeHtml(mantisGetDowntimeAbbr(name)) + '" ' +
+        'onchange="mantisSetDowntimeAbbr(\'' + mantisEscapeHtml(name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")) + '\', this.value)">' +
+    '</div>';
+  }).join('');
+}
+
 let mantisParetoItems = [];
 let mantisParetoWindowCount = MANTIS_PARETO_DEFAULT_COUNT;
 
@@ -2826,7 +2886,7 @@ function mantisBuildParetoChartInnerSvg(){
     // "gepeng"/flattened) whenever the rendered width isn't close to the
     // 1000-unit viewBox. Positioning by percentage instead sidesteps that
     // entirely, same as the dot-grid and line markers.
-    const shortLabel = MANTIS_DOWNTIME_ABBR[section.trim()] || (section.length > 16 ? section.slice(0, 15) + '…' : section);
+    const shortLabel = mantisGetDowntimeAbbr(section.trim()) || (section.length > 16 ? section.slice(0, 15) + '…' : section);
     const leftPct = (cx / W * 100).toFixed(2);
     const topPct = ((padTop + plotH + 16) / H * 100).toFixed(2);
     labelsHtml += '<span style="position:absolute;left:' + leftPct + '%;top:' + topPct + '%;transform:translate(-50%,-50%);font-size:10px;color:var(--ink-3);white-space:nowrap;">' + mantisEscapeHtml(shortLabel) + '</span>';
@@ -5462,6 +5522,7 @@ function showSettingsTab(name){
   document.querySelector('.tab-btn[data-settings-tab="' + name + '"]').classList.add('active');
 
   if(name === 'table') mantisInitTableSettingsTab();
+  if(name === 'chart') mantisInitChartSettingsTab();
 }
 
 /* ---------- Settings: language ---------- */
