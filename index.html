@@ -2777,7 +2777,7 @@ function mantisBuildParetoChartInnerSvg(){
 
     const shortLabel = MANTIS_DOWNTIME_ABBR[section.trim()] || (section.length > 16 ? section.slice(0, 15) + '…' : section);
     const labelY = padTop + plotH + 16;
-    labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="middle" font-size="10" fill="var(--ink-3)">' + mantisEscapeHtml(shortLabel) + '</text>';
+    labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" fill="var(--ink-3)">' + mantisEscapeHtml(shortLabel) + '</text>';
   });
 
   let gridLines = '';
