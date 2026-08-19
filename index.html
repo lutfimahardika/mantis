@@ -1367,7 +1367,7 @@ textarea.entry-input{
     </svg>
     <span class="app-logo-text">mantis</span>
   </div>
-  <div class="app-header-right" id="page-topbar-title">Dashboard</div>
+  <div class="app-header-right" id="page-topbar-title">test page</div>
 
   <!-- ============ MOBILE TOPBAR ============ -->
   <div class="mobile-topbar">
@@ -1400,10 +1400,6 @@ textarea.entry-input{
     </div>
     <div class="sb-divider sidebar-brand-divider"></div>
     <!-- Main nav -->
-    <div class="nav-item active" data-page="overview" onclick="showPage('overview')">
-      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 3a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2zm10 -4a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 -8a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2z"/></svg>
-      <span class="nav-label">Dashboard</span>
-    </div>
     <div class="nav-group" id="navGroupActivities">
       <div class="group-label" onclick="toggleGroup(this)">
         <svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 2a1 1 0 0 1 1 1v17h17a1 1 0 0 1 .993 .883l.007 .117a1 1 0 0 1 -1 1h-18a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1z"/><path d="M19 4a3 3 0 1 1 -.651 5.93l-2.002 3.202a3 3 0 1 1 -4.927 .337l-1.378 -1.655a3 3 0 1 1 1.538 -1.282l1.378 1.654a2.994 2.994 0 0 1 1.693 -.115l2.002 -3.203a3 3 0 0 1 2.347 -4.868z"/></svg>
@@ -1436,11 +1432,15 @@ textarea.entry-input{
     </div>
     <div class="nav-item" data-page="downtime" onclick="showPage('downtime')">
       <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 1.67c.955 0 1.845 .467 2.39 1.247l.105 .16l8.114 13.548a2.914 2.914 0 0 1 -2.307 4.363l-.195 .008h-16.225a2.914 2.914 0 0 1 -2.582 -4.2l.099 -.185l8.11 -13.538a2.914 2.914 0 0 1 2.494 -1.403zm.01 13.33l-.127 .007a1 1 0 0 0 0 1.986l.117 .007l.127 -.007a1 1 0 0 0 0 -1.986l-.117 -.007zm-.01 -7a1 1 0 0 0 -.993 .883l-.007 .117v4l.007 .117a1 1 0 0 0 1.986 0l.007 -.117v-4l-.007 -.117a1 1 0 0 0 -.993 -.883z"/></svg>
-      <span>Downtime</span>
+      <span>The Real Dashboard</span>
     </div>
 
     <!-- Bottom group: Settings, Support, Account -->
     <div class="sb-bottom-group">
+      <div class="nav-item" data-page="overview" id="navItemTestPage" onclick="showPage('overview')" style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 3a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2zm10 -4a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 -8a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2z"/></svg>
+        <span class="nav-label">test page</span>
+      </div>
       <div class="nav-item" data-page="settings" onclick="showPage('settings')">
         <svg width="16" height="16" viewBox="0 0 24 24"><path d="M14.647 4.081a.724 .724 0 0 0 1.08 .448c2.439 -1.485 5.23 1.305 3.745 3.744a.724 .724 0 0 0 .447 1.08c2.775 .673 2.775 4.62 0 5.294a.724 .724 0 0 0 -.448 1.08c1.485 2.439 -1.305 5.23 -3.744 3.745a.724 .724 0 0 0 -1.08 .447c-.673 2.775 -4.62 2.775 -5.294 0a.724 .724 0 0 0 -1.08 -.448c-2.439 1.485 -5.23 -1.305 -3.745 -3.744a.724 .724 0 0 0 -.447 -1.08c-2.775 -.673 -2.775 -4.62 0 -5.294a.724 .724 0 0 0 .448 -1.08c-1.485 -2.439 1.305 -5.23 3.744 -3.745a.722 .722 0 0 0 1.08 -.447c.673 -2.775 4.62 -2.775 5.294 0zm-2.647 4.919a3 3 0 1 0 0 6a3 3 0 0 0 0 -6"/></svg>
         <span>Settings</span>
@@ -2288,12 +2288,12 @@ const MANTIS_METER_WRITE_TOKEN = '0502f1eebcf46081d755f09ddb9d0c1e';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
-  overview: 'Dashboard',
+  overview: 'test page',
   activities: 'Activities',
   parts: 'Parts',
   meters: 'Meters',
   po: 'Orders',
-  downtime: 'Downtime',
+  downtime: 'The Real Dashboard',
   settings: 'Settings',
   support: 'Support'
 };
@@ -5601,6 +5601,12 @@ function mantisApplyAccountInfo(user){
   if(initialsEl){
     const initials = name.trim().split(/\s+/).map(function(w){ return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
     initialsEl.textContent = initials || '-';
+  }
+
+  const testPageNav = document.getElementById('navItemTestPage');
+  if(testPageNav){
+    const isForeman = ((user && user.role) || '').trim().toLowerCase() === 'foreman';
+    testPageNav.style.display = isForeman ? '' : 'none';
   }
 }
 
