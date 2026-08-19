@@ -2284,15 +2284,15 @@ function showPage(name){
 
   if(name === 'parts' && !mantisLoadedPages.parts){
     mantisLoadedPages.parts = true;
-    loadSheetTable('Sparepart', 'parts-table-container', 'mantisHandleSparepart');
+    loadSheetTable('Parts', 'parts-table-container', 'mantisHandleSparepart');
   }
   if(name === 'meters' && !mantisLoadedPages.meters){
     mantisLoadedPages.meters = true;
-    loadSheetTable('Running Hour', 'meters-table-container', 'mantisHandleRunningHour');
+    loadSheetTable('Meters', 'meters-table-container', 'mantisHandleRunningHour');
   }
   if(name === 'po' && !mantisLoadedPages.po){
     mantisLoadedPages.po = true;
-    loadSheetTable('PRPO', 'po-table-container', 'mantisHandlePRPO');
+    loadSheetTable('Orders', 'po-table-container', 'mantisHandlePRPO');
   }
 
   if(document.getElementById('sidebar').classList.contains('open')){
@@ -2318,7 +2318,7 @@ function showActivitiesTab(name){
 
   if((name === 'records' || name === 'newlog') && !mantisLoadedPages.activities){
     mantisLoadedPages.activities = true;
-    loadSheetTable('Maintenance', 'activity-records-container', 'mantisHandleMaintenance', false, mantisPopulateEntryFormOptions);
+    loadSheetTable('Records', 'activity-records-container', 'mantisHandleMaintenance', false, mantisPopulateEntryFormOptions);
   } else if(name === 'newlog'){
     mantisPopulateEntryFormOptions();
   }
@@ -3224,7 +3224,7 @@ function mantisApplyNewReadingLocally(table, row, week, value){
   if(!row.c) row.c = [];
   row.c[colIndex] = { v: value, f: String(value) };
 
-  try{ sessionStorage.removeItem(MANTIS_SHEET_CACHE_PREFIX + 'Running Hour'); }catch(e){ /* storage unavailable - ignore */ }
+  try{ sessionStorage.removeItem(MANTIS_SHEET_CACHE_PREFIX + 'Meters'); }catch(e){ /* storage unavailable - ignore */ }
 
   if(document.getElementById('meters-table-container') && typeof renderGvizTableRows === 'function'){
     renderGvizTableRows('meters-table-container');
@@ -3278,7 +3278,7 @@ function mantisSubmitNewReading(){
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({
       token: MANTIS_METER_WRITE_TOKEN,
-      sheet: 'Running Hour',
+      sheet: 'Meters',
       machine: machineName,
       week: week,
       value: value
@@ -3352,10 +3352,10 @@ function loadSheetTable(sheetName, containerId, handlerName, forceRefresh, onDon
 }
 
 const MANTIS_SHEET_SOURCES = {
-  'parts-table-container': ['Sparepart', 'mantisHandleSparepart'],
-  'meters-table-container': ['Running Hour', 'mantisHandleRunningHour'],
-  'po-table-container': ['PRPO', 'mantisHandlePRPO'],
-  'activity-records-container': ['Maintenance', 'mantisHandleMaintenance']
+  'parts-table-container': ['Parts', 'mantisHandleSparepart'],
+  'meters-table-container': ['Meters', 'mantisHandleRunningHour'],
+  'po-table-container': ['Orders', 'mantisHandlePRPO'],
+  'activity-records-container': ['Records', 'mantisHandleMaintenance']
 };
 
 function mantisRefreshSheet(containerId){
@@ -4430,7 +4430,7 @@ function mantisPublishActionsToSheet(){
   const payload = JSON.stringify({
     token: MANTIS_METER_WRITE_TOKEN,
     action: 'appendRow',
-    sheet: 'Maintenance',
+    sheet: 'Records',
     values: values
   });
 
@@ -4460,7 +4460,7 @@ function mantisPublishActionsToSheet(){
       return;
     }
 
-    try{ sessionStorage.removeItem(MANTIS_SHEET_CACHE_PREFIX + 'Maintenance'); }catch(e){ /* storage unavailable - ignore */ }
+    try{ sessionStorage.removeItem(MANTIS_SHEET_CACHE_PREFIX + 'Records'); }catch(e){ /* storage unavailable - ignore */ }
     mantisLoadedPages.activities = false;
 
     mantisShowActionsMessage((data.count || values.length) + ' action berhasil dipublish ke Google Sheet.', false);

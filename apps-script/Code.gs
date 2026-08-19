@@ -33,7 +33,7 @@
 
 var SHEET_ID = '11-sqiV3BYqx738Rhr3Y9SF4Q7FnAGKNqMn-Gvoq6rFs';
 var MACHINE_COLUMN_LABEL = 'Nama Mesin';
-var USER_SHEET_NAME = 'User';
+var USER_SHEET_NAME = 'Users';
 
 function doGet(e) {
   try {
@@ -226,7 +226,7 @@ function parseAppendValue(value) {
 
 function handleSetMeterReading(body) {
   try {
-    var sheetName = (body.sheet || 'Running Hour').toString();
+    var sheetName = (body.sheet || 'Meters').toString();
     var machine = (body.machine || '').toString().trim();
     var week = (body.week || '').toString().trim();
     var value = body.value;
