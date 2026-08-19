@@ -2872,6 +2872,9 @@ function mantisRefreshParetoChart(){
   mantisHideDowntimeBarDetail();
 }
 
+let mantisParetoActiveBar = null;
+let mantisParetoTooltipScrollBound = false;
+
 function mantisShowDowntimeBarDetail(rect){
   const tooltip = document.getElementById('mantisParetoTooltip');
   if(!tooltip) return;
@@ -2888,10 +2891,21 @@ function mantisShowDowntimeBarDetail(rect){
     '<div style="font-size:11px;color:#fff;opacity:.85;margin-top:2px;">' + mantisEscapeHtml(rect.dataset.hours) + '</div>';
   tooltip.style.display = 'block';
 
-  // Measure after content/display are set so offsetWidth/Height reflect the
-  // actual rendered card, then clamp against the viewport (position:fixed,
-  // so this is viewport math, not container-relative) and flip below the
-  // bar when there isn't enough room above it.
+  mantisParetoActiveBar = rect;
+  mantisPositionParetoTooltip();
+  mantisBindParetoTooltipScroll();
+}
+
+/* position:fixed (viewport-relative, see the .mantis-pareto-tooltip CSS
+   comment) is only computed once on hover by default, so scrolling the
+   page while a bar's tooltip is showing left it floating in place instead
+   of tracking the bar, which itself moves with the scroll. Re-running this
+   from the scroll listener keeps it pinned. */
+function mantisPositionParetoTooltip(){
+  const tooltip = document.getElementById('mantisParetoTooltip');
+  const rect = mantisParetoActiveBar;
+  if(!tooltip || !rect || tooltip.style.display === 'none') return;
+
   const barRect = rect.getBoundingClientRect();
   const tw = tooltip.offsetWidth;
   const th = tooltip.offsetHeight;
@@ -2907,6 +2921,15 @@ function mantisShowDowntimeBarDetail(rect){
   tooltip.style.top = top + 'px';
 }
 
+function mantisBindParetoTooltipScroll(){
+  if(mantisParetoTooltipScrollBound) return;
+  mantisParetoTooltipScrollBound = true;
+  // capture:true so this also catches scrolling inside .main (the scroll
+  // container, not window) - scroll events don't bubble, but they do reach
+  // capturing listeners on ancestors on the way down to the target.
+  window.addEventListener('scroll', mantisPositionParetoTooltip, true);
+}
+
 function mantisHideDowntimeBarDetail(){
   const tooltip = document.getElementById('mantisParetoTooltip');
   if(tooltip){
@@ -2914,6 +2937,7 @@ function mantisHideDowntimeBarDetail(){
     const svg = document.getElementById('mantisParetoSvg');
     if(svg) svg.querySelectorAll('.mantis-pareto-bar').forEach(function(r){ r.setAttribute('fill', '#E4E4E7'); });
   }
+  mantisParetoActiveBar = null;
 }
 
 /* ---------- Downtime filters (Line + date range/week) ---------- */
