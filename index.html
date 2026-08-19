@@ -2019,17 +2019,11 @@ textarea.entry-input{
       <div style="padding:20px;" class="flex items-center justify-between">
         <div>
           <div class="card-title">Downtime</div>
-          <div class="card-sub">Data Downtime</div>
+          <div class="card-sub">Ringkasan Data Downtime</div>
         </div>
-        <div class="flex items-center" style="gap:8px;">
-          <div class="table-search">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
-            <input type="text" placeholder="Cari downtime..." oninput="mantisSearchTable('downtime-table-container', this.value)">
-          </div>
-          <button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet('downtime-table-container')" style="width:32px;height:32px;padding:0;justify-content:center;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
-          </button>
-        </div>
+        <button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet('downtime-table-container')" style="width:32px;height:32px;padding:0;justify-content:center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+        </button>
       </div>
       <div id="downtime-table-container"></div>
     </div>
@@ -2088,10 +2082,6 @@ textarea.entry-input{
         <div class="settings-table-group">
           <div class="settings-table-group-title">Orders</div>
           <div class="col-pref-list" id="colprefs-po-table-container"><div class="col-pref-loading">Memuat kolom...</div></div>
-        </div>
-        <div class="settings-table-group">
-          <div class="settings-table-group-title">Downtime</div>
-          <div class="col-pref-list" id="colprefs-downtime-table-container"><div class="col-pref-loading">Memuat kolom...</div></div>
         </div>
       </div>
     </div>
@@ -2517,11 +2507,206 @@ function mantisOrderedVisibleColIndexes(containerId, table){
 }
 
 function renderGvizTable(container, table, containerId){
+  if(containerId === 'downtime-table-container'){
+    mantisTableCache[containerId] = table;
+    mantisRenderDowntimeDashboard(container, table);
+    return;
+  }
   mantisTableCache[containerId] = mantisStripEmptyColumns(table);
   if(!(containerId in mantisRowLimits)) mantisRowLimits[containerId] = 10;
   if(!(containerId in mantisCurrentPage)) mantisCurrentPage[containerId] = 1;
   delete mantisColumnWidths[containerId];
   renderGvizTableRows(containerId);
+}
+
+/* ---------- Downtime dashboard ----------
+   The "Downtime" sheet isn't a plain table: Line and Description are merged
+   cells spanning 4 rows per item, so only the first row of each block has
+   them filled (the rest read blank via gviz and need forward-filling). Each
+   block is one "hour" row, one "percent" row, then two "text" rows (root
+   cause, then a downtime note) - in that fixed order, with one column added
+   per day (after Unit) holding that day's value. The item's leading number
+   (e.g. "29.") is NOT a unique id - it's reused across different equipment,
+   sometimes even on the same line - so items are grouped by row position
+   (a new "hour" row starts a new item) rather than by that number. Columns
+   are located by label rather than fixed index since a stray blank column
+   has already shifted things once. */
+function mantisParseDowntimeTable(table){
+  const lineIdx = mantisFindColIndex(table, 'Line');
+  const descIdx = mantisFindColIndex(table, 'Description');
+  const unitIdx = mantisFindColIndex(table, 'Unit');
+  const lastFixedIdx = Math.max(lineIdx, descIdx, unitIdx);
+
+  const dateCols = table.cols
+    .map(function(c, i){ return { index: i, label: c.label || '' }; })
+    .filter(function(d){ return d.index > lastFixedIdx && d.label; });
+
+  const items = [];
+  let currentLine = '', currentDesc = '', currentItem = null, textSeen = 0;
+
+  table.rows.forEach(function(r){
+    const c = r.c || [];
+    const lineRaw = lineIdx >= 0 ? mantisCellText(c[lineIdx]).trim() : '';
+    const descRaw = descIdx >= 0 ? mantisCellText(c[descIdx]).trim() : '';
+    const unit = (unitIdx >= 0 ? mantisCellText(c[unitIdx]) : '').trim().toLowerCase();
+    if(lineRaw) currentLine = lineRaw;
+    if(descRaw) currentDesc = descRaw;
+    if(!currentLine || !currentDesc) return;
+
+    if(unit === 'hour'){
+      currentItem = { line: currentLine, equipment: currentDesc, hours: {}, rootCause: {}, note: {}, totalHours: 0 };
+      items.push(currentItem);
+      textSeen = 0;
+      dateCols.forEach(function(dc){
+        const text = mantisCellText(c[dc.index]);
+        if(text === '') return;
+        currentItem.hours[dc.label] = parseFloat(text) || 0;
+      });
+      return;
+    }
+
+    if(!currentItem) return;
+
+    if(unit === 'text'){
+      textSeen++;
+      dateCols.forEach(function(dc){
+        const text = mantisCellText(c[dc.index]);
+        if(text === '') return;
+        if(textSeen === 1) currentItem.rootCause[dc.label] = text;
+        else if(textSeen === 2) currentItem.note[dc.label] = text;
+      });
+    }
+  });
+
+  items.forEach(function(item){
+    item.totalHours = Object.keys(item.hours).reduce(function(sum, d){ return sum + (item.hours[d] || 0); }, 0);
+  });
+
+  return { items: items, dateLabels: dateCols.map(function(d){ return d.label; }) };
+}
+
+function mantisFormatDowntimeHours(n){
+  const num = Math.round((n || 0) * 10) / 10;
+  return (num % 1 === 0 ? num.toFixed(0) : num.toFixed(1)) + ' jam';
+}
+
+function mantisDowntimeMetricColHtml(label, value){
+  return '<div class="metric-col">' +
+    '<div class="metric-label-row"><span class="metric-label">' + mantisEscapeHtml(label) + '</span></div>' +
+    '<div class="metric-value">' + mantisEscapeHtml(value) + '</div>' +
+  '</div>';
+}
+
+function mantisBuildDowntimeChartSvg(dateLabels, hoursByDate){
+  if(!dateLabels.length){
+    return '<div class="tab-panel-empty" style="padding:24px 0;">Belum ada kolom tanggal.</div>';
+  }
+  const W = 1000, H = 220, padBottom = 26, padTop = 20;
+  const values = dateLabels.map(function(d){ return hoursByDate[d] || 0; });
+  const maxVal = Math.max.apply(null, values.concat([1]));
+  const n = dateLabels.length;
+  const bandW = W / n;
+  const barW = Math.max(8, Math.min(48, bandW * 0.5));
+
+  let bars = '';
+  dateLabels.forEach(function(d, i){
+    const v = values[i];
+    const barH = maxVal > 0 ? (v / maxVal) * (H - padBottom - padTop) : 0;
+    const cx = bandW * i + bandW / 2;
+    const x = cx - barW / 2;
+    const y = H - padBottom - barH;
+    bars += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(barH, 0).toFixed(1) + '" rx="4" fill="var(--accent)"></rect>';
+    if(v > 0){
+      bars += '<text x="' + cx.toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" text-anchor="middle" font-size="12" fill="var(--ink-2)">' + v + '</text>';
+    }
+    bars += '<text x="' + cx.toFixed(1) + '" y="' + (H - 6).toFixed(1) + '" text-anchor="middle" font-size="10" fill="var(--ink-3)">' + mantisEscapeHtml(d) + '</text>';
+  });
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:220px;display:block;">' +
+    '<line x1="0" y1="' + (H - padBottom) + '" x2="' + W + '" y2="' + (H - padBottom) + '" stroke="var(--line)" stroke-width="1"></line>' +
+    bars +
+    '</svg>';
+}
+
+function mantisRenderDowntimeDashboard(container, table){
+  if(!table || !table.cols || !table.rows){
+    container.innerHTML = '<div class="sheet-error">Data tidak ditemukan pada sheet.</div>';
+    return;
+  }
+
+  const parsed = mantisParseDowntimeTable(table);
+  const items = parsed.items;
+
+  let totalHours = 0, incidents = 0;
+  const lineHours = {};
+  const dateHours = {};
+  parsed.dateLabels.forEach(function(d){ dateHours[d] = 0; });
+
+  items.forEach(function(item){
+    Object.keys(item.hours).forEach(function(d){
+      const h = item.hours[d] || 0;
+      if(h <= 0) return;
+      incidents++;
+      totalHours += h;
+      dateHours[d] = (dateHours[d] || 0) + h;
+      lineHours[item.line] = (lineHours[item.line] || 0) + h;
+    });
+  });
+
+  let topLine = '-', topLineHours = 0;
+  Object.keys(lineHours).forEach(function(l){
+    if(lineHours[l] > topLineHours){ topLine = l; topLineHours = lineHours[l]; }
+  });
+
+  const topItems = items.filter(function(i){ return i.totalHours > 0; })
+    .sort(function(a, b){ return b.totalHours - a.totalHours; })
+    .slice(0, 8);
+
+  let html = '';
+
+  html += '<div style="padding:20px;">';
+  html += '<div class="metric-grid">';
+  html += mantisDowntimeMetricColHtml('Total Downtime', mantisFormatDowntimeHours(totalHours));
+  html += mantisDowntimeMetricColHtml('Jumlah Insiden', String(incidents));
+  html += mantisDowntimeMetricColHtml('Line Paling Terdampak', topLineHours ? (topLine + ' · ' + mantisFormatDowntimeHours(topLineHours)) : '-');
+  html += mantisDowntimeMetricColHtml('Rata-rata / Insiden', mantisFormatDowntimeHours(incidents ? totalHours / incidents : 0));
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div class="full-bleed-divider" style="margin:0;"></div>';
+
+  html += '<div style="padding:20px;">';
+  html += '<div class="card-sub" style="margin-bottom:12px;">Total Jam Downtime per Hari</div>';
+  html += mantisBuildDowntimeChartSvg(parsed.dateLabels, dateHours);
+  html += '</div>';
+
+  html += '<div class="full-bleed-divider" style="margin:0;"></div>';
+
+  html += '<div style="padding:20px;">';
+  html += '<div class="card-sub" style="margin-bottom:12px;">Top Downtime</div>';
+  if(!topItems.length){
+    html += '<div class="tab-panel-empty" style="padding:24px 0;">Belum ada data downtime yang tercatat.</div>';
+  } else {
+    html += '<div class="table-wrap"><table><thead><tr><th>Line &amp; Equipment</th><th>Root Cause</th><th style="white-space:nowrap;">Total Jam</th></tr></thead><tbody>';
+    topItems.forEach(function(item){
+      const dates = Object.keys(item.hours).filter(function(d){ return item.hours[d] > 0; });
+      const lastDate = dates.length ? dates[dates.length - 1] : '';
+      const rootCause = lastDate ? (item.rootCause[lastDate] || '') : '';
+      html += '<tr>' +
+        '<td><div class="flex items-center" style="gap:10px;">' +
+          '<div class="row-icon" style="background:var(--accent-soft);">' + MANTIS_ACTION_ICON + '</div>' +
+          '<div><div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.equipment) + '</div>' +
+          '<div style="font-size:11px;color:var(--ink-3);">' + mantisEscapeHtml(item.line) + '</div></div>' +
+        '</div></td>' +
+        '<td style="white-space:normal;max-width:320px;color:var(--ink);">' + mantisEscapeHtml(rootCause) + '</td>' +
+        '<td style="white-space:nowrap;font-weight:500;">' + mantisFormatDowntimeHours(item.totalHours) + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  html += '</div>';
+
+  container.innerHTML = html;
 }
 
 function renderGvizTableRows(containerId){
@@ -2700,7 +2885,6 @@ const MANTIS_DETAIL_RETURN_PAGE = {
   'parts-table-container': 'parts',
   'meters-table-container': 'meters',
   'po-table-container': 'po',
-  'downtime-table-container': 'downtime',
   'activity-records-container': 'activities'
 };
 let mantisDetailReturnPage = 'overview';
@@ -2714,8 +2898,7 @@ function mantisCellText(cell){
 const MANTIS_DETAIL_TITLE_COLUMN = {
   'parts-table-container': 'Nama Material',
   'meters-table-container': 'Nama Mesin',
-  'po-table-container': 'Deskripsi material',
-  'downtime-table-container': 'Description'
+  'po-table-container': 'Deskripsi material'
 };
 function mantisFindColIndex(table, label){
   if(!label) return -1;
