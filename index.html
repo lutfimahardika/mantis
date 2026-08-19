@@ -1140,6 +1140,15 @@ textarea.entry-input{
   border:4px solid transparent;
   border-top-color:var(--ink);
 }
+.mantis-pareto-tooltip{
+  white-space:normal;
+  padding:8px 12px;
+  min-width:140px;
+  text-align:left;
+  box-shadow:0 8px 20px rgba(0,0,0,.18);
+}
+.mantis-pareto-scroll{ border-radius:8px; }
+.mantis-pareto-bar{ cursor:pointer; transition:fill 120ms; }
 
 /* ---------- Responsive ---------- */
 @media (max-width:1100px){
@@ -2591,14 +2600,24 @@ function mantisDowntimeMetricColHtml(label, value){
   '</div>';
 }
 
-/* Pareto chart: items sorted by total hours descending (bars, left axis)
-   with a cumulative-percentage line (right axis, 0-100%) plus a dashed 80%
-   reference line - the classic "vital few" view of which equipment accounts
-   for most of the downtime. Capped to the worst MANTIS_PARETO_MAX_ITEMS so
-   it stays readable as more items accumulate, but the cumulative % is still
+/* Pareto chart: items sorted by total hours descending (bars) with a
+   cumulative-percentage line plus a dashed 80% reference line - the
+   classic "vital few" view of which equipment accounts for most of the
+   downtime. Capped to the worst MANTIS_PARETO_MAX_ITEMS so it stays
+   readable as more items accumulate, but the cumulative % is still
    computed against the true grand total across every item (not just the
-   ones drawn), so the line stays accurate even when items are cut off. */
+   ones drawn), so the line stays accurate even when items are cut off.
+
+   Bars are a fixed pixel width rather than stretched to fill the card, so
+   they stay readable regardless of item count; the chart sits in a
+   horizontally-scrollable strip (the app's global scrollbar styling makes
+   that visible below the chart) instead of squeezing everything into one
+   view. Hovering/tapping a bar highlights it and shows a detail card
+   (section, line, hours, cumulative %), mirroring the rest of the app's
+   .mantis-chart-tooltip pattern used on the Meters chart. */
 const MANTIS_PARETO_MAX_ITEMS = 20;
+const MANTIS_PARETO_BAND_PX = 56;
+const MANTIS_PARETO_BAR_PX = 30;
 
 function mantisBuildDowntimeParetoSvg(items){
   const withHours = items.filter(function(i){ return i.totalHours > 0; })
@@ -2611,12 +2630,12 @@ function mantisBuildDowntimeParetoSvg(items){
   const grandTotal = withHours.reduce(function(s, i){ return s + i.totalHours; }, 0);
   const shown = withHours.slice(0, MANTIS_PARETO_MAX_ITEMS);
 
-  const W = 1000, H = 320, padTop = 20, padBottom = 92, padRight = 34;
-  const plotW = W - padRight;
-  const plotH = H - padTop - padBottom;
+  const padLeft = 10, padRight = 10, padTop = 24, padBottom = 92;
   const n = shown.length;
-  const bandW = plotW / n;
-  const barW = Math.max(8, Math.min(40, bandW * 0.55));
+  const plotW = n * MANTIS_PARETO_BAND_PX;
+  const W = plotW + padLeft + padRight;
+  const H = 320;
+  const plotH = H - padTop - padBottom;
   const maxVal = Math.max.apply(null, shown.map(function(i){ return i.totalHours; }).concat([1]));
 
   let cum = 0;
@@ -2626,40 +2645,83 @@ function mantisBuildDowntimeParetoSvg(items){
   shown.forEach(function(item, i){
     cum += item.totalHours;
     const cumPct = grandTotal > 0 ? (cum / grandTotal) * 100 : 0;
-    const cx = bandW * i + bandW / 2;
+    const cx = padLeft + MANTIS_PARETO_BAND_PX * i + MANTIS_PARETO_BAND_PX / 2;
     const barH = (item.totalHours / maxVal) * plotH;
-    const x = cx - barW / 2;
+    const x = cx - MANTIS_PARETO_BAR_PX / 2;
     const y = padTop + plotH - barH;
-    bars += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(barH, 0).toFixed(1) + '" rx="3" fill="var(--accent)"></rect>';
+    const section = item.equipment.replace(/^\d+\.\s*/, '');
+    bars += '<rect class="mantis-pareto-bar" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + MANTIS_PARETO_BAR_PX + '" height="' + Math.max(barH, 0).toFixed(1) + '" rx="4" fill="#E4E4E7" ' +
+      'data-section="' + mantisEscapeHtml(section) + '" data-line="' + mantisEscapeHtml(item.line) + '" ' +
+      'data-hours="' + mantisEscapeHtml(mantisFormatDowntimeHours(item.totalHours)) + '" data-cum="' + Math.round(cumPct) + '" ' +
+      'onmouseenter="mantisShowDowntimeBarDetail(this)" onmouseleave="mantisHideDowntimeBarDetail()" onclick="mantisShowDowntimeBarDetail(this)"></rect>';
 
     const py = padTop + plotH - (cumPct / 100) * plotH;
     points.push({ x: cx, y: py });
 
-    const shortLabel = item.equipment.length > 16 ? item.equipment.slice(0, 15) + '…' : item.equipment;
+    const shortLabel = section.length > 16 ? section.slice(0, 15) + '…' : section;
     const labelY = padTop + plotH + 14;
     labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="end" font-size="9" fill="var(--ink-3)" transform="rotate(-45 ' + cx.toFixed(1) + ' ' + labelY.toFixed(1) + ')">' + mantisEscapeHtml(shortLabel) + '</text>';
   });
 
   const linePoints = points.map(function(p){ return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
-  const dots = points.map(function(p){ return '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="3" fill="#fff" stroke="var(--violet)" stroke-width="2"></circle>'; }).join('');
+  const dots = points.map(function(p){ return '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="3" fill="#fff" stroke="var(--violet)" stroke-width="2" style="pointer-events:none;"></circle>'; }).join('');
 
   let gridLines = '';
-  [0, 25, 50, 75, 100].forEach(function(pct){
+  [25, 50, 75, 100].forEach(function(pct){
     const y = padTop + plotH - (pct / 100) * plotH;
-    gridLines += '<line x1="0" y1="' + y.toFixed(1) + '" x2="' + plotW + '" y2="' + y.toFixed(1) + '" stroke="var(--line-soft)" stroke-width="1"></line>' +
-      '<text x="' + (plotW + 4) + '" y="' + (y + 3).toFixed(1) + '" font-size="9" fill="var(--ink-3)">' + pct + '%</text>';
+    gridLines += '<line x1="0" y1="' + y.toFixed(1) + '" x2="' + W + '" y2="' + y.toFixed(1) + '" stroke="var(--line-soft)" stroke-width="1"></line>';
   });
 
   const y80 = padTop + plotH - 0.8 * plotH;
 
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:320px;display:block;">' +
+  const svg = '<svg id="mantisParetoSvg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" style="display:block;">' +
     gridLines +
-    '<line x1="0" y1="' + y80.toFixed(1) + '" x2="' + plotW + '" y2="' + y80.toFixed(1) + '" stroke="var(--red)" stroke-width="1" stroke-dasharray="4 4"></line>' +
+    '<line x1="0" y1="' + y80.toFixed(1) + '" x2="' + W + '" y2="' + y80.toFixed(1) + '" stroke="var(--red)" stroke-width="1" stroke-dasharray="4 4"></line>' +
+    '<text x="4" y="' + (y80 - 5).toFixed(1) + '" font-size="9" fill="var(--red)">80%</text>' +
     bars +
-    '<polyline points="' + linePoints + '" fill="none" stroke="var(--violet)" stroke-width="2"></polyline>' +
+    '<polyline points="' + linePoints + '" fill="none" stroke="var(--violet)" stroke-width="2" style="pointer-events:none;"></polyline>' +
     dots +
     labels +
     '</svg>';
+
+  return '<div class="mantis-pareto-wrap" style="position:relative;">' +
+    '<div class="mantis-pareto-scroll" style="overflow-x:auto;">' + svg + '</div>' +
+    '<div class="mantis-chart-tooltip mantis-pareto-tooltip" id="mantisParetoTooltip"></div>' +
+  '</div>';
+}
+
+function mantisShowDowntimeBarDetail(rect){
+  const wrap = rect.closest('.mantis-pareto-wrap');
+  const tooltip = document.getElementById('mantisParetoTooltip');
+  if(!wrap || !tooltip) return;
+
+  const svg = rect.ownerSVGElement;
+  if(svg){
+    svg.querySelectorAll('.mantis-pareto-bar').forEach(function(r){ r.setAttribute('fill', '#E4E4E7'); });
+  }
+  rect.setAttribute('fill', 'var(--accent)');
+
+  const wrapRect = wrap.getBoundingClientRect();
+  const barRect = rect.getBoundingClientRect();
+  const left = barRect.left - wrapRect.left + barRect.width / 2;
+  const top = barRect.top - wrapRect.top;
+
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+  tooltip.innerHTML =
+    '<div style="font-size:11px;color:#fff;opacity:.75;">' + mantisEscapeHtml(rect.dataset.line) + '</div>' +
+    '<div style="font-size:12px;font-weight:600;color:#fff;margin-top:2px;">' + mantisEscapeHtml(rect.dataset.section) + '</div>' +
+    '<div style="font-size:11px;color:#fff;opacity:.85;margin-top:2px;">' + mantisEscapeHtml(rect.dataset.hours) + ' &middot; Kumulatif ' + rect.dataset.cum + '%</div>';
+  tooltip.style.display = 'block';
+}
+
+function mantisHideDowntimeBarDetail(){
+  const tooltip = document.getElementById('mantisParetoTooltip');
+  if(tooltip){
+    tooltip.style.display = 'none';
+    const svg = document.getElementById('mantisParetoSvg');
+    if(svg) svg.querySelectorAll('.mantis-pareto-bar').forEach(function(r){ r.setAttribute('fill', '#E4E4E7'); });
+  }
 }
 
 /* ---------- Downtime filters (Line + date range/week) ---------- */
