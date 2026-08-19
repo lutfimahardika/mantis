@@ -3167,20 +3167,38 @@ function mantisCloseRowDetail(){
   }
 }
 
-/* ---------- New meter reading (inline row) ---------- */
-function mantisSuggestNextWeekLabel(table){
+/* ---------- New meter reading (inline row) ----------
+   Suggests the earliest week column this specific machine still has no
+   value for (e.g. a skipped W33 while a later week's column already exists
+   because some other machine got entered first), so a missed week can be
+   backfilled instead of always being skipped in favor of the next new
+   column. Only once every existing week is filled in for this row does it
+   fall back to suggesting a brand new week (maxNum + 1). */
+function mantisSuggestNextWeekLabel(table, row){
+  const weeks = [];
   let maxNum = 0;
-  table.cols.forEach(function(c){
-    if(mantisIsWeekLabel(c.label)){
-      const n = parseInt((c.label || '').replace(/\D/g, ''), 10);
-      if(n > maxNum) maxNum = n;
-    }
+  table.cols.forEach(function(c, i){
+    if(!mantisIsWeekLabel(c.label)) return;
+    const n = parseInt((c.label || '').replace(/\D/g, ''), 10);
+    if(n > maxNum) maxNum = n;
+    weeks.push({ index: i, num: n, label: c.label });
   });
-  return 'W' + (maxNum + 1);
+  weeks.sort(function(a, b){ return a.num - b.num; });
+
+  if(row){
+    for(let i = 0; i < weeks.length; i++){
+      const w = weeks[i];
+      if(mantisCellText(row.c && row.c[w.index]) === ''){
+        return { label: w.label, isNew: false };
+      }
+    }
+  }
+
+  return { label: 'W' + (maxNum + 1), isNew: true };
 }
 
 function mantisBuildNewReadingRowHtml(table, row){
-  const nextWeek = mantisSuggestNextWeekLabel(table);
+  const nextWeek = mantisSuggestNextWeekLabel(table, row);
   const unitVal = mantisGetMeterUnit(table, row);
   const isDate = mantisIsDateUnit(unitVal);
   const inputHtml = isDate
@@ -3194,9 +3212,11 @@ function mantisBuildNewReadingRowHtml(table, row){
   const ocrFileInputHtml = isDate ? '' :
     '<input type="file" id="mantisOcrFileInput" accept="image/*" capture="environment" style="display:none;" onchange="mantisHandleOcrFile(event)">';
 
+  const newTagHtml = nextWeek.isNew ? '<span class="row-detail-new-tag">Baru</span>' : '';
+
   return '' +
     '<div class="row-detail-item row-detail-item-new">' +
-      '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek) + '<span class="row-detail-new-tag">Baru</span></span>' +
+      '<span class="row-detail-label">' + mantisEscapeHtml(nextWeek.label) + newTagHtml + '</span>' +
       '<div class="row-detail-new-input-row">' + inputHtml + ocrBtnHtml + '</div>' +
       ocrFileInputHtml +
       '<button type="button" class="row-detail-new-save" onclick="mantisSubmitNewReading()">Simpan</button>' +
@@ -3502,7 +3522,7 @@ function mantisSubmitNewReading(){
     return;
   }
 
-  const week = mantisSuggestNextWeekLabel(table);
+  const week = mantisSuggestNextWeekLabel(table, row).label;
   const titleIndex = mantisFindColIndex(table, MANTIS_DETAIL_TITLE_COLUMN[mantisDetailContainerId]);
   const machineName = titleIndex >= 0 ? mantisCellText(row.c && row.c[titleIndex]) : '';
 
