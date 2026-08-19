@@ -2625,6 +2625,80 @@ const MANTIS_PARETO_COUNT_CHOICES = [1, 2, 3, 5, 10, 20];
 const MANTIS_PARETO_DEFAULT_COUNT = 10;
 const MANTIS_PARETO_VIEWBOX_W = 1000;
 
+// Maps a downtime equipment/section name (with its leading "N. " stripped,
+// same as `section` below) to a fixed 4-letter code, so the rotated x-axis
+// label reads as a short code instead of a mid-word-truncated "...".
+// Names not in this table fall back to truncation.
+const MANTIS_DOWNTIME_ABBR = {
+  'Air Blow Infeeder': 'BLOW',
+  'Hot Melt Guns': 'HGUN',
+  'Hot Melt Unit Pump': 'HPUM',
+  'Hot Melt Tant': 'HTAN',
+  'Hot Melt Hose': 'HHOS',
+  'ASSU, Mechanical Setting (MC)': 'ASSU',
+  'Sterile Air System': 'SAIR',
+  'Peroxide System Alarm': 'PERO',
+  'Waste Box Congestion': 'WAST',
+  'Out Feed Conv. Congestion': 'OTFD',
+  'Open Tube': 'OPEN',
+  'Strip Out of Position': 'STRP',
+  'Photocell Unit, Barcode not Detected': 'PHOT',
+  'Cooling Water System': 'COOL',
+  'Paper Putus/Broken Packaging (Sambung/Int. CIP)': 'BROK',
+  'Coding Machine Issue/Coding Blur': 'CODE',
+  'Belt Brake Fault': 'BELT',
+  'SA, Roller, TPIH Gen. Fault': 'SAPP',
+  'Peroxide Bath, Low Peroxide Tamp.': 'PBTH',
+  'Design Correction': 'DSGN',
+  'Paper Splicing Device': 'PSPL',
+  'Strip Splicing Device': 'SSPL',
+  'Filling System/High Product Level': 'HLVL',
+  'Watering Compressor': 'COMP',
+  'Flap Heater': 'HEAT',
+  'Lubricating Jaw System': 'LUBR',
+  'Filling System (JELASKAN)': 'FILL',
+  'Headspace Injection': 'INJC',
+  'Tube Steering': 'TSTR',
+  'Pendulum roller, wrong position': 'PEND',
+  'Reference pendulum roller': 'REFP',
+  'HI, High flow': 'HFLO',
+  'HI, Low flow': 'LFLO',
+  'HI, injection valves fault': 'IFLT',
+  'TCA (Tetra Cap Aplicator)': 'TCAP',
+  'Alarm Electrical Cabinet High Temperature': 'ELEC',
+  'Carton Sealer': 'CART',
+  'Coding Pack': 'CODP',
+  'Coding Carton': 'CODC',
+  'Other': 'OTHR',
+  'Buffer Table Jam': 'BUFF',
+  'Suction Stop': 'SUCT',
+  'Top Pre Folder': 'TOPP',
+  'Jamming Top Forming': 'TOPF',
+  'US Generator': 'UGEN',
+  'Stop Due Jam Into CFA': 'JAMD',
+  'Jammed Into Off Conveyor': 'OFFC',
+  'Overload Device': 'OVLD',
+  'AT Low Level': 'LLVL',
+  'Coding Blur': 'CBLR',
+  'Mandreel Cooling': 'MAND',
+  'Straw Applicator': 'STRA',
+  'Tray Packer': 'TRAY',
+  'Palletizer': 'PLET',
+  'Magazine Feeder': 'FEED',
+  'Eror Trasferstation': 'TNSF',
+  'Deformed Package in Contour Gate': 'DFRM',
+  'H2O2 Heater Low/High': 'H2HT',
+  'Spraying Quantity H2O2': 'H2SP',
+  'Filling Station': 'FSTA',
+  'Top Section / Open Flap': 'TSEC',
+  'Exhaust Box Low/High': 'XHST',
+  'Jam Off Discharge': 'DISC',
+  'Coding Blue': 'CBLU',
+  'Coding EHT Tripped': 'CEHT',
+  'Coding Separuh': 'CHLF',
+  'Steam Injection': 'SINJ'
+};
+
 let mantisParetoItems = [];
 let mantisParetoWindowCount = MANTIS_PARETO_DEFAULT_COUNT;
 
@@ -2701,7 +2775,7 @@ function mantisBuildParetoChartInnerSvg(){
       'data-hours="' + mantisEscapeHtml(mantisFormatDowntimeHours(item.totalHours)) + '" ' +
       'onmouseenter="mantisShowDowntimeBarDetail(this)" onmouseleave="mantisHideDowntimeBarDetail()" onclick="mantisShowDowntimeBarDetail(this)"></rect>';
 
-    const shortLabel = section.length > 16 ? section.slice(0, 15) + '…' : section;
+    const shortLabel = MANTIS_DOWNTIME_ABBR[section.trim()] || (section.length > 16 ? section.slice(0, 15) + '…' : section);
     const labelY = padTop + plotH + 14;
     labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="end" font-size="10" fill="var(--ink-3)" transform="rotate(-45 ' + cx.toFixed(1) + ' ' + labelY.toFixed(1) + ')">' + mantisEscapeHtml(shortLabel) + '</text>';
   });
