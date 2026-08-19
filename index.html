@@ -1141,12 +1141,22 @@ textarea.entry-input{
   border-top-color:var(--ink);
 }
 .mantis-pareto-tooltip{
+  /* position:fixed (viewport-relative) rather than the inherited
+     position:absolute, so it can never get clipped by the .card's
+     overflow:hidden regardless of where the highlighted bar sits -
+     mantisShowDowntimeBarDetail() computes left/top straight from the
+     bar's getBoundingClientRect() and flips above/below as needed. */
+  position:fixed;
+  transform:none;
+  margin-top:0;
   white-space:normal;
   padding:8px 12px;
   min-width:140px;
+  max-width:220px;
   text-align:left;
   box-shadow:0 8px 20px rgba(0,0,0,.18);
 }
+.mantis-pareto-tooltip::after{ display:none; }
 .mantis-pareto-scroll{ border-radius:8px; }
 .mantis-pareto-bar{ cursor:pointer; transition:fill 120ms; }
 
@@ -2691,9 +2701,8 @@ function mantisBuildDowntimeParetoSvg(items){
 }
 
 function mantisShowDowntimeBarDetail(rect){
-  const wrap = rect.closest('.mantis-pareto-wrap');
   const tooltip = document.getElementById('mantisParetoTooltip');
-  if(!wrap || !tooltip) return;
+  if(!tooltip) return;
 
   const svg = rect.ownerSVGElement;
   if(svg){
@@ -2701,18 +2710,30 @@ function mantisShowDowntimeBarDetail(rect){
   }
   rect.setAttribute('fill', 'var(--accent)');
 
-  const wrapRect = wrap.getBoundingClientRect();
-  const barRect = rect.getBoundingClientRect();
-  const left = barRect.left - wrapRect.left + barRect.width / 2;
-  const top = barRect.top - wrapRect.top;
-
-  tooltip.style.left = left + 'px';
-  tooltip.style.top = top + 'px';
   tooltip.innerHTML =
     '<div style="font-size:11px;color:#fff;opacity:.75;">' + mantisEscapeHtml(rect.dataset.line) + '</div>' +
     '<div style="font-size:12px;font-weight:600;color:#fff;margin-top:2px;">' + mantisEscapeHtml(rect.dataset.section) + '</div>' +
     '<div style="font-size:11px;color:#fff;opacity:.85;margin-top:2px;">' + mantisEscapeHtml(rect.dataset.hours) + ' &middot; Kumulatif ' + rect.dataset.cum + '%</div>';
   tooltip.style.display = 'block';
+
+  // Measure after content/display are set so offsetWidth/Height reflect the
+  // actual rendered card, then clamp against the viewport (position:fixed,
+  // so this is viewport math, not container-relative) and flip below the
+  // bar when there isn't enough room above it - the exact overlap the user
+  // hit when the tallest bar's tooltip popped up into the card title.
+  const barRect = rect.getBoundingClientRect();
+  const tw = tooltip.offsetWidth;
+  const th = tooltip.offsetHeight;
+  const gap = 10;
+
+  let left = barRect.left + barRect.width / 2 - tw / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+
+  let top = barRect.top - th - gap;
+  if(top < 8) top = barRect.bottom + gap;
+
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
 }
 
 function mantisHideDowntimeBarDetail(){
