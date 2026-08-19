@@ -1,2 +1,2 @@
-https://script.google.com/macros/s/AKfycbxFTyoLRLPO_PvyPOVYoGXlKpZXCknYWiRlubdh8Gyq4P8n63hhg26Bo4rg8ceu9uMT/exec
+https://script.google.com/macros/s/AKfycbw70i8V3UKaIi3jd-E8m8tIblUaBjcQ07nHl7mcK3GDjS5u3h9hXbWyihTqdB6W4koG/exec
 hasil dari `openssl rand -hex 16`
