@@ -2802,7 +2802,7 @@ function mantisBuildParetoChartInnerSvg(){
   const barW = Math.max(10, bandW * 0.6);
   const maxVal = Math.max.apply(null, shown.map(function(i){ return i.totalHours; }).concat([1]));
 
-  let bars = '', labels = '';
+  let bars = '', labelsHtml = '';
   shown.forEach(function(item, i){
     const cx = bandW * i + bandW / 2;
     const barH = (item.totalHours / maxVal) * plotH;
@@ -2820,14 +2820,22 @@ function mantisBuildParetoChartInnerSvg(){
       'data-hours="' + mantisEscapeHtml(mantisFormatDowntimeHours(item.totalHours)) + '" ' +
       'onmouseenter="mantisShowDowntimeBarDetail(this)" onmouseleave="mantisHideDowntimeBarDetail()" onclick="mantisShowDowntimeBarDetail(this)"></rect>';
 
+    // HTML <span>, not SVG <text> - glyphs inside the SVG inherit its
+    // preserveAspectRatio="none" non-uniform x/y stretch same as everything
+    // else, which squashes the font's own aspect ratio (letters read
+    // "gepeng"/flattened) whenever the rendered width isn't close to the
+    // 1000-unit viewBox. Positioning by percentage instead sidesteps that
+    // entirely, same as the dot-grid and line markers.
     const shortLabel = MANTIS_DOWNTIME_ABBR[section.trim()] || (section.length > 16 ? section.slice(0, 15) + '…' : section);
-    const labelY = padTop + plotH + 16;
-    labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" fill="var(--ink-3)">' + mantisEscapeHtml(shortLabel) + '</text>';
+    const leftPct = (cx / W * 100).toFixed(2);
+    const topPct = ((padTop + plotH + 16) / H * 100).toFixed(2);
+    labelsHtml += '<span style="position:absolute;left:' + leftPct + '%;top:' + topPct + '%;transform:translate(-50%,-50%);font-size:10px;color:var(--ink-3);white-space:nowrap;">' + mantisEscapeHtml(shortLabel) + '</span>';
   });
 
   return '<svg id="mantisParetoSvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:320px;display:block;">' +
-    bars + labels +
-  '</svg>';
+    bars +
+  '</svg>' +
+  '<div style="position:absolute;inset:0;z-index:2;pointer-events:none;">' + labelsHtml + '</div>';
 }
 
 /* preserveAspectRatio="none" stretches the SVG's X and Y axes by different
