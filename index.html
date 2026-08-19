@@ -2591,35 +2591,74 @@ function mantisDowntimeMetricColHtml(label, value){
   '</div>';
 }
 
-function mantisBuildDowntimeChartSvg(dateLabels, hoursByDate){
-  if(!dateLabels.length){
-    return '<div class="tab-panel-empty" style="padding:24px 0;">Belum ada kolom tanggal.</div>';
-  }
-  const W = 1000, H = 220, padBottom = 26, padTop = 20;
-  const values = dateLabels.map(function(d){ return hoursByDate[d] || 0; });
-  const maxVal = Math.max.apply(null, values.concat([1]));
-  const n = dateLabels.length;
-  const bandW = W / n;
-  const barW = Math.max(8, Math.min(48, bandW * 0.5));
+/* Pareto chart: items sorted by total hours descending (bars, left axis)
+   with a cumulative-percentage line (right axis, 0-100%) plus a dashed 80%
+   reference line - the classic "vital few" view of which equipment accounts
+   for most of the downtime. Capped to the worst MANTIS_PARETO_MAX_ITEMS so
+   it stays readable as more items accumulate, but the cumulative % is still
+   computed against the true grand total across every item (not just the
+   ones drawn), so the line stays accurate even when items are cut off. */
+const MANTIS_PARETO_MAX_ITEMS = 20;
 
-  let bars = '';
-  dateLabels.forEach(function(d, i){
-    const v = values[i];
-    const barH = maxVal > 0 ? (v / maxVal) * (H - padBottom - padTop) : 0;
+function mantisBuildDowntimeParetoSvg(items){
+  const withHours = items.filter(function(i){ return i.totalHours > 0; })
+    .sort(function(a, b){ return b.totalHours - a.totalHours; });
+
+  if(!withHours.length){
+    return '<div class="tab-panel-empty" style="padding:24px 0;">Belum ada data downtime.</div>';
+  }
+
+  const grandTotal = withHours.reduce(function(s, i){ return s + i.totalHours; }, 0);
+  const shown = withHours.slice(0, MANTIS_PARETO_MAX_ITEMS);
+
+  const W = 1000, H = 320, padTop = 20, padBottom = 92, padRight = 34;
+  const plotW = W - padRight;
+  const plotH = H - padTop - padBottom;
+  const n = shown.length;
+  const bandW = plotW / n;
+  const barW = Math.max(8, Math.min(40, bandW * 0.55));
+  const maxVal = Math.max.apply(null, shown.map(function(i){ return i.totalHours; }).concat([1]));
+
+  let cum = 0;
+  const points = [];
+  let bars = '', labels = '';
+
+  shown.forEach(function(item, i){
+    cum += item.totalHours;
+    const cumPct = grandTotal > 0 ? (cum / grandTotal) * 100 : 0;
     const cx = bandW * i + bandW / 2;
+    const barH = (item.totalHours / maxVal) * plotH;
     const x = cx - barW / 2;
-    const y = H - padBottom - barH;
-    bars += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(barH, 0).toFixed(1) + '" rx="4" fill="var(--accent)"></rect>';
-    if(v > 0){
-      const vLabel = Math.round(v * 100) / 100;
-      bars += '<text x="' + cx.toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" text-anchor="middle" font-size="12" fill="var(--ink-2)">' + vLabel + '</text>';
-    }
-    bars += '<text x="' + cx.toFixed(1) + '" y="' + (H - 6).toFixed(1) + '" text-anchor="middle" font-size="10" fill="var(--ink-3)">' + mantisEscapeHtml(d) + '</text>';
+    const y = padTop + plotH - barH;
+    bars += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(barH, 0).toFixed(1) + '" rx="3" fill="var(--accent)"></rect>';
+
+    const py = padTop + plotH - (cumPct / 100) * plotH;
+    points.push({ x: cx, y: py });
+
+    const shortLabel = item.equipment.length > 16 ? item.equipment.slice(0, 15) + '…' : item.equipment;
+    const labelY = padTop + plotH + 14;
+    labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="end" font-size="9" fill="var(--ink-3)" transform="rotate(-45 ' + cx.toFixed(1) + ' ' + labelY.toFixed(1) + ')">' + mantisEscapeHtml(shortLabel) + '</text>';
   });
 
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:220px;display:block;">' +
-    '<line x1="0" y1="' + (H - padBottom) + '" x2="' + W + '" y2="' + (H - padBottom) + '" stroke="var(--line)" stroke-width="1"></line>' +
+  const linePoints = points.map(function(p){ return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+  const dots = points.map(function(p){ return '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="3" fill="#fff" stroke="var(--violet)" stroke-width="2"></circle>'; }).join('');
+
+  let gridLines = '';
+  [0, 25, 50, 75, 100].forEach(function(pct){
+    const y = padTop + plotH - (pct / 100) * plotH;
+    gridLines += '<line x1="0" y1="' + y.toFixed(1) + '" x2="' + plotW + '" y2="' + y.toFixed(1) + '" stroke="var(--line-soft)" stroke-width="1"></line>' +
+      '<text x="' + (plotW + 4) + '" y="' + (y + 3).toFixed(1) + '" font-size="9" fill="var(--ink-3)">' + pct + '%</text>';
+  });
+
+  const y80 = padTop + plotH - 0.8 * plotH;
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:320px;display:block;">' +
+    gridLines +
+    '<line x1="0" y1="' + y80.toFixed(1) + '" x2="' + plotW + '" y2="' + y80.toFixed(1) + '" stroke="var(--red)" stroke-width="1" stroke-dasharray="4 4"></line>' +
     bars +
+    '<polyline points="' + linePoints + '" fill="none" stroke="var(--violet)" stroke-width="2"></polyline>' +
+    dots +
+    labels +
     '</svg>';
 }
 
@@ -2634,8 +2673,6 @@ function mantisRenderDowntimeDashboard(container, table){
 
   let totalHours = 0, incidents = 0;
   const lineHours = {};
-  const dateHours = {};
-  parsed.dateLabels.forEach(function(d){ dateHours[d] = 0; });
 
   items.forEach(function(item){
     Object.keys(item.hours).forEach(function(d){
@@ -2643,7 +2680,6 @@ function mantisRenderDowntimeDashboard(container, table){
       if(h <= 0) return;
       incidents++;
       totalHours += h;
-      dateHours[d] = (dateHours[d] || 0) + h;
       lineHours[item.line] = (lineHours[item.line] || 0) + h;
     });
   });
@@ -2678,12 +2714,12 @@ function mantisRenderDowntimeDashboard(container, table){
   html += '</div>';
   html += '</div>';
 
-  // ---- Card 2: Grafik ----
+  // ---- Card 2: Grafik (Pareto) ----
   html += '<div class="card" style="padding:0;overflow:hidden;">';
-  html += '<div style="padding:20px;"><div class="card-title">Grafik Downtime</div><div class="card-sub">Total Jam Downtime per Hari</div></div>';
+  html += '<div style="padding:20px;"><div class="card-title">Grafik Downtime</div><div class="card-sub">Pareto - Total Jam per Equipment &amp; Persentase Kumulatif</div></div>';
   html += '<div class="full-bleed-divider" style="margin:0;"></div>';
   html += '<div style="padding:20px;">';
-  html += mantisBuildDowntimeChartSvg(parsed.dateLabels, dateHours);
+  html += mantisBuildDowntimeParetoSvg(items);
   html += '</div>';
   html += '</div>';
 
