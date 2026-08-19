@@ -2015,18 +2015,7 @@ textarea.entry-input{
 
   <!-- ============ DOWNTIME ============ -->
   <div class="page" id="page-downtime" style="display:none;">
-    <div class="card" style="padding:0;overflow:hidden;">
-      <div style="padding:20px;" class="flex items-center justify-between">
-        <div>
-          <div class="card-title">Downtime</div>
-          <div class="card-sub">Ringkasan Data Downtime</div>
-        </div>
-        <button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet('downtime-table-container')" style="width:32px;height:32px;padding:0;justify-content:center;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
-        </button>
-      </div>
-      <div id="downtime-table-container"></div>
-    </div>
+    <div id="downtime-table-container" style="display:flex;flex-direction:column;gap:16px;"></div>
   </div>
 
   <!-- ============ SETTINGS ============ -->
@@ -2670,6 +2659,15 @@ function mantisRenderDowntimeDashboard(container, table){
 
   let html = '';
 
+  // ---- Card 1: Ringkasan Downtime ----
+  html += '<div class="card" style="padding:0;overflow:hidden;">';
+  html += '<div style="padding:20px;" class="flex items-center justify-between">' +
+    '<div><div class="card-title">Ringkasan Downtime</div><div class="card-sub">Data Downtime</div></div>' +
+    '<button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet(\'downtime-table-container\')" style="width:32px;height:32px;padding:0;justify-content:center;">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>' +
+    '</button>' +
+  '</div>';
+  html += '<div class="full-bleed-divider" style="margin:0;"></div>';
   html += '<div style="padding:20px;">';
   html += '<div class="metric-grid">';
   html += mantisDowntimeMetricColHtml('Total Downtime', mantisFormatDowntimeHours(totalHours));
@@ -2678,18 +2676,21 @@ function mantisRenderDowntimeDashboard(container, table){
   html += mantisDowntimeMetricColHtml('Rata-rata / Insiden', mantisFormatDowntimeHours(incidents ? totalHours / incidents : 0));
   html += '</div>';
   html += '</div>';
-
-  html += '<div class="full-bleed-divider" style="margin:0;"></div>';
-
-  html += '<div style="padding:20px;">';
-  html += '<div class="card-sub" style="margin-bottom:12px;">Total Jam Downtime per Hari</div>';
-  html += mantisBuildDowntimeChartSvg(parsed.dateLabels, dateHours);
   html += '</div>';
 
+  // ---- Card 2: Grafik ----
+  html += '<div class="card" style="padding:0;overflow:hidden;">';
+  html += '<div style="padding:20px;"><div class="card-title">Grafik Downtime</div><div class="card-sub">Total Jam Downtime per Hari</div></div>';
   html += '<div class="full-bleed-divider" style="margin:0;"></div>';
-
   html += '<div style="padding:20px;">';
-  html += '<div class="card-sub" style="margin-bottom:12px;">Top Downtime</div>';
+  html += mantisBuildDowntimeChartSvg(parsed.dateLabels, dateHours);
+  html += '</div>';
+  html += '</div>';
+
+  // ---- Card 3: Tabel ----
+  html += '<div class="card" style="padding:0;overflow:hidden;">';
+  html += '<div style="padding:20px;"><div class="card-title">Top Downtime</div><div class="card-sub">Ranking berdasarkan total jam</div></div>';
+  html += '<div class="full-bleed-divider" style="margin:0;"></div>';
   if(!topItems.length){
     html += '<div class="tab-panel-empty" style="padding:24px 0;">Belum ada data downtime yang tercatat.</div>';
   } else {
