@@ -3107,6 +3107,7 @@ function mantisSyncDowntimeFilterPopovers(){
 
 function mantisSetDowntimeLineFilter(value){
   mantisDowntimeFilters.line = value;
+  mantisDowntimeLinePopoverOpen = false;
   mantisRerenderDowntimeDashboard();
 }
 
@@ -3120,6 +3121,8 @@ function mantisApplyDowntimeDateInputs(){
 
 function mantisResetDowntimeFilters(){
   mantisDowntimeFilters = { line: '', dateFrom: '', dateTo: '' };
+  mantisDowntimeLinePopoverOpen = false;
+  mantisDowntimeDatePopoverOpen = false;
   mantisRerenderDowntimeDashboard();
 }
 
@@ -3129,6 +3132,7 @@ function mantisSetDowntimeLastNDays(daysBack){
   from.setDate(to.getDate() - daysBack);
   mantisDowntimeFilters.dateFrom = mantisFormatIsoDate(from);
   mantisDowntimeFilters.dateTo = mantisFormatIsoDate(to);
+  mantisDowntimeDatePopoverOpen = false;
   mantisRerenderDowntimeDashboard();
 }
 
@@ -3141,6 +3145,7 @@ function mantisSetDowntimeThisWeek(){
   sunday.setDate(monday.getDate() + 6);
   mantisDowntimeFilters.dateFrom = mantisFormatIsoDate(monday);
   mantisDowntimeFilters.dateTo = mantisFormatIsoDate(sunday);
+  mantisDowntimeDatePopoverOpen = false;
   mantisRerenderDowntimeDashboard();
 }
 
@@ -3150,6 +3155,7 @@ function mantisSetDowntimeThisMonth(){
   const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   mantisDowntimeFilters.dateFrom = mantisFormatIsoDate(first);
   mantisDowntimeFilters.dateTo = mantisFormatIsoDate(last);
+  mantisDowntimeDatePopoverOpen = false;
   mantisRerenderDowntimeDashboard();
 }
 
