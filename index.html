@@ -2766,20 +2766,11 @@ function mantisBuildParetoChartInnerSvg(){
   // (band width grows a lot, bar width didn't).
   const barW = Math.max(10, bandW * 0.6);
   const maxVal = Math.max.apply(null, shown.map(function(i){ return i.totalHours; }).concat([1]));
-  // Cumulative % against the total of every tracked section (not just the
-  // ones currently shown), so switching Top-N doesn't artificially force
-  // the line to 100% at the last visible bar - a Top-5 view genuinely
-  // shows what fraction of all downtime those 5 sections account for.
-  const grandTotal = mantisParetoItems.reduce(function(s, i){ return s + i.totalHours; }, 0) || 1;
 
-  let bars = '', labels = '', runningHours = 0;
-  const linePoints = [];
+  let bars = '', labels = '';
   shown.forEach(function(item, i){
     const cx = bandW * i + bandW / 2;
     const barH = (item.totalHours / maxVal) * plotH;
-    runningHours += item.totalHours;
-    const cumPct = runningHours / grandTotal * 100;
-    linePoints.push({ x: cx, y: padTop + plotH - (cumPct / 100) * plotH });
     const x = cx - barW / 2;
     const y = padTop + plotH - barH;
     const section = item.equipment.replace(/^\d+\.\s*/, '');
@@ -2799,22 +2790,9 @@ function mantisBuildParetoChartInnerSvg(){
     labels += '<text x="' + cx.toFixed(1) + '" y="' + labelY.toFixed(1) + '" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" fill="var(--ink-3)">' + mantisEscapeHtml(shortLabel) + '</text>';
   });
 
-  // Same smoothing + marker technique as the Meters detail chart
-  // (mantisBuildMeterReadingsChartHtml): a Catmull-Rom path plus HTML
-  // <span class="mantis-chart-dot"> markers positioned by percentage,
-  // rather than SVG shapes - sidesteps the SVG's non-uniform x/y stretch
-  // entirely instead of correcting for it post-render.
-  const cumulativeLinePath = '<path class="mantis-chart-line" d="' + mantisSmoothLinePath(linePoints) + '" fill="none" stroke="#2E7CF6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>';
-  const lineDotsHtml = linePoints.map(function(p){
-    const leftPct = (p.x / W * 100).toFixed(2);
-    const topPct = (p.y / H * 100).toFixed(2);
-    return '<span class="mantis-chart-dot" style="left:' + leftPct + '%;top:' + topPct + '%;border-color:#2E7CF6;"></span>';
-  }).join('');
-
   return '<svg id="mantisParetoSvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:320px;display:block;">' +
-    bars + cumulativeLinePath + labels +
-  '</svg>' +
-  '<div class="mantis-chart-markers">' + lineDotsHtml + '</div>';
+    bars + labels +
+  '</svg>';
 }
 
 /* preserveAspectRatio="none" stretches the SVG's X and Y axes by different
