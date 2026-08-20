@@ -2198,6 +2198,14 @@ textarea.entry-input{
       <div class="settings-tab-panel" id="settings-tab-app" style="display:none;padding:20px;">
         <div class="settings-row">
           <div>
+            <div class="settings-row-label">Versi Aplikasi</div>
+            <div class="settings-row-desc">Mantis <span id="mantisAppVersionLabel"></span></div>
+          </div>
+        </div>
+        <div class="full-bleed-divider" style="margin:16px 0;"></div>
+
+        <div class="settings-row">
+          <div>
             <div class="settings-row-label">Update Aplikasi</div>
             <div class="settings-row-desc">Mantis otomatis mengambil versi terbaru tiap kali dibuka sambil online. Pakai tombol ini kalau mau memastikan langsung, tanpa menunggu.</div>
           </div>
@@ -2413,6 +2421,10 @@ const MANTIS_METER_WRITE_TOKEN = '0502f1eebcf46081d755f09ddb9d0c1e';
    ini setelah deploy Apps Script (lihat apps-script/DriveUpload.gs). */
 const MANTIS_DRIVE_UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbyYRQTRN_NUBCj0S2f1WCBTS6uhqA_35qAa9XyW5pw1n5abOVrJt5zGCP6ElBjT4Ezu/exec';
 const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
+
+/* Bump on every change that ships (X.01 -> X.02, ...), shown in
+   Settings > Aplikasi. */
+const MANTIS_APP_VERSION = '1.00';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -6293,6 +6305,11 @@ function mantisLogout(){
 }
 
 mantisCheckAuth();
+
+(function(){
+  const el = document.getElementById('mantisAppVersionLabel');
+  if(el) el.textContent = 'v' + MANTIS_APP_VERSION;
+})();
 
 /* ---------- PWA: app shell service worker ----------
    file:// (and plain http) origins don't support service workers at all -
