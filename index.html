@@ -3502,6 +3502,23 @@ function renderGvizTableRows(containerId){
     });
   }
 
+  // Activity Records: newest entry first, instead of the sheet's raw
+  // append order (oldest first). Same-day entries keep the later-appended
+  // one on top, using the sheet row index as a tiebreaker.
+  if(containerId === 'activity-records-container'){
+    const dateColIdx = mantisFindColIndex(table, 'Tanggal');
+    if(dateColIdx !== -1){
+      indexedRows = indexedRows.slice().sort(function(a, b){
+        const da = mantisParseGvizDateValue(a.row.c && a.row.c[dateColIdx]);
+        const db = mantisParseGvizDateValue(b.row.c && b.row.c[dateColIdx]);
+        const ta = da ? da.getTime() : -Infinity;
+        const tb = db ? db.getTime() : -Infinity;
+        if(tb !== ta) return tb - ta;
+        return b.index - a.index;
+      });
+    }
+  }
+
   const totalRows = indexedRows.length;
   const totalPages = (limit === 'all') ? 1 : Math.max(1, Math.ceil(totalRows / limit));
   const page = Math.min(Math.max(1, mantisCurrentPage[containerId] || 1), totalPages);
@@ -3676,6 +3693,28 @@ const MANTIS_DETAIL_TITLE_COLUMN = {
 function mantisFindColIndex(table, label){
   if(!label) return -1;
   return table.cols.findIndex(function(c){ return (c.label || '').trim() === label; });
+}
+
+/* Date-typed gviz cells show up as a real Date object on a fresh load (the
+   sheet response runs as JSONP, where gviz emits "new Date(y,m,d)" as
+   literal executable JS) but as an ISO string after a round-trip through
+   the sessionStorage cache (JSON.stringify turns the Date into a string,
+   and JSON.parse doesn't revive it) - this handles both, plus the raw
+   "Date(y,m,d)" string gviz would emit if ever consumed via JSON.parse. */
+function mantisParseGvizDateValue(cell){
+  if(!cell || cell.v === null || cell.v === undefined) return null;
+  const v = cell.v;
+  if(v instanceof Date) return isNaN(v.getTime()) ? null : v;
+  if(typeof v === 'string'){
+    const gvizMatch = /^Date\((\d+),(\d+),(\d+)/.exec(v);
+    if(gvizMatch){
+      const d = new Date(Number(gvizMatch[1]), Number(gvizMatch[2]), Number(gvizMatch[3]));
+      return isNaN(d.getTime()) ? null : d;
+    }
+    const d = new Date(v);
+    if(!isNaN(d.getTime())) return d;
+  }
+  return null;
 }
 
 function mantisGetMeterUnit(table, row){
