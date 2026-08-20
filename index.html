@@ -2270,7 +2270,7 @@ textarea.entry-input{
 
   <!-- ============ NEW ACTION MODAL (Problem & Action input) ============ -->
   <div class="mantis-modal-overlay" id="mantisActionModalOverlay" onclick="mantisCloseNewActionOnBackdrop(event)">
-    <div class="mantis-modal" onclick="event.stopPropagation()">
+    <div class="mantis-modal">
       <div class="mantis-modal-header">
         <div class="card-title" id="mantisNewActionTitle">New Action</div>
         <button type="button" class="mantis-modal-close-btn" onclick="mantisCloseNewAction()">
@@ -2285,7 +2285,7 @@ textarea.entry-input{
           <label class="entry-field-label" for="entryMesin">Mesin</label>
           <div class="entry-mesin-row">
             <input type="text" id="entryMesin" class="entry-input" placeholder="Nama mesin" autocomplete="off"
-              oninput="mantisHandleMesinInput()" onfocus="mantisOpenMesinDropdown()">
+              oninput="mantisHandleMesinInput()" onfocus="mantisOpenMesinDropdown()" onclick="event.stopPropagation()">
             <button type="button" class="entry-mesin-toggle" tabindex="-1" onclick="mantisToggleMesinDropdown(event)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6"/></svg>
             </button>
@@ -2299,7 +2299,7 @@ textarea.entry-input{
         <div class="entry-field">
           <label class="entry-field-label" for="entryIssue">Issue (opsional)</label>
           <textarea id="entryIssue" class="entry-input" placeholder="Deskripsikan kendala/temuan, kosongkan jika hanya action"
-            oninput="mantisHandleIssueInput()" onfocus="mantisOpenIssueDropdown()"></textarea>
+            oninput="mantisHandleIssueInput()" onfocus="mantisOpenIssueDropdown()" onclick="event.stopPropagation()"></textarea>
 
           <div class="entry-meta-popover" id="mantisIssueDropdown" style="min-width:260px;max-width:320px;" onclick="event.stopPropagation()">
             <div class="entry-meta-popover-list" id="mantisIssueDropdownList"></div>
