@@ -2111,6 +2111,7 @@ textarea.entry-input{
         <button class="tab-btn" data-settings-tab="table" onclick="showSettingsTab('table')">Table</button>
         <button class="tab-btn" data-settings-tab="chart" onclick="showSettingsTab('chart')">Chart</button>
         <button class="tab-btn" data-settings-tab="account" onclick="showSettingsTab('account')">Akun</button>
+        <button class="tab-btn" data-settings-tab="app" onclick="showSettingsTab('app')">Aplikasi</button>
       </div>
 
       <div class="settings-tab-panel" id="settings-tab-language" style="padding:20px;">
@@ -2169,6 +2170,31 @@ textarea.entry-input{
       <div class="settings-tab-panel" id="settings-tab-account" style="display:none;padding:20px;">
         <div class="settings-row-desc" style="margin-bottom:16px;">Pilih warna avatar yang tampil di pojok kiri bawah sidebar.</div>
         <div id="settings-avatar-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:12px;max-width:420px;"></div>
+      </div>
+
+      <div class="settings-tab-panel" id="settings-tab-app" style="display:none;padding:20px;">
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Update Aplikasi</div>
+            <div class="settings-row-desc">Mantis otomatis mengambil versi terbaru tiap kali dibuka sambil online. Pakai tombol ini kalau mau memastikan langsung, tanpa menunggu.</div>
+          </div>
+          <div class="settings-row-control">
+            <button type="button" class="pill-btn" id="mantisUpdateBtn" onclick="mantisCheckForUpdate()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.05 11a8 8 0 1 1 .5 4m-.5 5v-5h5"/></svg>
+              Periksa Update
+            </button>
+          </div>
+        </div>
+        <div class="settings-row-desc" id="mantisUpdateStatus" style="min-height:16px;margin-top:8px;"></div>
+
+        <div class="full-bleed-divider" style="margin:20px 0;"></div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Ikon &amp; Warna App Terinstall</div>
+            <div class="settings-row-desc">Kalau icon atau warna app yang sudah di-install di HP belum ikut berubah meski konten di atas sudah ter-update, itu wajar - Android hanya menyesuaikan tampilan app terinstall itu secara berkala di background, bisa makan waktu beberapa hari. Cara paling cepat: uninstall icon-nya, buka lagi situsnya di Chrome, lalu install ulang lewat menu "Install app".</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -5755,6 +5781,72 @@ function mantisSetLanguage(lang){
     if(lang && sel) sel.value = lang;
   }catch(e){ /* storage unavailable - ignore */ }
 })();
+
+/* ---------- Settings: app update ----------
+   The service worker is already network-first for the app shell (see sw.js),
+   so a normal reload while online already gets the latest deploy - this
+   button exists to give an explicit "do it now" affordance and force an
+   immediate sw.js update check, rather than waiting for the browser's own
+   periodic check. Doesn't (and can't, from a web page) touch the OS-level
+   WebAPK chrome - icon/theme_color there is a separate, slower background
+   process on Android, called out in the note next to this button instead. */
+function mantisSetUpdateStatus(text, isError){
+  const el = document.getElementById('mantisUpdateStatus');
+  if(!el) return;
+  el.textContent = text || '';
+  el.style.color = isError ? 'var(--red)' : 'var(--ink-3)';
+}
+
+function mantisCheckForUpdate(){
+  const btn = document.getElementById('mantisUpdateBtn');
+
+  if(!('serviceWorker' in navigator)){
+    mantisSetUpdateStatus('Fitur ini hanya aktif saat Mantis dibuka lewat HTTPS (mis. GitHub Pages), bukan file lokal.', true);
+    return;
+  }
+
+  if(btn) btn.disabled = true;
+  mantisSetUpdateStatus('Memeriksa update...', false);
+
+  navigator.serviceWorker.getRegistration().then(function(reg){
+    if(!reg){
+      location.reload();
+      return;
+    }
+
+    let settled = false;
+    const finish = function(hasUpdate){
+      if(settled) return;
+      settled = true;
+      if(btn) btn.disabled = false;
+      if(hasUpdate){
+        mantisSetUpdateStatus('Update ditemukan, memuat ulang...', false);
+        setTimeout(function(){ location.reload(); }, 600);
+      } else {
+        mantisSetUpdateStatus('Sudah versi terbaru.', false);
+      }
+    };
+
+    reg.addEventListener('updatefound', function(){
+      const newWorker = reg.installing;
+      if(!newWorker) return;
+      newWorker.addEventListener('statechange', function(){
+        if(newWorker.state === 'installed') finish(true);
+      });
+    });
+
+    reg.update().then(function(){
+      setTimeout(function(){ finish(false); }, 1500);
+    }).catch(function(err){
+      settled = true;
+      if(btn) btn.disabled = false;
+      mantisSetUpdateStatus('Gagal memeriksa update: ' + err.message, true);
+    });
+  }).catch(function(err){
+    if(btn) btn.disabled = false;
+    mantisSetUpdateStatus('Gagal memeriksa update: ' + err.message, true);
+  });
+}
 
 /* ---------- Settings: table columns ---------- */
 let mantisTableSettingsInited = false;
