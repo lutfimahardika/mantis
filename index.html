@@ -667,7 +667,8 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 .row-detail-item:last-child{ border-bottom:none; }
 .row-detail-label{ color:var(--ink-2); flex:0 0 160px; }
 .row-detail-value{ color:var(--ink); font-weight:500; text-align:left; flex:1; word-break:break-word; }
-.row-detail-photo{ display:block; max-width:240px; width:100%; border-radius:10px; border:1px solid var(--line); cursor:pointer; }
+.row-detail-photo-gallery{ display:flex; flex-wrap:wrap; gap:8px; }
+.row-detail-photo{ display:block; width:96px; height:96px; object-fit:cover; border-radius:10px; border:1px solid var(--line); cursor:pointer; }
 
 .row-detail-item-new{ align-items:center; flex-wrap:wrap; row-gap:10px; }
 .row-detail-new-tag{
@@ -995,36 +996,50 @@ textarea.entry-input{
 .entry-mesin-toggle:hover{ color:var(--ink); }
 .entry-mesin-toggle.open{ transform:rotate(180deg); color:var(--accent); }
 
-.entry-photo-btn{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  height:36px;
-  padding:0 12px;
-  border:1px dashed var(--line);
-  border-radius:10px;
-  background:transparent;
-  color:var(--ink-2);
-  font-family:inherit;
-  font-size:12.5px;
-  cursor:pointer;
-  transition:border-color 150ms,color 150ms;
-}
-.entry-photo-btn:hover{ border-color:var(--accent); color:var(--accent); }
-.entry-photo-preview{ display:flex; align-items:center; gap:10px; }
-.entry-photo-preview img{
-  width:56px;
-  height:56px;
-  object-fit:cover;
+.entry-photo-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+.entry-photo-tile{
+  position:relative;
+  width:64px;
+  height:64px;
+  flex:0 0 auto;
   border-radius:8px;
+  overflow:hidden;
   border:1px solid var(--line);
   background:#f2f2f2;
 }
-.entry-photo-remove{
-  width:26px;
-  height:26px;
-  flex:0 0 auto;
+.entry-photo-tile img{ width:100%; height:100%; object-fit:cover; display:block; }
+.entry-photo-tile-uploading img{ opacity:.5; }
+.entry-photo-tile-spinner{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+.entry-photo-tile-spinner::after{
+  content:'';
+  width:18px;
+  height:18px;
+  border:2px solid var(--line);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:mantisPtrSpin 0.7s linear infinite;
+}
+.entry-photo-tile-remove{
+  position:absolute;
+  top:2px;
+  right:2px;
+  width:18px;
+  height:18px;
+  padding:0;
   border:none;
+  border-radius:50%;
+  background:rgba(0,0,0,0.55);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+.entry-photo-add{
+  width:64px;
+  height:64px;
+  flex:0 0 auto;
+  border:1px dashed var(--line);
   border-radius:8px;
   background:transparent;
   color:var(--ink-3);
@@ -1032,8 +1047,9 @@ textarea.entry-input{
   align-items:center;
   justify-content:center;
   cursor:pointer;
+  transition:border-color 150ms,color 150ms;
 }
-.entry-photo-remove:hover{ color:var(--red); background:#FEF2F2; }
+.entry-photo-add:hover{ border-color:var(--accent); color:var(--accent); }
 .entry-photo-status{ font-size:11.5px; color:var(--ink-3); }
 .entry-photo-status.error{ color:var(--red); }
 
@@ -2296,17 +2312,8 @@ textarea.entry-input{
         </div>
 
         <div class="entry-field" style="border:none;background:transparent;padding:0;gap:8px;">
-          <label class="entry-field-label">Foto Laporan (opsional)</label>
-          <button type="button" class="entry-photo-btn" id="entryPhotoBtn" onclick="mantisOpenActionPhotoPicker()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><circle cx="12" cy="13" r="3"/></svg>
-            Ambil/Pilih Foto
-          </button>
-          <div class="entry-photo-preview" id="entryPhotoPreview" style="display:none;">
-            <img id="entryPhotoThumb" src="" alt="Foto laporan">
-            <button type="button" class="entry-photo-remove" title="Hapus foto" onclick="mantisRemoveActionPhoto()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
-            </button>
-          </div>
+          <label class="entry-field-label">Foto Laporan (opsional, maks. 4)</label>
+          <div class="entry-photo-grid" id="entryPhotoGrid"></div>
           <div class="entry-photo-status" id="entryPhotoStatus"></div>
           <input type="file" id="entryPhotoFileInput" accept="image/*" capture="environment" style="display:none;" onchange="mantisHandleActionPhotoFile(event)">
         </div>
@@ -2570,13 +2577,19 @@ function mantisIsWeekLabel(label){
   return /^W\d+$/i.test((label || '').trim());
 }
 
+/* Sheet columns backing the New Action modal's photo slots (up to 4 photos
+   per entry) - add "Link 2", "Link 3", "Link 4" as extra columns on the
+   Records sheet alongside the existing "Link" for this to actually persist
+   more than the first photo. */
+const MANTIS_ACTION_PHOTO_FIELD_KEYS = ['Link', 'Link 2', 'Link 3', 'Link 4'];
+
 /* Columns that never show up as a table column (or a Settings > Table
    toggle) for a given container, regardless of user prefs - e.g. Records'
-   "Link" column, which is only meant to be viewed as a photo on the row
-   detail page (mantisShowRowDetail reads table.cols directly, bypassing
-   this, so it's unaffected). */
+   photo-link columns above, which are only meant to be viewed as photos on
+   the row detail page (mantisShowRowDetail reads table.cols directly,
+   bypassing this, so it's unaffected). */
 const MANTIS_ALWAYS_HIDDEN_COLUMNS = {
-  'activity-records-container': ['Link']
+  'activity-records-container': MANTIS_ACTION_PHOTO_FIELD_KEYS
 };
 
 /* Groups per-week columns (W27, W28, ...) into a single logical "Week" column
@@ -3889,15 +3902,22 @@ function mantisShowRowDetail(containerId, rowIndex){
     html += mantisBuildMeterReadingsChartHtml(table, row);
   }
   html += '<div class="row-detail-list">';
+  const photoUrls = [];
   table.cols.forEach(function(c, i){
-    const val = mantisCellText(row.c && row.c[i]) || '-';
     const label = (c.label || c.id || '').trim();
-    const isPhotoLink = label === 'Link' && /^https?:\/\//i.test(val);
-    const valueHtml = isPhotoLink
-      ? '<a href="' + mantisEscapeHtml(val) + '" target="_blank" rel="noopener"><img src="' + mantisEscapeHtml(mantisDriveThumbUrl(val)) + '" alt="Foto laporan" class="row-detail-photo" loading="lazy"></a>'
-      : mantisEscapeHtml(val);
-    html += '<div class="row-detail-item"><span class="row-detail-label">' + mantisEscapeHtml(c.label || c.id || '') + '</span><span class="row-detail-value">' + valueHtml + '</span></div>';
+    const val = mantisCellText(row.c && row.c[i]);
+    if(MANTIS_ACTION_PHOTO_FIELD_KEYS.indexOf(label) !== -1){
+      if(val && /^https?:\/\//i.test(val)) photoUrls.push(val);
+      return;
+    }
+    html += '<div class="row-detail-item"><span class="row-detail-label">' + mantisEscapeHtml(label) + '</span><span class="row-detail-value">' + mantisEscapeHtml(val || '-') + '</span></div>';
   });
+  if(photoUrls.length){
+    const galleryHtml = photoUrls.map(function(url){
+      return '<a href="' + mantisEscapeHtml(url) + '" target="_blank" rel="noopener"><img src="' + mantisEscapeHtml(mantisDriveThumbUrl(url)) + '" alt="Foto laporan" class="row-detail-photo" loading="lazy"></a>';
+    }).join('');
+    html += '<div class="row-detail-item"><span class="row-detail-label">Foto Laporan</span><span class="row-detail-value"><div class="row-detail-photo-gallery">' + galleryHtml + '</div></span></div>';
+  }
   if(containerId === 'meters-table-container'){
     html += mantisBuildNewReadingRowHtml(table, row);
   }
@@ -5276,9 +5296,12 @@ function mantisRenderProblemActionTable(){
   items.forEach(function(item){
     const areaIcon = mantisGetAreaIconHtml(item.Area);
     html += '<tr>';
-    const photoLinkHtml = item.Link ?
-      ' <a href="' + mantisEscapeHtml(item.Link) + '" target="_blank" rel="noopener" title="Lihat foto laporan" style="display:inline-flex;vertical-align:-3px;color:var(--accent);" onclick="event.stopPropagation()">' +
-      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><circle cx="12" cy="13" r="3"/></svg></a>' : '';
+    const photoUrls = MANTIS_ACTION_PHOTO_FIELD_KEYS.map(function(key){ return item[key]; }).filter(Boolean);
+    const photoLinkHtml = photoUrls.length ?
+      ' <a href="' + mantisEscapeHtml(photoUrls[0]) + '" target="_blank" rel="noopener" title="Lihat foto laporan (' + photoUrls.length + ')" style="display:inline-flex;align-items:center;gap:2px;vertical-align:-3px;color:var(--accent);" onclick="event.stopPropagation()">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><circle cx="12" cy="13" r="3"/></svg>' +
+      (photoUrls.length > 1 ? '<span style="font-size:10px;font-weight:600;">' + photoUrls.length + '</span>' : '') +
+      '</a>' : '';
     html += '<td><div class="flex items-center" style="gap:10px;">' +
       '<div class="row-icon" style="background:' + areaIcon.bg + ';">' + areaIcon.html + '</div>' +
       '<div><div style="font-size:13px;font-weight:500;">' + mantisEscapeHtml(item.Mesin) + photoLinkHtml + '</div>' +
@@ -5310,9 +5333,12 @@ function mantisOpenActionModal(){
   if(areaInput) areaInput.focus({ preventScroll: true });
 }
 
-/* ---------- New Action: report photo attach & upload to Drive ---------- */
-let mantisActionPhoto = null; // { url, previewUrl } once uploaded (or restored while editing)
-let mantisActionPhotoUploading = false;
+/* ---------- New Action: report photo attach & upload to Drive (up to 4) ---------- */
+let mantisActionPhotos = []; // [{ url, previewUrl, uploading }], max MANTIS_ACTION_PHOTO_FIELD_KEYS.length
+
+function mantisIsActionPhotosUploading(){
+  return mantisActionPhotos.some(function(p){ return p.uploading; });
+}
 
 function mantisSetActionPhotoStatus(text, isError){
   const status = document.getElementById('entryPhotoStatus');
@@ -5321,32 +5347,50 @@ function mantisSetActionPhotoStatus(text, isError){
   status.className = 'entry-photo-status' + (isError ? ' error' : '');
 }
 
-function mantisShowActionPhotoPreview(src){
-  const preview = document.getElementById('entryPhotoPreview');
-  const btn = document.getElementById('entryPhotoBtn');
-  const thumb = document.getElementById('entryPhotoThumb');
-  if(thumb) thumb.src = src;
-  if(preview) preview.style.display = '';
-  if(btn) btn.style.display = 'none';
+function mantisRenderActionPhotoGrid(){
+  const grid = document.getElementById('entryPhotoGrid');
+  if(!grid) return;
+
+  let html = mantisActionPhotos.map(function(p, i){
+    if(p.uploading){
+      return '<div class="entry-photo-tile entry-photo-tile-uploading"><img src="' + mantisEscapeHtml(p.previewUrl) + '" alt="Mengunggah..."><div class="entry-photo-tile-spinner"></div></div>';
+    }
+    return '<div class="entry-photo-tile">' +
+      '<img src="' + mantisEscapeHtml(p.previewUrl) + '" alt="Foto laporan ' + (i + 1) + '">' +
+      '<button type="button" class="entry-photo-tile-remove" title="Hapus foto" onclick="mantisRemoveActionPhotoAt(' + i + ')">' +
+        '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>' +
+      '</button>' +
+    '</div>';
+  }).join('');
+
+  if(mantisActionPhotos.length < MANTIS_ACTION_PHOTO_FIELD_KEYS.length){
+    html += '<button type="button" class="entry-photo-add" title="Tambah foto" onclick="mantisOpenActionPhotoPicker()">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><circle cx="12" cy="13" r="3"/></svg>' +
+    '</button>';
+  }
+
+  grid.innerHTML = html;
 }
 
-function mantisResetActionPhoto(){
-  mantisActionPhoto = null;
-  mantisActionPhotoUploading = false;
-  const preview = document.getElementById('entryPhotoPreview');
-  const btn = document.getElementById('entryPhotoBtn');
-  const thumb = document.getElementById('entryPhotoThumb');
-  if(preview) preview.style.display = 'none';
-  if(btn) btn.style.display = '';
-  if(thumb) thumb.src = '';
+function mantisResetActionPhotos(){
+  mantisActionPhotos = [];
   mantisSetActionPhotoStatus('', false);
+  mantisRenderActionPhotoGrid();
 }
 
-function mantisRemoveActionPhoto(){
-  mantisResetActionPhoto();
+function mantisRemoveActionPhotoAt(index){
+  mantisActionPhotos.splice(index, 1);
+  mantisRenderActionPhotoGrid();
+}
+
+function mantisRemoveActionPhotoSlot(slot){
+  const idx = mantisActionPhotos.indexOf(slot);
+  if(idx !== -1) mantisActionPhotos.splice(idx, 1);
+  mantisRenderActionPhotoGrid();
 }
 
 function mantisOpenActionPhotoPicker(){
+  if(mantisActionPhotos.length >= MANTIS_ACTION_PHOTO_FIELD_KEYS.length) return;
   const input = document.getElementById('entryPhotoFileInput');
   if(input) input.click();
 }
@@ -5381,21 +5425,26 @@ function mantisResizeImageToDataUrl(file, maxDim, quality){
 
 /* Uploads straight from the file picker, before the entry itself is saved -
    keeps only the resulting Drive URL in the pending-actions list (localStorage)
-   instead of the full base64 image, which would blow past its storage quota. */
+   instead of the full base64 image, which would blow past its storage quota.
+   Tracks each photo by object reference (not array index), so removing an
+   earlier slot mid-upload can't make a later upload write into the wrong one. */
 function mantisHandleActionPhotoFile(evt){
   const file = evt.target.files && evt.target.files[0];
   evt.target.value = '';
   if(!file) return;
+  if(mantisActionPhotos.length >= MANTIS_ACTION_PHOTO_FIELD_KEYS.length) return;
 
-  mantisActionPhoto = null;
-  mantisActionPhotoUploading = true;
+  const slot = { url: null, previewUrl: '', uploading: true };
+  mantisActionPhotos.push(slot);
+  mantisRenderActionPhotoGrid();
+  mantisSetActionPhotoStatus('Mengunggah foto...', false);
 
   mantisResizeImageToDataUrl(file, 1600, 0.75).then(function(dataUrl){
-    mantisShowActionPhotoPreview(dataUrl);
-    mantisSetActionPhotoStatus('Mengunggah foto...', false);
+    slot.previewUrl = dataUrl;
+    mantisRenderActionPhotoGrid();
 
     if(!MANTIS_DRIVE_UPLOAD_URL){
-      mantisActionPhotoUploading = false;
+      mantisRemoveActionPhotoSlot(slot);
       mantisSetActionPhotoStatus('Upload foto belum dikonfigurasi (isi MANTIS_DRIVE_UPLOAD_URL di index.html).', true);
       return;
     }
@@ -5410,16 +5459,18 @@ function mantisHandleActionPhotoFile(evt){
         data: dataUrl.split(',')[1]
       })
     }).then(function(res){ return res.json(); }).then(function(data){
-      mantisActionPhotoUploading = false;
       if(!data || !data.success){
+        mantisRemoveActionPhotoSlot(slot);
         mantisSetActionPhotoStatus((data && data.error) ? data.error : 'Gagal mengunggah foto.', true);
         return;
       }
-      mantisActionPhoto = { url: data.url, previewUrl: dataUrl };
+      slot.url = data.url;
+      slot.uploading = false;
+      mantisRenderActionPhotoGrid();
       mantisSetActionPhotoStatus('Foto berhasil diunggah.', false);
     });
   }).catch(function(err){
-    mantisActionPhotoUploading = false;
+    mantisRemoveActionPhotoSlot(slot);
     mantisSetActionPhotoStatus(err.message || 'Gagal memproses foto.', true);
   });
 }
@@ -5431,7 +5482,7 @@ function mantisOpenNewAction(){
   document.getElementById('entryMesin').value = '';
   document.getElementById('entryIssue').value = '';
   document.getElementById('entryAction').value = '';
-  mantisResetActionPhoto();
+  mantisResetActionPhotos();
 
   const titleEl = document.getElementById('mantisNewActionTitle');
   if(titleEl) titleEl.textContent = 'New Action';
@@ -5455,11 +5506,11 @@ function mantisEditPendingAction(id){
   document.getElementById('entryIssue').value = item.Issue || '';
   document.getElementById('entryAction').value = item.Action || '';
 
-  mantisResetActionPhoto();
-  if(item.Link){
-    mantisActionPhoto = { url: item.Link, previewUrl: item.Link };
-    mantisShowActionPhotoPreview(mantisDriveThumbUrl(item.Link));
-  }
+  mantisResetActionPhotos();
+  MANTIS_ACTION_PHOTO_FIELD_KEYS.forEach(function(key){
+    if(item[key]) mantisActionPhotos.push({ url: item[key], previewUrl: mantisDriveThumbUrl(item[key]), uploading: false });
+  });
+  mantisRenderActionPhotoGrid();
 
   const titleEl = document.getElementById('mantisNewActionTitle');
   if(titleEl) titleEl.textContent = 'Edit Action';
@@ -5519,7 +5570,7 @@ function mantisSubmitMaintenanceEntry(){
   messageEl.className = 'entry-form-message';
   messageEl.textContent = '';
 
-  if(mantisActionPhotoUploading){
+  if(mantisIsActionPhotosUploading()){
     messageEl.className = 'entry-form-message error';
     messageEl.textContent = 'Tunggu proses upload foto selesai.';
     return;
@@ -5533,9 +5584,11 @@ function mantisSubmitMaintenanceEntry(){
     Area: areaValue,
     Mesin: mesinValue,
     Issue: document.getElementById('entryIssue').value.trim(),
-    Action: document.getElementById('entryAction').value.trim(),
-    Link: mantisActionPhoto ? mantisActionPhoto.url : ''
+    Action: document.getElementById('entryAction').value.trim()
   };
+  MANTIS_ACTION_PHOTO_FIELD_KEYS.forEach(function(key, i){
+    fields[key] = (mantisActionPhotos[i] && mantisActionPhotos[i].url) ? mantisActionPhotos[i].url : '';
+  });
 
   if(!fields.Mesin || !fields.Action){
     messageEl.className = 'entry-form-message error';
@@ -5617,16 +5670,17 @@ function mantisPublishActionsToSheet(){
   mantisShowActionsMessage('', false);
 
   const values = queue.map(function(item){
-    return {
+    const v = {
       Tanggal: meta.Tanggal,
       Shift: meta.Shift,
       Teknisi: meta.Teknisi,
       Area: item.Area,
       Mesin: item.Mesin,
       Issue: item.Issue,
-      Action: item.Action,
-      Link: item.Link || ''
+      Action: item.Action
     };
+    MANTIS_ACTION_PHOTO_FIELD_KEYS.forEach(function(key){ v[key] = item[key] || ''; });
+    return v;
   });
 
   const payload = JSON.stringify({
