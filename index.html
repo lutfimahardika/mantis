@@ -2904,15 +2904,29 @@ function mantisBuildParetoCountSelectHtml(){
   const options = mantisGetParetoCountOptions();
   if(options.length <= 1) return '';
 
-  const optionsHtml = options.map(function(v){
-    return '<option value="' + v + '"' + (v === mantisParetoWindowCount ? ' selected' : '') + '>Top-' + v + '</option>';
+  const itemsHtml = options.map(function(v){
+    return '<button type="button" class="entry-meta-popover-item' + (v === mantisParetoWindowCount ? ' selected' : '') + '" data-value="' + v + '" onclick="mantisSetParetoWindowCount(' + v + ')">Top-' + v + '</button>';
   }).join('');
 
-  return '<select id="mantisParetoCountSelect" class="pill-btn" onchange="mantisSetParetoWindowCount(this.value)">' + optionsHtml + '</select>';
+  return '<button type="button" class="pill-btn" id="mantisParetoCountBtn" onclick="mantisToggleMetaPopover(\'paretoCount\', event)">' +
+      '<span id="mantisParetoCountLabel">Top-' + mantisParetoWindowCount + '</span>' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6"/></svg>' +
+    '</button>' +
+    '<div class="entry-meta-popover" id="mantisParetoCountPopover" onclick="event.stopPropagation()">' +
+      '<div class="entry-meta-popover-list">' + itemsHtml + '</div>' +
+    '</div>';
 }
 
 function mantisSetParetoWindowCount(value){
   mantisParetoWindowCount = parseInt(value, 10) || MANTIS_PARETO_DEFAULT_COUNT;
+  mantisCloseAllMetaPopovers();
+
+  const label = document.getElementById('mantisParetoCountLabel');
+  if(label) label.textContent = 'Top-' + mantisParetoWindowCount;
+  document.querySelectorAll('#mantisParetoCountPopover .entry-meta-popover-item').forEach(function(btn){
+    btn.classList.toggle('selected', btn.dataset.value === String(mantisParetoWindowCount));
+  });
+
   mantisRefreshParetoChart();
   mantisRefreshDowntimeTopTable();
 }
