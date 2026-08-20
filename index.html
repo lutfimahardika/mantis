@@ -408,7 +408,8 @@ html,body{
 .table-pagination-mobile{ display:none; }
 
 /* ---------- Tabs (Activities) ---------- */
-.tab-row{ display:flex; align-items:center; gap:6px; padding:12px 20px 0 20px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.tab-row{ display:flex; align-items:center; gap:6px; padding:12px 20px 0 20px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; -ms-overflow-style:none; }
+.tab-row::-webkit-scrollbar{ display:none; }
 .tab-btn{
   height:32px;
   padding:0 14px;
