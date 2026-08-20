@@ -378,34 +378,12 @@ html,body{
 }
 .table-pagination button:hover:not(:disabled){ background:#FAFAF9; color:var(--ink); }
 .table-pagination button:disabled{ opacity:.35; cursor:not-allowed; }
-.table-pagination .table-pg-nav{
-  font-weight:600;
-  padding:0 14px;
-  border:none;
-  background:var(--blue);
-  color:#fff;
-}
-.table-pagination .table-pg-nav:hover:not(:disabled){ background:var(--blue); color:#fff; opacity:.92; }
-.table-pg-nav svg{ flex:0 0 auto; }
 .table-page-btn.active{
   border:1.5px solid var(--accent);
   background:var(--accent-soft);
   color:var(--accent);
   font-weight:700;
 }
-.table-pg-divider{
-  width:1px;
-  height:22px;
-  background:var(--line);
-  margin:0 4px;
-  flex:0 0 1px;
-}
-.table-page-ellipsis{
-  padding:0 6px;
-  font-size:13px;
-  color:var(--ink-3);
-}
-.table-pagination-mobile{ display:none; }
 
 /* ---------- Tabs (Activities) ---------- */
 .tab-row{ display:flex; align-items:center; gap:6px; padding:12px 20px 0 20px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; -ms-overflow-style:none; }
@@ -1383,8 +1361,6 @@ textarea.entry-input{
   .row-detail-new-input{ flex:1 1 0%; width:auto; height:44px; font-size:16px; }
   .row-detail-ocr-btn{ display:flex; flex:0 0 auto; width:44px; height:44px; }
   .row-detail-new-save{ flex:0 0 auto; width:100%; height:44px; }
-  .table-pagination-desktop{ display:none; }
-  .table-pagination-mobile{ display:inline-flex; }
 
   .mantis-chart-wrap{ height:200px; }
 }
@@ -3577,26 +3553,7 @@ function renderGvizTableRows(containerId){
   html += '</select><span class="table-rows-label-text">dari ' + totalRows + ' data</span></label>';
 
   if(limit !== 'all' && totalPages > 1){
-    html += '<div class="table-pagination table-pagination-desktop">';
-    html += '<button type="button" class="table-pg-nav"' + (page <= 1 ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page - 1) + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg>Previous</button>';
-    mantisGetPageNumbers(page, totalPages).forEach(function(p){
-      if(p === '...'){
-        html += '<span class="table-page-ellipsis">&hellip;</span>';
-      } else {
-        html += '<button type="button" class="table-page-btn' + (p === page ? ' active' : '') + '" onclick="mantisChangePage(\'' + containerId + '\', ' + p + ')">' + p + '</button>';
-      }
-    });
-    html += '<span class="table-pg-divider"></span>';
-    html += '<button type="button" class="table-pg-nav"' + (page >= totalPages ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page + 1) + ')">Next<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></button>';
-    html += '</div>';
-
-    html += '<div class="table-pagination table-pagination-mobile">';
-    html += '<button type="button" class="table-pg-nav-icon"' + (page <= 1 ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page - 1) + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg></button>';
-    mantisGetMobilePageNumbers(page, totalPages).forEach(function(p){
-      html += '<button type="button" class="table-page-btn' + (p === page ? ' active' : '') + '" onclick="mantisChangePage(\'' + containerId + '\', ' + p + ')">' + p + '</button>';
-    });
-    html += '<button type="button" class="table-pg-nav-icon"' + (page >= totalPages ? ' disabled' : '') + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page + 1) + ')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg></button>';
-    html += '</div>';
+    html += mantisBuildPaginationHtml(containerId, page, totalPages);
   }
 
   html += '</div>';
@@ -3611,34 +3568,30 @@ function renderGvizTableRows(containerId){
   }
 }
 
-function mantisGetPageNumbers(current, total){
-  const delta = 1;
-  const range = [];
-  const result = [];
-  let last;
+/* Same minimalist << < [1 2 3] > >> layout on both mobile and desktop -
+   only three page numbers ever show (mantisGetWindowedPageNumbers), so
+   there's never a need for the old ellipsis-based desktop page list. */
+function mantisBuildPaginationHtml(containerId, page, totalPages){
+  const prevDisabled = page <= 1 ? ' disabled' : '';
+  const nextDisabled = page >= totalPages ? ' disabled' : '';
+  const chevronsLeftIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 7l-5 5l5 5"/><path d="M17 7l-5 5l5 5"/></svg>';
+  const chevronLeftIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg>';
+  const chevronRightIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg>';
+  const chevronsRightIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l5 5l-5 5"/><path d="M13 7l5 5l-5 5"/></svg>';
 
-  for(let i = 1; i <= total; i++){
-    if(i === 1 || i === total || (i >= current - delta && i <= current + delta)){
-      range.push(i);
-    }
-  }
-
-  range.forEach(function(i){
-    if(last !== undefined){
-      if(i - last === 2){
-        result.push(last + 1);
-      } else if(i - last > 1){
-        result.push('...');
-      }
-    }
-    result.push(i);
-    last = i;
+  let html = '<div class="table-pagination">';
+  html += '<button type="button" class="table-pg-nav-icon" title="Halaman pertama"' + prevDisabled + ' onclick="mantisChangePage(\'' + containerId + '\', 1)">' + chevronsLeftIcon + '</button>';
+  html += '<button type="button" class="table-pg-nav-icon" title="Sebelumnya"' + prevDisabled + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page - 1) + ')">' + chevronLeftIcon + '</button>';
+  mantisGetWindowedPageNumbers(page, totalPages).forEach(function(p){
+    html += '<button type="button" class="table-page-btn' + (p === page ? ' active' : '') + '" onclick="mantisChangePage(\'' + containerId + '\', ' + p + ')">' + p + '</button>';
   });
-
-  return result;
+  html += '<button type="button" class="table-pg-nav-icon" title="Selanjutnya"' + nextDisabled + ' onclick="mantisChangePage(\'' + containerId + '\', ' + (page + 1) + ')">' + chevronRightIcon + '</button>';
+  html += '<button type="button" class="table-pg-nav-icon" title="Halaman terakhir"' + nextDisabled + ' onclick="mantisChangePage(\'' + containerId + '\', ' + totalPages + ')">' + chevronsRightIcon + '</button>';
+  html += '</div>';
+  return html;
 }
 
-function mantisGetMobilePageNumbers(current, total){
+function mantisGetWindowedPageNumbers(current, total){
   if(total <= 3){
     const arr = [];
     for(let i = 1; i <= total; i++) arr.push(i);
