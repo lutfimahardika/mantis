@@ -2426,7 +2426,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.02';
+const MANTIS_APP_VERSION = '1.03';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -2609,7 +2609,7 @@ const MANTIS_ACTION_PHOTO_FIELD_KEYS = ['Link', 'Link 2', 'Link 3', 'Link 4'];
    the row detail page (mantisShowRowDetail reads table.cols directly,
    bypassing this, so it's unaffected). */
 const MANTIS_ALWAYS_HIDDEN_COLUMNS = {
-  'activity-records-container': MANTIS_ACTION_PHOTO_FIELD_KEYS
+  'activity-records-container': MANTIS_ACTION_PHOTO_FIELD_KEYS.concat(['EntryID'])
 };
 
 /* Groups per-week columns (W27, W28, ...) into a single logical "Week" column
@@ -5719,6 +5719,10 @@ function mantisPublishActionsToSheet(){
 
   mantisShowActionsMessage('', false);
 
+  // EntryID (item.id) lets Code.gs upsert instead of blindly appending, so a
+  // retried/duplicated publish call (double click, keepalive retry, or
+  // re-publishing a still-pending queue in a later session) overwrites the
+  // same row instead of creating a second one.
   const values = queue.map(function(item){
     const v = {
       Tanggal: meta.Tanggal,
@@ -5727,7 +5731,8 @@ function mantisPublishActionsToSheet(){
       Area: item.Area,
       Mesin: item.Mesin,
       Issue: item.Issue,
-      Action: item.Action
+      Action: item.Action,
+      EntryID: item.id
     };
     MANTIS_ACTION_PHOTO_FIELD_KEYS.forEach(function(key){ v[key] = item[key] || ''; });
     return v;

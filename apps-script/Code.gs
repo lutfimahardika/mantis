@@ -172,11 +172,20 @@ function handleLogin(body) {
   return jsonResponse({ success: false, error: 'Username atau password salah' });
 }
 
+var APPEND_ROW_ID_COLUMN_LABEL = 'EntryID';
+
 /**
- * Appends one or more rows at the end of the given sheet, mapping body.values
- * (an object, or an array of objects, keyed by header label) onto the matching
- * columns. Used by the Activities "Problem & Action" queue to publish the
- * actions collected during a shift after the existing reports, in one call.
+ * Appends one or more rows to the given sheet, mapping body.values (an object,
+ * or an array of objects, keyed by header label) onto the matching columns.
+ * Used by the Activities "Problem & Action" queue to publish the actions
+ * collected during a shift after the existing reports, in one call.
+ *
+ * Each incoming row carries an EntryID (the queue item's client-side id) so a
+ * duplicated publish call - double click, a keepalive retry, or re-publishing
+ * a still-pending queue in a later session - upserts (overwrites the row with
+ * that EntryID) instead of appending a second copy. The EntryID column is
+ * auto-created (like a missing week column in handleSetMeterReading) if the
+ * sheet doesn't have it yet.
  */
 function handleAppendRow(body) {
   var sheetName = (body.sheet || '').toString().trim();
@@ -199,19 +208,53 @@ function handleAppendRow(body) {
 
   var lastCol = sheet.getLastColumn();
   var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  var startRow = sheet.getLastRow() + 1;
 
-  var matrix = rowsToAppend.map(function (entryValues) {
+  var idCol = -1;
+  for (var h = 0; h < headers.length; h++) {
+    if (String(headers[h]).trim() === APPEND_ROW_ID_COLUMN_LABEL) { idCol = h; break; }
+  }
+  if (idCol === -1) {
+    idCol = headers.length;
+    headers.push(APPEND_ROW_ID_COLUMN_LABEL);
+    sheet.getRange(1, idCol + 1).setValue(APPEND_ROW_ID_COLUMN_LABEL);
+    lastCol = headers.length;
+  }
+
+  var lastRow = sheet.getLastRow();
+  var existingIds = lastRow > 1 ? sheet.getRange(2, idCol + 1, lastRow - 1, 1).getValues() : [];
+  var idToRow = {};
+  existingIds.forEach(function (row, i) {
+    var id = String(row[0] || '').trim();
+    if (id) idToRow[id] = i + 2;
+  });
+
+  var rowToMatrix = function (entryValues) {
     return headers.map(function (header) {
       var key = String(header).trim();
       if (!key || !entryValues || typeof entryValues !== 'object' || !(key in entryValues)) return '';
       return parseAppendValue(entryValues[key]);
     });
+  };
+
+  var toAppend = [];
+  var updated = 0;
+  rowsToAppend.forEach(function (entryValues) {
+    var id = entryValues && typeof entryValues === 'object' ? String(entryValues[APPEND_ROW_ID_COLUMN_LABEL] || '').trim() : '';
+    var existingRow = id ? idToRow[id] : undefined;
+    if (existingRow) {
+      sheet.getRange(existingRow, 1, 1, lastCol).setValues([rowToMatrix(entryValues)]);
+      updated++;
+    } else {
+      toAppend.push(rowToMatrix(entryValues));
+    }
   });
 
-  sheet.getRange(startRow, 1, matrix.length, headers.length).setValues(matrix);
+  var startRow = sheet.getLastRow() + 1;
+  if (toAppend.length) {
+    sheet.getRange(startRow, 1, toAppend.length, lastCol).setValues(toAppend);
+  }
 
-  return jsonResponse({ success: true, row: startRow, count: matrix.length });
+  return jsonResponse({ success: true, row: startRow, appended: toAppend.length, updated: updated, count: rowsToAppend.length });
 }
 
 function parseAppendValue(value) {
