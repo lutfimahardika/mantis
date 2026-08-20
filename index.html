@@ -2934,6 +2934,78 @@ function mantisSetParetoWindowCount(value){
   mantisRefreshDowntimeTopTable();
 }
 
+/* ---------- Downtime: fetch from the plant's internal report server ----------
+   172.20.240.41 is a private-network address (factory LAN only) serving plain
+   HTTP with no CORS headers, while Mantis itself is served over HTTPS - so a
+   direct fetch() here is expected to be blocked by the browser's mixed-content
+   policy before it ever reaches the network. This still tries first (in case
+   a given device's browser has "insecure content" allowed for this site and
+   the server ever adds CORS headers), and falls back to just listing the
+   report links to open manually otherwise. Labels are placeholders (Mesin 1-4)
+   until the actual machine names for these machine_id values are known. */
+const MANTIS_DOWNTIME_EXTERNAL_REPORTS = [
+  { label: 'Mesin 1', url: 'http://172.20.240.41:8080/t.downtime.weekly.php?plant=CMDPSR&dept=CMD6&section=FLPCCMD6&machine_id=63a2c489c345220387&per=Month%20Range&week=0&month=8&year=2026&weekAkhir=36&yearAkhir=0&dateBase=sc' },
+  { label: 'Mesin 2', url: 'http://172.20.240.41:8080/t.downtime.weekly.php?plant=CMDPSR&dept=CMD6&section=FLPCCMD6&machine_id=63a2c4f8ab00588186&per=Month%20Range&week=0&month=8&year=2026&weekAkhir=36&yearAkhir=0&dateBase=sc' },
+  { label: 'Mesin 3', url: 'http://172.20.240.41:8080/t.downtime.weekly.php?plant=CMDPSR&dept=CMD6&section=FLPCCMD6&machine_id=63a2c51001ace84102&per=Month%20Range&week=0&month=8&year=2026&weekAkhir=36&yearAkhir=0&dateBase=sc' },
+  { label: 'Mesin 4', url: 'http://172.20.240.41:8080/t.downtime.weekly.php?plant=CMDPSR&dept=CMD6&section=FLPCCMD6&machine_id=664c434ab9b8548995&per=Month%20Range&week=0&month=8&year=2026&weekAkhir=36&yearAkhir=0&dateBase=sc' }
+];
+
+function mantisBuildDowntimeExternalFetchBtnHtml(){
+  return '<button type="button" class="pill-btn" id="mantisDowntimeExternalFetchBtn" title="Ambil data downtime dari server pabrik" onclick="mantisFetchDowntimeExternalReports(event)" style="width:32px;height:32px;padding:0;justify-content:center;">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4 -4l4 4l4 -4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/></svg>' +
+    '</button>' +
+    '<div class="entry-meta-popover" id="mantisDowntimeExternalPopover" style="min-width:220px;" onclick="event.stopPropagation()">' +
+      '<div class="entry-meta-popover-list" id="mantisDowntimeExternalPopoverList"></div>' +
+    '</div>';
+}
+
+function mantisFetchWithTimeout(url, ms){
+  const controller = new AbortController();
+  const timer = setTimeout(function(){ controller.abort(); }, ms);
+  return fetch(url, { signal: controller.signal }).finally(function(){ clearTimeout(timer); });
+}
+
+function mantisFetchDowntimeExternalReports(evt){
+  if(evt) evt.stopPropagation();
+
+  const popover = document.getElementById('mantisDowntimeExternalPopover');
+  const list = document.getElementById('mantisDowntimeExternalPopoverList');
+  const btn = document.getElementById('mantisDowntimeExternalFetchBtn');
+  if(!popover || !list || !btn) return;
+
+  const wasOpen = popover.classList.contains('open');
+  mantisCloseAllMetaPopovers();
+  if(wasOpen) return;
+
+  popover.classList.add('open');
+  list.innerHTML = '<div style="padding:8px 10px;font-size:12px;color:var(--ink-3);">Mengambil data...</div>';
+  mantisPositionPopover(popover, btn);
+
+  Promise.all(MANTIS_DOWNTIME_EXTERNAL_REPORTS.map(function(r){
+    return mantisFetchWithTimeout(r.url, 8000).then(function(res){ return res.text(); }).then(function(text){
+      return { ok: true, label: r.label, text: text };
+    }).catch(function(err){
+      return { ok: false, label: r.label, error: err.message };
+    });
+  })).then(function(results){
+    if(!popover.classList.contains('open')) return;
+
+    const succeeded = results.filter(function(r){ return r.ok; });
+
+    if(succeeded.length){
+      window.__mantisDowntimeExternalResults = results;
+      console.log('Mantis: data downtime dari server pabrik berhasil diambil - lihat window.__mantisDowntimeExternalResults', results);
+      list.innerHTML = '<div style="padding:6px 10px 10px;font-size:11.5px;color:var(--ink-3);line-height:1.5;">Berhasil diambil (' + succeeded.length + '/' + results.length + '). Buka Console (F12) untuk lihat data mentahnya, atau kirim ke developer untuk ditampilkan rapi.</div>';
+    } else {
+      list.innerHTML = '<div style="padding:6px 10px 10px;font-size:11.5px;color:var(--ink-3);line-height:1.5;">Tidak bisa diambil otomatis (diblokir keamanan browser: server itu HTTP biasa, Mantis HTTPS). Buka manual:</div>' +
+        MANTIS_DOWNTIME_EXTERNAL_REPORTS.map(function(r){
+          return '<a href="' + mantisEscapeHtml(r.url) + '" target="_blank" rel="noopener" class="entry-meta-popover-item" style="display:block;text-decoration:none;">' + mantisEscapeHtml(r.label) + '</a>';
+        }).join('');
+    }
+    mantisPositionPopover(popover, btn);
+  });
+}
+
 /* Shared by the initial Downtime dashboard render and the Top-N dropdown's
    lightweight refresh, so the "Top Downtime" table always lists exactly the
    sections the Pareto chart is currently showing. */
@@ -3450,7 +3522,10 @@ function mantisRenderDowntimeDashboard(container, table){
   html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="padding:20px;" class="flex items-center justify-between">' +
     '<div><div class="card-title">Grafik Downtime</div><div class="card-sub">Total Jam per Equipment</div></div>' +
-    mantisBuildParetoCountSelectHtml() +
+    '<div class="flex items-center" style="gap:8px;">' +
+      mantisBuildDowntimeExternalFetchBtnHtml() +
+      mantisBuildParetoCountSelectHtml() +
+    '</div>' +
   '</div>';
   html += '<div class="full-bleed-divider" style="margin:0;"></div>';
   html += '<div style="padding:20px;">';
