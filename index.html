@@ -667,6 +667,7 @@ td{ padding:16px 20px; font-size:13px; color:var(--ink); white-space:nowrap; }
 .row-detail-item:last-child{ border-bottom:none; }
 .row-detail-label{ color:var(--ink-2); flex:0 0 160px; }
 .row-detail-value{ color:var(--ink); font-weight:500; text-align:left; flex:1; word-break:break-word; }
+.row-detail-photo{ display:block; max-width:240px; width:100%; border-radius:10px; border:1px solid var(--line); cursor:pointer; }
 
 .row-detail-item-new{ align-items:center; flex-wrap:wrap; row-gap:10px; }
 .row-detail-new-tag{
@@ -2569,17 +2570,31 @@ function mantisIsWeekLabel(label){
   return /^W\d+$/i.test((label || '').trim());
 }
 
+/* Columns that never show up as a table column (or a Settings > Table
+   toggle) for a given container, regardless of user prefs - e.g. Records'
+   "Link" column, which is only meant to be viewed as a photo on the row
+   detail page (mantisShowRowDetail reads table.cols directly, bypassing
+   this, so it's unaffected). */
+const MANTIS_ALWAYS_HIDDEN_COLUMNS = {
+  'activity-records-container': ['Link']
+};
+
 /* Groups per-week columns (W27, W28, ...) into a single logical "Week" column
    pointing at only the most recent week, so Settings shows one toggle instead
    of one row per week. */
-function mantisGetLogicalColumns(table){
+function mantisGetLogicalColumns(table, containerId){
+  const alwaysHidden = (containerId && MANTIS_ALWAYS_HIDDEN_COLUMNS[containerId]) || [];
+  const isAlwaysHidden = function(label){ return alwaysHidden.indexOf((label || '').trim()) !== -1; };
+
   const weekIndexes = [];
   table.cols.forEach(function(c, i){
     if(mantisIsWeekLabel(c.label)) weekIndexes.push(i);
   });
 
   if(!weekIndexes.length){
-    return table.cols.map(function(c, i){ return { id: c.id || String(i), label: c.label || c.id || '', realIndexes: [i] }; });
+    return table.cols
+      .map(function(c, i){ return { id: c.id || String(i), label: c.label || c.id || '', realIndexes: [i] }; })
+      .filter(function(c){ return !isAlwaysHidden(c.label); });
   }
 
   let lastIdx = weekIndexes[0];
@@ -2597,6 +2612,7 @@ function mantisGetLogicalColumns(table){
       if(i === lastIdx) result.push({ id: '__week__', label: 'Week', realIndexes: [lastIdx] });
       return;
     }
+    if(isAlwaysHidden(c.label)) return;
     result.push({ id: c.id || String(i), label: c.label || c.id || '', realIndexes: [i] });
   });
   return result;
@@ -2620,7 +2636,7 @@ function mantisOrderedLogicalIds(containerId, logicalCols){
 }
 
 function mantisOrderedVisibleColIndexes(containerId, table){
-  const logicalCols = mantisGetLogicalColumns(table);
+  const logicalCols = mantisGetLogicalColumns(table, containerId);
   const idToCol = {};
   logicalCols.forEach(function(c){ idToCol[c.id] = c; });
 
@@ -3875,7 +3891,12 @@ function mantisShowRowDetail(containerId, rowIndex){
   html += '<div class="row-detail-list">';
   table.cols.forEach(function(c, i){
     const val = mantisCellText(row.c && row.c[i]) || '-';
-    html += '<div class="row-detail-item"><span class="row-detail-label">' + mantisEscapeHtml(c.label || c.id || '') + '</span><span class="row-detail-value">' + mantisEscapeHtml(val) + '</span></div>';
+    const label = (c.label || c.id || '').trim();
+    const isPhotoLink = label === 'Link' && /^https?:\/\//i.test(val);
+    const valueHtml = isPhotoLink
+      ? '<a href="' + mantisEscapeHtml(val) + '" target="_blank" rel="noopener"><img src="' + mantisEscapeHtml(mantisDriveThumbUrl(val)) + '" alt="Foto laporan" class="row-detail-photo" loading="lazy"></a>'
+      : mantisEscapeHtml(val);
+    html += '<div class="row-detail-item"><span class="row-detail-label">' + mantisEscapeHtml(c.label || c.id || '') + '</span><span class="row-detail-value">' + valueHtml + '</span></div>';
   });
   if(containerId === 'meters-table-container'){
     html += mantisBuildNewReadingRowHtml(table, row);
@@ -5904,7 +5925,7 @@ function mantisRenderColumnPrefsList(containerId, table){
   const listEl = document.getElementById('colprefs-' + containerId);
   if(!listEl || !table || !table.cols) return;
 
-  const logicalCols = mantisGetLogicalColumns(table);
+  const logicalCols = mantisGetLogicalColumns(table, containerId);
   const idToCol = {};
   logicalCols.forEach(function(c){ idToCol[c.id] = c; });
 
@@ -5928,7 +5949,7 @@ function mantisRenderColumnPrefsList(containerId, table){
 
 function mantisToggleColumn(containerId, colId, isChecked){
   const table = mantisTableCache[containerId];
-  const defaultOrder = table ? mantisGetLogicalColumns(table).map(function(c){ return c.id; }) : [];
+  const defaultOrder = table ? mantisGetLogicalColumns(table, containerId).map(function(c){ return c.id; }) : [];
   const prefs = mantisGetColumnPrefs(containerId) || { order: defaultOrder, hidden: [] };
   const hiddenSet = {};
   (prefs.hidden || []).forEach(function(id){ hiddenSet[id] = true; });
