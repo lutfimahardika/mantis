@@ -1480,7 +1480,7 @@ textarea.entry-input{
       <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 3a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2zm10 -4a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 -8a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2z"/></svg>
       <span class="nav-label">Dashboard</span>
     </div>
-    <div class="nav-item" data-page="breakdown" onclick="showPage('breakdown')">
+    <div class="nav-item" data-page="breakdown" id="navItemBreakdown" onclick="showPage('breakdown')" style="display:none;">
       <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4 4m0 1a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1z"/><path d="M4 13m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z"/><path d="M13 13m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z"/></svg>
       <span>Breakdown</span>
     </div>
@@ -2435,7 +2435,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.06';
+const MANTIS_APP_VERSION = '1.07';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -6394,10 +6394,16 @@ function mantisResetAllColumnPrefs(){
    since Downtime - now that default page - has no data of its own until
    showPage('downtime') runs its lazy loadSheetTable() call. */
 (function mantisRestoreLastPage(){
-  const MANTIS_NAV_PAGES = ['overview', 'downtime', 'activities', 'parts', 'meters', 'po', 'settings', 'support'];
+  const MANTIS_NAV_PAGES = ['overview', 'downtime', 'breakdown', 'activities', 'parts', 'meters', 'po', 'settings', 'support'];
   try{
     const lastPage = localStorage.getItem(MANTIS_LAST_PAGE_KEY);
-    const target = (lastPage && MANTIS_NAV_PAGES.indexOf(lastPage) !== -1) ? lastPage : 'downtime';
+    let target = (lastPage && MANTIS_NAV_PAGES.indexOf(lastPage) !== -1) ? lastPage : 'downtime';
+
+    // A returning Foreman/Supervisor's last page can legitimately be
+    // "breakdown" - but if their role changed (or someone else opens the
+    // same browser profile), don't let the restored page bypass the nav
+    // item's own role gate.
+    if(target === 'breakdown' && !mantisCanViewBreakdown()) target = 'downtime';
 
     if(target === 'activities'){
       const lastTab = localStorage.getItem(MANTIS_LAST_ACTIVITIES_TAB_KEY);
@@ -6426,6 +6432,18 @@ function mantisGetAuthUser(){
   }catch(e){ return null; }
 }
 
+/* Breakdown page is restricted to Foreman/Supervisor - same client-side-only
+   gate as navItemTestPage's Foreman check below (no server enforces this,
+   the sheet's gviz read is public either way). Takes an optional user so
+   mantisRestoreLastPage (which runs before mantisCheckAuth applies account
+   info) can check the role itself rather than assuming the nav item's
+   current display state. */
+function mantisCanViewBreakdown(user){
+  const u = user || mantisGetAuthUser();
+  const role = ((u && u.role) || '').trim().toLowerCase();
+  return role === 'foreman' || role === 'supervisor';
+}
+
 function mantisToSentenceCase(text){
   const trimmed = (text || '').trim();
   if(!trimmed) return '';
@@ -6443,6 +6461,9 @@ function mantisApplyAccountInfo(user){
     const initials = name.trim().split(/\s+/).map(function(w){ return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
     initialsEl.textContent = initials || '-';
   }
+
+  const breakdownNav = document.getElementById('navItemBreakdown');
+  if(breakdownNav) breakdownNav.style.display = mantisCanViewBreakdown(user) ? '' : 'none';
 
   const testPageNav = document.getElementById('navItemTestPage');
   if(testPageNav){
