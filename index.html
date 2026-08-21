@@ -2426,7 +2426,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.04';
+const MANTIS_APP_VERSION = '1.05';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -6340,14 +6340,25 @@ if('serviceWorker' in navigator && (location.protocol === 'https:' || location.h
 (function mantisSetupPullToRefresh(){
   const PULL_THRESHOLD = 64;
   const MAX_PULL = 100;
+  // Movement (px) before a gesture commits to an axis. Below this it's
+  // treated as jitter, so a table drag that starts with a slightly-downward
+  // first sample (very common with diagonal thumb motion) isn't immediately
+  // mistaken for a pull.
+  const AXIS_LOCK_DISTANCE = 10;
   const indicator = document.getElementById('mantisPtrIndicator');
   const icon = document.getElementById('mantisPtrIcon');
   if(!indicator || !icon) return;
 
+  let startX = 0;
   let startY = 0;
   let pulling = false;
   let triggered = false;
   let lastPull = 0;
+  // null until AXIS_LOCK_DISTANCE is crossed, then 'vertical' or 'horizontal'
+  // for the rest of this touch - once 'horizontal', pulling stays false and
+  // preventDefault is never called, so a table's native left/right scroll
+  // (or any other horizontal swipe) is never hijacked by this handler.
+  let axis = null;
 
   function scrollTop(){
     return document.scrollingElement ? document.scrollingElement.scrollTop : document.body.scrollTop;
@@ -6366,18 +6377,28 @@ if('serviceWorker' in navigator && (location.protocol === 'https:' || location.h
     if(scrollTop() > 0) return;
     if(evt.touches.length !== 1) return;
 
+    startX = evt.touches[0].clientX;
     startY = evt.touches[0].clientY;
     pulling = true;
+    axis = null;
     indicator.style.transition = 'none';
   }, { passive: true });
 
   document.addEventListener('touchmove', function(evt){
     if(!pulling || triggered) return;
 
-    const delta = evt.touches[0].clientY - startY;
-    if(delta <= 0 || scrollTop() > 0){ pulling = false; return; }
+    const deltaX = evt.touches[0].clientX - startX;
+    const deltaY = evt.touches[0].clientY - startY;
 
-    lastPull = Math.min(MAX_PULL, delta * 0.5);
+    if(axis === null){
+      if(Math.max(Math.abs(deltaX), Math.abs(deltaY)) < AXIS_LOCK_DISTANCE) return;
+      axis = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
+      if(axis === 'horizontal'){ pulling = false; return; }
+    }
+
+    if(deltaY <= 0 || scrollTop() > 0){ pulling = false; return; }
+
+    lastPull = Math.min(MAX_PULL, deltaY * 0.5);
     indicator.style.transform = 'translateY(' + (lastPull - 56) + 'px)';
     icon.style.transform = 'rotate(' + (lastPull / MAX_PULL * 360) + 'deg)';
 
