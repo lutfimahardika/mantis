@@ -1480,6 +1480,10 @@ textarea.entry-input{
       <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 3a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2zm10 -4a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 -8a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2z"/></svg>
       <span class="nav-label">Dashboard</span>
     </div>
+    <div class="nav-item" data-page="breakdown" onclick="showPage('breakdown')">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4 4m0 1a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1z"/><path d="M4 13m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z"/><path d="M13 13m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z"/></svg>
+      <span>Breakdown</span>
+    </div>
     <div class="nav-group" id="navGroupActivities">
       <div class="group-label" onclick="toggleGroup(this)">
         <svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 2a1 1 0 0 1 1 1v17h17a1 1 0 0 1 .993 .883l.007 .117a1 1 0 0 1 -1 1h-18a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1z"/><path d="M19 4a3 3 0 1 1 -.651 5.93l-2.002 3.202a3 3 0 1 1 -4.927 .337l-1.378 -1.655a3 3 0 1 1 1.538 -1.282l1.378 1.654a2.994 2.994 0 0 1 1.693 -.115l2.002 -3.203a3 3 0 0 1 2.347 -4.868z"/></svg>
@@ -2122,6 +2126,11 @@ textarea.entry-input{
     <div id="downtime-table-container" style="display:flex;flex-direction:column;gap:16px;"></div>
   </div>
 
+  <!-- ============ BREAKDOWN ============ -->
+  <div class="page" id="page-breakdown" style="display:none;">
+    <div id="breakdown-table-container" style="display:flex;flex-direction:column;gap:16px;"></div>
+  </div>
+
   <!-- ============ SETTINGS ============ -->
   <div class="page" id="page-settings" style="display:none;">
     <div class="card" style="padding:0;overflow:hidden;">
@@ -2426,7 +2435,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.05';
+const MANTIS_APP_VERSION = '1.06';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -2436,6 +2445,7 @@ const mantisPageTitles = {
   meters: 'Meters',
   po: 'Orders',
   downtime: 'Dashboard',
+  breakdown: 'Breakdown',
   settings: 'Settings',
   support: 'Support'
 };
@@ -2477,6 +2487,10 @@ function showPage(name){
   if(name === 'downtime' && !mantisLoadedPages.downtime){
     mantisLoadedPages.downtime = true;
     loadSheetTable('Downtime', 'downtime-table-container', 'mantisHandleDowntime');
+  }
+  if(name === 'breakdown' && !mantisLoadedPages.breakdown){
+    mantisLoadedPages.breakdown = true;
+    loadSheetTable('Downtime', 'breakdown-table-container', 'mantisHandleBreakdownDowntime');
   }
 
   if(document.getElementById('sidebar').classList.contains('open')){
@@ -2692,6 +2706,11 @@ function renderGvizTable(container, table, containerId){
     mantisRenderDowntimeDashboard(container, table);
     return;
   }
+  if(containerId === 'breakdown-table-container'){
+    mantisTableCache[containerId] = table;
+    mantisRenderBreakdownDashboard(container, table);
+    return;
+  }
   mantisTableCache[containerId] = mantisStripEmptyColumns(table);
   if(!(containerId in mantisRowLimits)) mantisRowLimits[containerId] = 10;
   if(!(containerId in mantisCurrentPage)) mantisCurrentPage[containerId] = 1;
@@ -2773,6 +2792,14 @@ function mantisParseDowntimeTable(table){
 function mantisFormatDowntimeHours(n){
   const num = Math.round((n || 0) * 10) / 10;
   return (num % 1 === 0 ? num.toFixed(0) : num.toFixed(1)) + ' jam';
+}
+
+/* Same rounding as mantisFormatDowntimeHours but without the "jam" suffix -
+   used in the Breakdown per-day matrix where every column is already known
+   to be a duration, so repeating the unit in every cell would just be noise. */
+function mantisFormatDowntimeNumber(n){
+  const num = Math.round((n || 0) * 10) / 10;
+  return num % 1 === 0 ? num.toFixed(0) : num.toFixed(1);
 }
 
 function mantisDowntimeMetricColHtml(label, value){
@@ -3511,6 +3538,249 @@ function mantisRenderDowntimeDashboard(container, table){
   mantisSyncDowntimeFilterPopovers();
   mantisApplyParetoChartScaling();
   mantisBindParetoRadiusResize();
+}
+
+/* ---------- Breakdown page (Downtime pivoted: one row per Line+Description,
+   one column per day) ----------
+   Reuses mantisParseDowntimeTable's "duration" items directly - Detail is
+   restricted to "duration" rows by construction there (Rate/Root Cause/Action
+   rows never become a standalone item), so it's always shown as the literal
+   "Duration" here rather than read per-row. Filter state and popovers are a
+   separate copy of the Downtime page's own (mantisDowntimeFilters etc.) so
+   the two pages don't fight over the same globals. */
+let mantisBreakdownFilters = { line: '', dateFrom: '', dateTo: '' };
+let mantisBreakdownLinePopoverOpen = false;
+let mantisBreakdownDatePopoverOpen = false;
+
+function mantisRerenderBreakdownDashboard(){
+  const table = mantisTableCache['breakdown-table-container'];
+  const container = document.getElementById('breakdown-table-container');
+  if(table && container) mantisRenderBreakdownDashboard(container, table);
+}
+
+function mantisToggleBreakdownLinePopover(evt){
+  if(evt) evt.stopPropagation();
+  const wasOpen = mantisBreakdownLinePopoverOpen;
+  mantisBreakdownLinePopoverOpen = false;
+  mantisBreakdownDatePopoverOpen = false;
+  mantisBreakdownLinePopoverOpen = !wasOpen;
+  mantisSyncBreakdownFilterPopovers();
+}
+
+function mantisToggleBreakdownDatePopover(evt){
+  if(evt) evt.stopPropagation();
+  const wasOpen = mantisBreakdownDatePopoverOpen;
+  mantisBreakdownLinePopoverOpen = false;
+  mantisBreakdownDatePopoverOpen = false;
+  mantisBreakdownDatePopoverOpen = !wasOpen;
+  mantisSyncBreakdownFilterPopovers();
+}
+
+function mantisSyncBreakdownFilterPopovers(){
+  const linePopover = document.getElementById('mantisBreakdownLinePopover');
+  const lineBtn = document.getElementById('mantisBreakdownLineFilterBtn');
+  if(linePopover && lineBtn){
+    if(mantisBreakdownLinePopoverOpen){ linePopover.classList.add('open'); mantisPositionPopover(linePopover, lineBtn); }
+    else linePopover.classList.remove('open');
+  }
+  const datePopover = document.getElementById('mantisBreakdownDatePopover');
+  const dateBtn = document.getElementById('mantisBreakdownDateFilterBtn');
+  if(datePopover && dateBtn){
+    if(mantisBreakdownDatePopoverOpen){ datePopover.classList.add('open'); mantisPositionPopover(datePopover, dateBtn); }
+    else datePopover.classList.remove('open');
+  }
+}
+
+function mantisSetBreakdownLineFilter(value){
+  mantisBreakdownFilters.line = value;
+  mantisBreakdownLinePopoverOpen = false;
+  mantisRerenderBreakdownDashboard();
+}
+
+function mantisApplyBreakdownDateInputs(){
+  const fromInput = document.getElementById('mantisBreakdownDateFrom');
+  const toInput = document.getElementById('mantisBreakdownDateTo');
+  mantisBreakdownFilters.dateFrom = fromInput ? fromInput.value : '';
+  mantisBreakdownFilters.dateTo = toInput ? toInput.value : '';
+  mantisRerenderBreakdownDashboard();
+}
+
+function mantisResetBreakdownFilters(){
+  mantisBreakdownFilters = { line: '', dateFrom: '', dateTo: '' };
+  mantisBreakdownLinePopoverOpen = false;
+  mantisBreakdownDatePopoverOpen = false;
+  mantisRerenderBreakdownDashboard();
+}
+
+function mantisSetBreakdownLastNDays(daysBack){
+  const to = new Date();
+  const from = new Date(to);
+  from.setDate(to.getDate() - daysBack);
+  mantisBreakdownFilters.dateFrom = mantisFormatIsoDate(from);
+  mantisBreakdownFilters.dateTo = mantisFormatIsoDate(to);
+  mantisBreakdownDatePopoverOpen = false;
+  mantisRerenderBreakdownDashboard();
+}
+
+function mantisSetBreakdownThisWeek(){
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + (day === 0 ? -6 : 1) - day);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  mantisBreakdownFilters.dateFrom = mantisFormatIsoDate(monday);
+  mantisBreakdownFilters.dateTo = mantisFormatIsoDate(sunday);
+  mantisBreakdownDatePopoverOpen = false;
+  mantisRerenderBreakdownDashboard();
+}
+
+function mantisSetBreakdownThisMonth(){
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  mantisBreakdownFilters.dateFrom = mantisFormatIsoDate(first);
+  mantisBreakdownFilters.dateTo = mantisFormatIsoDate(last);
+  mantisBreakdownDatePopoverOpen = false;
+  mantisRerenderBreakdownDashboard();
+}
+
+function mantisRenderBreakdownDashboard(container, table){
+  if(!table || !table.cols || !table.rows){
+    container.innerHTML = '<div class="sheet-error">Data tidak ditemukan pada sheet.</div>';
+    return;
+  }
+
+  const parsed = mantisParseDowntimeTable(table);
+  const allItems = parsed.items;
+
+  const allLines = [];
+  allItems.forEach(function(item){ if(allLines.indexOf(item.line) === -1) allLines.push(item.line); });
+  const preferredLineOrder = ['tetra pak line 1', 'sig 1', 'sig 2', 'sig 3'];
+  const orderedLines = [];
+  preferredLineOrder.forEach(function(key){
+    const match = allLines.find(function(l){ return l.toLowerCase() === key; });
+    if(match) orderedLines.push(match);
+  });
+  allLines.forEach(function(l){ if(orderedLines.indexOf(l) === -1) orderedLines.push(l); });
+
+  const isoDates = parsed.dateLabels.map(mantisDowntimeDateLabelToIso).filter(Boolean).sort();
+  const minDateIso = isoDates.length ? isoDates[0] : '';
+  const maxDateIso = isoDates.length ? isoDates[isoDates.length - 1] : '';
+
+  const filterLine = mantisBreakdownFilters.line;
+  const filterFrom = mantisBreakdownFilters.dateFrom;
+  const filterTo = mantisBreakdownFilters.dateTo;
+
+  const allowedDates = parsed.dateLabels.filter(function(label){
+    const iso = mantisDowntimeDateLabelToIso(label);
+    if(filterFrom && (!iso || iso < filterFrom)) return false;
+    if(filterTo && (!iso || iso > filterTo)) return false;
+    return true;
+  });
+
+  const items = allItems.filter(function(item){ return !filterLine || item.line === filterLine; });
+
+  let lineItemsHtml = '<button type="button" class="entry-meta-popover-item' + (!filterLine ? ' selected' : '') + '" onclick="mantisSetBreakdownLineFilter(\'\')">Semua Line</button>';
+  orderedLines.forEach(function(l){
+    lineItemsHtml += '<button type="button" class="entry-meta-popover-item' + (filterLine === l ? ' selected' : '') + '" onclick="mantisSetBreakdownLineFilter(\'' + l.replace(/'/g, "\\'") + '\')">' + mantisEscapeHtml(l) + '</button>';
+  });
+
+  const presetDefs = [
+    { label: 'Hari Ini', fn: 'mantisSetBreakdownLastNDays(0)' },
+    { label: '3 Hari Terakhir', fn: 'mantisSetBreakdownLastNDays(2)' },
+    { label: '7 Hari Terakhir', fn: 'mantisSetBreakdownLastNDays(6)' },
+    { label: '30 Hari Terakhir', fn: 'mantisSetBreakdownLastNDays(29)' },
+    { label: 'Minggu Ini', fn: 'mantisSetBreakdownThisWeek()' },
+    { label: 'Bulan Ini', fn: 'mantisSetBreakdownThisMonth()' }
+  ];
+  let presetItemsHtml = '';
+  presetDefs.forEach(function(p){
+    presetItemsHtml += '<button type="button" class="entry-meta-popover-item" onclick="' + p.fn + '">' + p.label + '</button>';
+  });
+
+  const linePopoverHtml = '<div class="entry-meta-popover" id="mantisBreakdownLinePopover" onclick="event.stopPropagation()">' +
+    '<div class="entry-meta-popover-list">' + lineItemsHtml + '</div>' +
+  '</div>';
+
+  const datePopoverHtml = '<div class="entry-meta-popover" id="mantisBreakdownDatePopover" style="min-width:340px;padding:12px;" onclick="event.stopPropagation()">' +
+    '<div class="flex" style="align-items:stretch;">' +
+      '<div style="flex:0 0 150px;border-right:1px solid var(--line);padding-right:10px;">' +
+        '<div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;padding:2px 10px 8px;">Periode</div>' +
+        '<div class="entry-meta-popover-list" style="max-height:none;">' + presetItemsHtml + '</div>' +
+      '</div>' +
+      '<div style="flex:1;min-width:170px;padding-left:10px;">' +
+        '<div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;padding:2px 10px 8px;">Rentang Tanggal</div>' +
+        '<div style="padding:0 10px;display:flex;flex-direction:column;gap:10px;">' +
+          '<label style="font-size:11px;color:var(--ink-3);display:block;">Dari' +
+            '<input type="date" id="mantisBreakdownDateFrom" style="display:block;width:100%;margin-top:4px;height:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;font-family:inherit;" value="' + mantisEscapeHtml(filterFrom) + '" min="' + minDateIso + '" max="' + maxDateIso + '" onchange="mantisApplyBreakdownDateInputs()">' +
+          '</label>' +
+          '<label style="font-size:11px;color:var(--ink-3);display:block;">Sampai' +
+            '<input type="date" id="mantisBreakdownDateTo" style="display:block;width:100%;margin-top:4px;height:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;font-family:inherit;" value="' + mantisEscapeHtml(filterTo) + '" min="' + minDateIso + '" max="' + maxDateIso + '" onchange="mantisApplyBreakdownDateInputs()">' +
+          '</label>' +
+          '<button type="button" class="pill-btn" style="justify-content:center;" onclick="mantisResetBreakdownFilters()">Reset Filter</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  const lineFilterActive = !!filterLine;
+  const dateFilterActive = !!(filterFrom || filterTo);
+  const activeIconAttrs = ' fill="rgba(245,166,35,0.18)" style="stroke:var(--accent);"';
+
+  let html = '';
+  html += '<div class="card" style="padding:0;overflow:hidden;">';
+  html += '<div style="padding:20px;flex-wrap:wrap;gap:10px;" class="flex items-center justify-between">' +
+    '<div><div class="card-title">Breakdown</div><div class="card-sub">Durasi downtime (jam) per hari</div></div>' +
+    '<div class="flex items-center" style="gap:8px;flex-wrap:wrap;">' +
+      '<button type="button" class="pill-btn" id="mantisBreakdownLineFilterBtn" onclick="mantisToggleBreakdownLinePopover(event)">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (lineFilterActive ? activeIconAttrs : '') + '><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></svg>' +
+        'Filter' +
+      '</button>' +
+      '<button type="button" class="pill-btn" id="mantisBreakdownDateFilterBtn" onclick="mantisToggleBreakdownDatePopover(event)">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (dateFilterActive ? activeIconAttrs : '') + '><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M11 15h1"/><path d="M12 15v3"/></svg>' +
+        'Tanggal' +
+      '</button>' +
+      '<button class="pill-btn" title="Refresh data" onclick="mantisRefreshSheet(\'breakdown-table-container\')">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>' +
+        'Refresh' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+  html += linePopoverHtml;
+  html += datePopoverHtml;
+  html += '<div class="full-bleed-divider" style="margin:0;"></div>';
+
+  if(!items.length){
+    html += '<div class="tab-panel-empty" style="padding:24px 0;">Belum ada data downtime yang tercatat.</div>';
+  } else {
+    html += '<div class="table-wrap"><table><thead><tr>' +
+      '<th style="white-space:nowrap;">Line</th>' +
+      '<th style="white-space:nowrap;">Description</th>' +
+      '<th style="white-space:nowrap;">Detail</th>';
+    allowedDates.forEach(function(label){
+      html += '<th style="text-align:right;white-space:nowrap;padding:10px 14px;">' + mantisEscapeHtml(mantisFormatDowntimeShortDate(mantisDowntimeDateLabelToIso(label))) + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+
+    items.forEach(function(item){
+      html += '<tr><td style="white-space:nowrap;">' + mantisEscapeHtml(item.line) + '</td>' +
+        '<td>' + mantisEscapeHtml(item.equipment) + '</td>' +
+        '<td style="white-space:nowrap;">Duration</td>';
+      allowedDates.forEach(function(label){
+        const has = Object.prototype.hasOwnProperty.call(item.hours, label);
+        html += '<td style="text-align:right;white-space:nowrap;padding:10px 14px;">' + (has ? mantisFormatDowntimeNumber(item.hours[label]) : '') + '</td>';
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+  }
+
+  html += '</div>';
+
+  container.innerHTML = html;
+  mantisSyncBreakdownFilterPopovers();
 }
 
 function renderGvizTableRows(containerId){
@@ -4432,6 +4702,7 @@ const MANTIS_SHEET_SOURCES = {
   'meters-table-container': ['Meters', 'mantisHandleRunningHour'],
   'po-table-container': ['Orders', 'mantisHandlePRPO'],
   'downtime-table-container': ['Downtime', 'mantisHandleDowntime'],
+  'breakdown-table-container': ['Downtime', 'mantisHandleBreakdownDowntime'],
   'activity-records-container': ['Records', 'mantisHandleMaintenance']
 };
 
