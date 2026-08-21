@@ -1482,7 +1482,7 @@ textarea.entry-input{
     </div>
     <div class="nav-item" data-page="breakdown" id="navItemBreakdown" onclick="showPage('breakdown')" style="display:none;">
       <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4 4m0 1a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1z"/><path d="M4 13m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z"/><path d="M13 13m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z"/></svg>
-      <span>Breakdown</span>
+      <span>Breakdowns</span>
     </div>
     <div class="nav-group" id="navGroupActivities">
       <div class="group-label" onclick="toggleGroup(this)">
@@ -2435,7 +2435,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.07';
+const MANTIS_APP_VERSION = '1.08';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -2445,7 +2445,7 @@ const mantisPageTitles = {
   meters: 'Meters',
   po: 'Orders',
   downtime: 'Dashboard',
-  breakdown: 'Breakdown',
+  breakdown: 'Breakdowns',
   settings: 'Settings',
   support: 'Support'
 };
@@ -3551,6 +3551,8 @@ function mantisRenderDowntimeDashboard(container, table){
 let mantisBreakdownFilters = { line: '', dateFrom: '', dateTo: '' };
 let mantisBreakdownLinePopoverOpen = false;
 let mantisBreakdownDatePopoverOpen = false;
+let mantisBreakdownRowLimit = 10;
+let mantisBreakdownCurrentPage = 1;
 
 function mantisRerenderBreakdownDashboard(){
   const table = mantisTableCache['breakdown-table-container'];
@@ -3594,6 +3596,7 @@ function mantisSyncBreakdownFilterPopovers(){
 function mantisSetBreakdownLineFilter(value){
   mantisBreakdownFilters.line = value;
   mantisBreakdownLinePopoverOpen = false;
+  mantisBreakdownCurrentPage = 1;
   mantisRerenderBreakdownDashboard();
 }
 
@@ -3602,6 +3605,7 @@ function mantisApplyBreakdownDateInputs(){
   const toInput = document.getElementById('mantisBreakdownDateTo');
   mantisBreakdownFilters.dateFrom = fromInput ? fromInput.value : '';
   mantisBreakdownFilters.dateTo = toInput ? toInput.value : '';
+  mantisBreakdownCurrentPage = 1;
   mantisRerenderBreakdownDashboard();
 }
 
@@ -3609,6 +3613,7 @@ function mantisResetBreakdownFilters(){
   mantisBreakdownFilters = { line: '', dateFrom: '', dateTo: '' };
   mantisBreakdownLinePopoverOpen = false;
   mantisBreakdownDatePopoverOpen = false;
+  mantisBreakdownCurrentPage = 1;
   mantisRerenderBreakdownDashboard();
 }
 
@@ -3619,6 +3624,7 @@ function mantisSetBreakdownLastNDays(daysBack){
   mantisBreakdownFilters.dateFrom = mantisFormatIsoDate(from);
   mantisBreakdownFilters.dateTo = mantisFormatIsoDate(to);
   mantisBreakdownDatePopoverOpen = false;
+  mantisBreakdownCurrentPage = 1;
   mantisRerenderBreakdownDashboard();
 }
 
@@ -3632,6 +3638,7 @@ function mantisSetBreakdownThisWeek(){
   mantisBreakdownFilters.dateFrom = mantisFormatIsoDate(monday);
   mantisBreakdownFilters.dateTo = mantisFormatIsoDate(sunday);
   mantisBreakdownDatePopoverOpen = false;
+  mantisBreakdownCurrentPage = 1;
   mantisRerenderBreakdownDashboard();
 }
 
@@ -3642,7 +3649,41 @@ function mantisSetBreakdownThisMonth(){
   mantisBreakdownFilters.dateFrom = mantisFormatIsoDate(first);
   mantisBreakdownFilters.dateTo = mantisFormatIsoDate(last);
   mantisBreakdownDatePopoverOpen = false;
+  mantisBreakdownCurrentPage = 1;
   mantisRerenderBreakdownDashboard();
+}
+
+function mantisChangeBreakdownRowLimit(value){
+  mantisBreakdownRowLimit = (value === 'all') ? 'all' : parseInt(value, 10);
+  mantisBreakdownCurrentPage = 1;
+  mantisRerenderBreakdownDashboard();
+}
+
+function mantisChangeBreakdownPage(page){
+  mantisBreakdownCurrentPage = page;
+  mantisRerenderBreakdownDashboard();
+}
+
+/* Same layout as mantisBuildPaginationHtml, just wired to the Breakdown
+   page's own row-limit/page state instead of a generic containerId. */
+function mantisBuildBreakdownPaginationHtml(page, totalPages){
+  const prevDisabled = page <= 1 ? ' disabled' : '';
+  const nextDisabled = page >= totalPages ? ' disabled' : '';
+  const chevronsLeftIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 7l-5 5l5 5"/><path d="M17 7l-5 5l5 5"/></svg>';
+  const chevronLeftIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg>';
+  const chevronRightIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6"/></svg>';
+  const chevronsRightIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l5 5l-5 5"/><path d="M13 7l5 5l-5 5"/></svg>';
+
+  let html = '<div class="table-pagination">';
+  html += '<button type="button" class="table-pg-nav-icon" title="Halaman pertama"' + prevDisabled + ' onclick="mantisChangeBreakdownPage(1)">' + chevronsLeftIcon + '</button>';
+  html += '<button type="button" class="table-pg-nav-icon" title="Sebelumnya"' + prevDisabled + ' onclick="mantisChangeBreakdownPage(' + (page - 1) + ')">' + chevronLeftIcon + '</button>';
+  mantisGetWindowedPageNumbers(page, totalPages).forEach(function(p){
+    html += '<button type="button" class="table-page-btn' + (p === page ? ' active' : '') + '" onclick="mantisChangeBreakdownPage(' + p + ')">' + p + '</button>';
+  });
+  html += '<button type="button" class="table-pg-nav-icon" title="Selanjutnya"' + nextDisabled + ' onclick="mantisChangeBreakdownPage(' + (page + 1) + ')">' + chevronRightIcon + '</button>';
+  html += '<button type="button" class="table-pg-nav-icon" title="Halaman terakhir"' + nextDisabled + ' onclick="mantisChangeBreakdownPage(' + totalPages + ')">' + chevronsRightIcon + '</button>';
+  html += '</div>';
+  return html;
 }
 
 function mantisRenderBreakdownDashboard(container, table){
@@ -3680,6 +3721,13 @@ function mantisRenderBreakdownDashboard(container, table){
   });
 
   const items = allItems.filter(function(item){ return !filterLine || item.line === filterLine; });
+
+  const breakdownLimit = mantisBreakdownRowLimit;
+  const totalItemRows = items.length;
+  const totalItemPages = (breakdownLimit === 'all') ? 1 : Math.max(1, Math.ceil(totalItemRows / breakdownLimit));
+  const breakdownPage = Math.min(Math.max(1, mantisBreakdownCurrentPage || 1), totalItemPages);
+  mantisBreakdownCurrentPage = breakdownPage;
+  const itemsToShow = (breakdownLimit === 'all') ? items : items.slice((breakdownPage - 1) * breakdownLimit, (breakdownPage - 1) * breakdownLimit + breakdownLimit);
 
   let lineItemsHtml = '<button type="button" class="entry-meta-popover-item' + (!filterLine ? ' selected' : '') + '" onclick="mantisSetBreakdownLineFilter(\'\')">Semua Line</button>';
   orderedLines.forEach(function(l){
@@ -3731,7 +3779,7 @@ function mantisRenderBreakdownDashboard(container, table){
   let html = '';
   html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="padding:20px;flex-wrap:wrap;gap:10px;" class="flex items-center justify-between">' +
-    '<div><div class="card-title">Breakdown</div><div class="card-sub">Durasi downtime (jam) per hari</div></div>' +
+    '<div><div class="card-title">Breakdowns</div><div class="card-sub">Durasi downtime (jam) per hari</div></div>' +
     '<div class="flex items-center" style="gap:8px;flex-wrap:wrap;">' +
       '<button type="button" class="pill-btn" id="mantisBreakdownLineFilterBtn" onclick="mantisToggleBreakdownLinePopover(event)">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (lineFilterActive ? activeIconAttrs : '') + '><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></svg>' +
@@ -3763,7 +3811,7 @@ function mantisRenderBreakdownDashboard(container, table){
     });
     html += '</tr></thead><tbody>';
 
-    items.forEach(function(item){
+    itemsToShow.forEach(function(item){
       html += '<tr><td style="white-space:nowrap;">' + mantisEscapeHtml(item.line) + '</td>' +
         '<td>' + mantisEscapeHtml(item.equipment) + '</td>' +
         '<td style="white-space:nowrap;">Duration</td>';
@@ -3775,6 +3823,22 @@ function mantisRenderBreakdownDashboard(container, table){
     });
 
     html += '</tbody></table></div>';
+
+    html += '<div class="table-rows-control">';
+    html += '<label><span class="table-rows-label-text">Tampilkan</span>';
+    html += '<select onchange="mantisChangeBreakdownRowLimit(this.value)">';
+    MANTIS_ROW_OPTIONS.forEach(function(n){
+      const selected = (String(breakdownLimit) === String(n)) ? ' selected' : '';
+      html += '<option value="' + n + '"' + selected + '>' + n + '</option>';
+    });
+    html += '<option value="all"' + (breakdownLimit === 'all' ? ' selected' : '') + '>Semua</option>';
+    html += '</select><span class="table-rows-label-text">dari ' + totalItemRows + ' data</span></label>';
+
+    if(breakdownLimit !== 'all' && totalItemPages > 1){
+      html += mantisBuildBreakdownPaginationHtml(breakdownPage, totalItemPages);
+    }
+
+    html += '</div>';
   }
 
   html += '</div>';
