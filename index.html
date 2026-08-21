@@ -2435,7 +2435,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.09';
+const MANTIS_APP_VERSION = '1.10';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -3559,7 +3559,22 @@ function mantisRenderDowntimeDashboard(container, table){
    "Duration" here rather than read per-row. Filter state and popovers are a
    separate copy of the Downtime page's own (mantisDowntimeFilters etc.) so
    the two pages don't fight over the same globals. */
-let mantisBreakdownFilters = { line: '', dateFrom: '', dateTo: '' };
+/* Default view is last week (Mon-Sun before the current week), not "all
+   dates" - e.g. opening this on Friday 21 Aug shows 10-16 Aug. Computed once
+   at load, same Monday-finding logic as mantisSetBreakdownThisWeek() below. */
+function mantisBreakdownLastWeekRange(){
+  const now = new Date();
+  const day = now.getDay();
+  const thisMonday = new Date(now);
+  thisMonday.setDate(now.getDate() + (day === 0 ? -6 : 1) - day);
+  const lastMonday = new Date(thisMonday);
+  lastMonday.setDate(thisMonday.getDate() - 7);
+  const lastSunday = new Date(lastMonday);
+  lastSunday.setDate(lastMonday.getDate() + 6);
+  return { dateFrom: mantisFormatIsoDate(lastMonday), dateTo: mantisFormatIsoDate(lastSunday) };
+}
+
+let mantisBreakdownFilters = Object.assign({ line: '' }, mantisBreakdownLastWeekRange());
 let mantisBreakdownLinePopoverOpen = false;
 let mantisBreakdownDatePopoverOpen = false;
 let mantisBreakdownRowLimit = 10;
