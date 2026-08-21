@@ -2435,7 +2435,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.10';
+const MANTIS_APP_VERSION = '1.11';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -3553,12 +3553,15 @@ function mantisRenderDowntimeDashboard(container, table){
 
 /* ---------- Breakdown page (Downtime pivoted: one row per Line+Description,
    one column per day) ----------
-   Reuses mantisParseDowntimeTable's "duration" items directly - Detail is
-   restricted to "duration" rows by construction there (Rate/Root Cause/Action
-   rows never become a standalone item), so it's always shown as the literal
-   "Duration" here rather than read per-row. Filter state and popovers are a
-   separate copy of the Downtime page's own (mantisDowntimeFilters etc.) so
-   the two pages don't fight over the same globals. */
+   Reuses mantisParseDowntimeTable's items directly - each item already
+   carries hours/percent/rootCause/note maps (one per Detail type) keyed by
+   date label, since Rate/Root Cause/Action rows attach onto the same item
+   as the Line+Description block's "duration" row rather than becoming
+   separate items (see that function's own comment). The Detail filter below
+   just picks which of those four maps gets read per day; it doesn't change
+   which items exist. Filter state and popovers are a separate copy of the
+   Downtime page's own (mantisDowntimeFilters etc.) so the two pages don't
+   fight over the same globals. */
 /* Default view is last week (Mon-Sun before the current week), not "all
    dates" - e.g. opening this on Friday 21 Aug shows 10-16 Aug. Computed once
    at load, same Monday-finding logic as mantisSetBreakdownThisWeek() below. */
@@ -3574,8 +3577,30 @@ function mantisBreakdownLastWeekRange(){
   return { dateFrom: mantisFormatIsoDate(lastMonday), dateTo: mantisFormatIsoDate(lastSunday) };
 }
 
-let mantisBreakdownFilters = Object.assign({ line: '' }, mantisBreakdownLastWeekRange());
-let mantisBreakdownLinePopoverOpen = false;
+/* value/field pairs the Detail filter switches between - field is which of
+   a parsed item's maps (see mantisParseDowntimeTable) supplies the per-day
+   value. duration/rate are numbers (hours, percent); rootcause/action are
+   free text, so the table cells they produce are formatted differently
+   (see mantisRenderBreakdownDashboard). */
+const MANTIS_BREAKDOWN_DETAIL_OPTIONS = [
+  { value: 'duration', label: 'Duration', field: 'hours' },
+  { value: 'rate', label: 'Rate', field: 'percent' },
+  { value: 'rootcause', label: 'Root Cause', field: 'rootCause' },
+  { value: 'action', label: 'Action', field: 'note' }
+];
+const MANTIS_BREAKDOWN_DETAIL_SUBTITLE = {
+  duration: 'Durasi downtime (jam) per hari',
+  rate: 'Rate downtime (%) per hari',
+  rootcause: 'Root cause per hari',
+  action: 'Action per hari'
+};
+
+function mantisGetBreakdownDetailOption(value){
+  return MANTIS_BREAKDOWN_DETAIL_OPTIONS.find(function(o){ return o.value === value; }) || MANTIS_BREAKDOWN_DETAIL_OPTIONS[0];
+}
+
+let mantisBreakdownFilters = Object.assign({ line: '', detail: 'duration', hasDataOnly: false }, mantisBreakdownLastWeekRange());
+let mantisBreakdownFilterPopoverOpen = false;
 let mantisBreakdownDatePopoverOpen = false;
 let mantisBreakdownRowLimit = 10;
 let mantisBreakdownCurrentPage = 1;
@@ -3586,30 +3611,30 @@ function mantisRerenderBreakdownDashboard(){
   if(table && container) mantisRenderBreakdownDashboard(container, table);
 }
 
-function mantisToggleBreakdownLinePopover(evt){
+function mantisToggleBreakdownFilterPopover(evt){
   if(evt) evt.stopPropagation();
-  const wasOpen = mantisBreakdownLinePopoverOpen;
-  mantisBreakdownLinePopoverOpen = false;
+  const wasOpen = mantisBreakdownFilterPopoverOpen;
+  mantisBreakdownFilterPopoverOpen = false;
   mantisBreakdownDatePopoverOpen = false;
-  mantisBreakdownLinePopoverOpen = !wasOpen;
+  mantisBreakdownFilterPopoverOpen = !wasOpen;
   mantisSyncBreakdownFilterPopovers();
 }
 
 function mantisToggleBreakdownDatePopover(evt){
   if(evt) evt.stopPropagation();
   const wasOpen = mantisBreakdownDatePopoverOpen;
-  mantisBreakdownLinePopoverOpen = false;
+  mantisBreakdownFilterPopoverOpen = false;
   mantisBreakdownDatePopoverOpen = false;
   mantisBreakdownDatePopoverOpen = !wasOpen;
   mantisSyncBreakdownFilterPopovers();
 }
 
 function mantisSyncBreakdownFilterPopovers(){
-  const linePopover = document.getElementById('mantisBreakdownLinePopover');
-  const lineBtn = document.getElementById('mantisBreakdownLineFilterBtn');
-  if(linePopover && lineBtn){
-    if(mantisBreakdownLinePopoverOpen){ linePopover.classList.add('open'); mantisPositionPopover(linePopover, lineBtn); }
-    else linePopover.classList.remove('open');
+  const filterPopover = document.getElementById('mantisBreakdownFilterPopover');
+  const filterBtn = document.getElementById('mantisBreakdownFilterBtn');
+  if(filterPopover && filterBtn){
+    if(mantisBreakdownFilterPopoverOpen){ filterPopover.classList.add('open'); mantisPositionPopover(filterPopover, filterBtn); }
+    else filterPopover.classList.remove('open');
   }
   const datePopover = document.getElementById('mantisBreakdownDatePopover');
   const dateBtn = document.getElementById('mantisBreakdownDateFilterBtn');
@@ -3621,7 +3646,21 @@ function mantisSyncBreakdownFilterPopovers(){
 
 function mantisSetBreakdownLineFilter(value){
   mantisBreakdownFilters.line = value;
-  mantisBreakdownLinePopoverOpen = false;
+  mantisBreakdownFilterPopoverOpen = false;
+  mantisBreakdownCurrentPage = 1;
+  mantisRerenderBreakdownDashboard();
+}
+
+function mantisSetBreakdownDetailFilter(value){
+  mantisBreakdownFilters.detail = value;
+  mantisBreakdownFilterPopoverOpen = false;
+  mantisBreakdownCurrentPage = 1;
+  mantisRerenderBreakdownDashboard();
+}
+
+function mantisSetBreakdownHasDataOnly(value){
+  mantisBreakdownFilters.hasDataOnly = value;
+  mantisBreakdownFilterPopoverOpen = false;
   mantisBreakdownCurrentPage = 1;
   mantisRerenderBreakdownDashboard();
 }
@@ -3636,8 +3675,8 @@ function mantisApplyBreakdownDateInputs(){
 }
 
 function mantisResetBreakdownFilters(){
-  mantisBreakdownFilters = { line: '', dateFrom: '', dateTo: '' };
-  mantisBreakdownLinePopoverOpen = false;
+  mantisBreakdownFilters = { line: '', dateFrom: '', dateTo: '', detail: 'duration', hasDataOnly: false };
+  mantisBreakdownFilterPopoverOpen = false;
   mantisBreakdownDatePopoverOpen = false;
   mantisBreakdownCurrentPage = 1;
   mantisRerenderBreakdownDashboard();
@@ -3668,12 +3707,10 @@ function mantisSetBreakdownThisWeek(){
   mantisRerenderBreakdownDashboard();
 }
 
-function mantisSetBreakdownThisMonth(){
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 1);
-  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  mantisBreakdownFilters.dateFrom = mantisFormatIsoDate(first);
-  mantisBreakdownFilters.dateTo = mantisFormatIsoDate(last);
+function mantisSetBreakdownLastWeek(){
+  const range = mantisBreakdownLastWeekRange();
+  mantisBreakdownFilters.dateFrom = range.dateFrom;
+  mantisBreakdownFilters.dateTo = range.dateTo;
   mantisBreakdownDatePopoverOpen = false;
   mantisBreakdownCurrentPage = 1;
   mantisRerenderBreakdownDashboard();
@@ -3738,6 +3775,11 @@ function mantisRenderBreakdownDashboard(container, table){
   const filterLine = mantisBreakdownFilters.line;
   const filterFrom = mantisBreakdownFilters.dateFrom;
   const filterTo = mantisBreakdownFilters.dateTo;
+  const hasDataOnly = !!mantisBreakdownFilters.hasDataOnly;
+  const detailOption = mantisGetBreakdownDetailOption(mantisBreakdownFilters.detail);
+  const filterDetail = detailOption.value;
+  const detailField = detailOption.field;
+  const isNumericDetail = (filterDetail === 'duration' || filterDetail === 'rate');
 
   const allowedDates = parsed.dateLabels.filter(function(label){
     const iso = mantisDowntimeDateLabelToIso(label);
@@ -3746,7 +3788,12 @@ function mantisRenderBreakdownDashboard(container, table){
     return true;
   });
 
-  const items = allItems.filter(function(item){ return !filterLine || item.line === filterLine; });
+  let items = allItems.filter(function(item){ return !filterLine || item.line === filterLine; });
+  if(hasDataOnly){
+    items = items.filter(function(item){
+      return allowedDates.some(function(label){ return Object.prototype.hasOwnProperty.call(item[detailField], label); });
+    });
+  }
 
   const breakdownLimit = mantisBreakdownRowLimit;
   const totalItemRows = items.length;
@@ -3754,6 +3801,14 @@ function mantisRenderBreakdownDashboard(container, table){
   const breakdownPage = Math.min(Math.max(1, mantisBreakdownCurrentPage || 1), totalItemPages);
   mantisBreakdownCurrentPage = breakdownPage;
   const itemsToShow = (breakdownLimit === 'all') ? items : items.slice((breakdownPage - 1) * breakdownLimit, (breakdownPage - 1) * breakdownLimit + breakdownLimit);
+
+  let hasDataItemsHtml = '<button type="button" class="entry-meta-popover-item' + (!hasDataOnly ? ' selected' : '') + '" onclick="mantisSetBreakdownHasDataOnly(false)">Tampilkan Semua</button>' +
+    '<button type="button" class="entry-meta-popover-item' + (hasDataOnly ? ' selected' : '') + '" onclick="mantisSetBreakdownHasDataOnly(true)">List yang Ada Isinya</button>';
+
+  let detailItemsHtml = '';
+  MANTIS_BREAKDOWN_DETAIL_OPTIONS.forEach(function(opt){
+    detailItemsHtml += '<button type="button" class="entry-meta-popover-item' + (filterDetail === opt.value ? ' selected' : '') + '" onclick="mantisSetBreakdownDetailFilter(\'' + opt.value + '\')">' + opt.label + '</button>';
+  });
 
   let lineItemsHtml = '<button type="button" class="entry-meta-popover-item' + (!filterLine ? ' selected' : '') + '" onclick="mantisSetBreakdownLineFilter(\'\')">Semua Line</button>';
   orderedLines.forEach(function(l){
@@ -3766,14 +3821,24 @@ function mantisRenderBreakdownDashboard(container, table){
     { label: '7 Hari Terakhir', fn: 'mantisSetBreakdownLastNDays(6)' },
     { label: '30 Hari Terakhir', fn: 'mantisSetBreakdownLastNDays(29)' },
     { label: 'Minggu Ini', fn: 'mantisSetBreakdownThisWeek()' },
-    { label: 'Bulan Ini', fn: 'mantisSetBreakdownThisMonth()' }
+    { label: 'Minggu Lalu', fn: 'mantisSetBreakdownLastWeek()' }
   ];
   let presetItemsHtml = '';
   presetDefs.forEach(function(p){
     presetItemsHtml += '<button type="button" class="entry-meta-popover-item" onclick="' + p.fn + '">' + p.label + '</button>';
   });
 
-  const linePopoverHtml = '<div class="entry-meta-popover" id="mantisBreakdownLinePopover" onclick="event.stopPropagation()">' +
+  const filterSectionLabelStyle = 'font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;padding:6px 10px 6px;';
+  const filterSectionDividerHtml = '<div style="height:1px;background:var(--line);margin:4px 0;"></div>';
+
+  const filterPopoverHtml = '<div class="entry-meta-popover" id="mantisBreakdownFilterPopover" style="min-width:220px;" onclick="event.stopPropagation()">' +
+    '<div style="' + filterSectionLabelStyle + '">Tampilkan</div>' +
+    '<div class="entry-meta-popover-list" style="max-height:none;">' + hasDataItemsHtml + '</div>' +
+    filterSectionDividerHtml +
+    '<div style="' + filterSectionLabelStyle + '">Detail</div>' +
+    '<div class="entry-meta-popover-list" style="max-height:none;">' + detailItemsHtml + '</div>' +
+    filterSectionDividerHtml +
+    '<div style="' + filterSectionLabelStyle + '">Line</div>' +
     '<div class="entry-meta-popover-list">' + lineItemsHtml + '</div>' +
   '</div>';
 
@@ -3798,17 +3863,17 @@ function mantisRenderBreakdownDashboard(container, table){
     '</div>' +
   '</div>';
 
-  const lineFilterActive = !!filterLine;
+  const filterActive = !!filterLine || hasDataOnly || (filterDetail !== 'duration');
   const dateFilterActive = !!(filterFrom || filterTo);
   const activeIconAttrs = ' fill="rgba(245,166,35,0.18)" style="stroke:var(--accent);"';
 
   let html = '';
   html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="padding:20px;flex-wrap:wrap;gap:10px;" class="flex items-center justify-between">' +
-    '<div><div class="card-title">Breakdowns</div><div class="card-sub">Durasi downtime (jam) per hari</div></div>' +
+    '<div><div class="card-title">Breakdowns</div><div class="card-sub">' + mantisEscapeHtml(MANTIS_BREAKDOWN_DETAIL_SUBTITLE[filterDetail] || '') + '</div></div>' +
     '<div class="flex items-center" style="gap:8px;flex-wrap:wrap;">' +
-      '<button type="button" class="pill-btn" id="mantisBreakdownLineFilterBtn" onclick="mantisToggleBreakdownLinePopover(event)">' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (lineFilterActive ? activeIconAttrs : '') + '><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></svg>' +
+      '<button type="button" class="pill-btn" id="mantisBreakdownFilterBtn" onclick="mantisToggleBreakdownFilterPopover(event)">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (filterActive ? activeIconAttrs : '') + '><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></svg>' +
         'Filter' +
       '</button>' +
       '<button type="button" class="pill-btn" id="mantisBreakdownDateFilterBtn" onclick="mantisToggleBreakdownDatePopover(event)">' +
@@ -3821,7 +3886,7 @@ function mantisRenderBreakdownDashboard(container, table){
       '</button>' +
     '</div>' +
   '</div>';
-  html += linePopoverHtml;
+  html += filterPopoverHtml;
   html += datePopoverHtml;
   html += '<div class="full-bleed-divider" style="margin:0;"></div>';
 
@@ -3840,10 +3905,20 @@ function mantisRenderBreakdownDashboard(container, table){
     itemsToShow.forEach(function(item){
       html += '<tr><td style="white-space:nowrap;">' + mantisEscapeHtml(item.line) + '</td>' +
         '<td>' + mantisEscapeHtml(item.equipment) + '</td>' +
-        '<td style="white-space:nowrap;">Duration</td>';
+        '<td style="white-space:nowrap;">' + mantisEscapeHtml(detailOption.label) + '</td>';
+      const valueMap = item[detailField];
       allowedDates.forEach(function(label){
-        const has = Object.prototype.hasOwnProperty.call(item.hours, label);
-        html += '<td style="text-align:right;white-space:nowrap;padding:10px 14px;">' + (has ? mantisFormatDowntimeNumber(item.hours[label]) : '') + '</td>';
+        const has = Object.prototype.hasOwnProperty.call(valueMap, label);
+        let cellText = '';
+        if(has){
+          cellText = isNumericDetail
+            ? mantisFormatDowntimeNumber(valueMap[label]) + (filterDetail === 'rate' ? '%' : '')
+            : mantisEscapeHtml(String(valueMap[label]));
+        }
+        const cellStyle = isNumericDetail
+          ? 'text-align:right;white-space:nowrap;padding:10px 14px;'
+          : 'text-align:left;white-space:normal;max-width:240px;padding:10px 14px;';
+        html += '<td style="' + cellStyle + '">' + cellText + '</td>';
       });
       html += '</tr>';
     });
