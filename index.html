@@ -2435,7 +2435,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.12';
+const MANTIS_APP_VERSION = '1.13';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -3599,7 +3599,7 @@ function mantisGetBreakdownDetailOption(value){
   return MANTIS_BREAKDOWN_DETAIL_OPTIONS.find(function(o){ return o.value === value; }) || MANTIS_BREAKDOWN_DETAIL_OPTIONS[0];
 }
 
-let mantisBreakdownFilters = Object.assign({ line: '', detail: 'duration', hasDataOnly: false }, mantisBreakdownLastWeekRange());
+let mantisBreakdownFilters = Object.assign({ line: '', detail: 'duration' }, mantisBreakdownLastWeekRange());
 let mantisBreakdownFilterPopoverOpen = false;
 let mantisBreakdownDatePopoverOpen = false;
 let mantisBreakdownRowLimit = 10;
@@ -3658,13 +3658,6 @@ function mantisSetBreakdownDetailFilter(value){
   mantisRerenderBreakdownDashboard();
 }
 
-function mantisSetBreakdownHasDataOnly(value){
-  mantisBreakdownFilters.hasDataOnly = value;
-  mantisBreakdownFilterPopoverOpen = false;
-  mantisBreakdownCurrentPage = 1;
-  mantisRerenderBreakdownDashboard();
-}
-
 function mantisApplyBreakdownDateInputs(){
   const fromInput = document.getElementById('mantisBreakdownDateFrom');
   const toInput = document.getElementById('mantisBreakdownDateTo');
@@ -3675,7 +3668,7 @@ function mantisApplyBreakdownDateInputs(){
 }
 
 function mantisResetBreakdownFilters(){
-  mantisBreakdownFilters = { line: '', dateFrom: '', dateTo: '', detail: 'duration', hasDataOnly: false };
+  mantisBreakdownFilters = { line: '', dateFrom: '', dateTo: '', detail: 'duration' };
   mantisBreakdownFilterPopoverOpen = false;
   mantisBreakdownDatePopoverOpen = false;
   mantisBreakdownCurrentPage = 1;
@@ -3775,7 +3768,6 @@ function mantisRenderBreakdownDashboard(container, table){
   const filterLine = mantisBreakdownFilters.line;
   const filterFrom = mantisBreakdownFilters.dateFrom;
   const filterTo = mantisBreakdownFilters.dateTo;
-  const hasDataOnly = !!mantisBreakdownFilters.hasDataOnly;
   const detailOption = mantisGetBreakdownDetailOption(mantisBreakdownFilters.detail);
   const filterDetail = detailOption.value;
   const detailField = detailOption.field;
@@ -3788,12 +3780,14 @@ function mantisRenderBreakdownDashboard(container, table){
     return true;
   });
 
+  // Always only the Line+Description rows that actually have a value (for
+  // whichever Detail type is selected) in the visible date range - there's
+  // no "show everything, even the blanks" toggle anymore, so this always
+  // applies rather than being conditional on a filter flag.
   let items = allItems.filter(function(item){ return !filterLine || item.line === filterLine; });
-  if(hasDataOnly){
-    items = items.filter(function(item){
-      return allowedDates.some(function(label){ return Object.prototype.hasOwnProperty.call(item[detailField], label); });
-    });
-  }
+  items = items.filter(function(item){
+    return allowedDates.some(function(label){ return Object.prototype.hasOwnProperty.call(item[detailField], label); });
+  });
 
   const breakdownLimit = mantisBreakdownRowLimit;
   const totalItemRows = items.length;
@@ -3801,9 +3795,6 @@ function mantisRenderBreakdownDashboard(container, table){
   const breakdownPage = Math.min(Math.max(1, mantisBreakdownCurrentPage || 1), totalItemPages);
   mantisBreakdownCurrentPage = breakdownPage;
   const itemsToShow = (breakdownLimit === 'all') ? items : items.slice((breakdownPage - 1) * breakdownLimit, (breakdownPage - 1) * breakdownLimit + breakdownLimit);
-
-  let hasDataItemsHtml = '<button type="button" class="entry-meta-popover-item' + (!hasDataOnly ? ' selected' : '') + '" onclick="mantisSetBreakdownHasDataOnly(false)">Tampilkan Semua</button>' +
-    '<button type="button" class="entry-meta-popover-item' + (hasDataOnly ? ' selected' : '') + '" onclick="mantisSetBreakdownHasDataOnly(true)">List yang Ada Isinya</button>';
 
   let detailItemsHtml = '';
   MANTIS_BREAKDOWN_DETAIL_OPTIONS.forEach(function(opt){
@@ -3832,9 +3823,6 @@ function mantisRenderBreakdownDashboard(container, table){
   const filterSectionDividerHtml = '<div style="height:1px;background:var(--line);margin:4px 0;"></div>';
 
   const filterPopoverHtml = '<div class="entry-meta-popover" id="mantisBreakdownFilterPopover" style="min-width:220px;" onclick="event.stopPropagation()">' +
-    '<div style="' + filterSectionLabelStyle + '">Tampilkan</div>' +
-    '<div class="entry-meta-popover-list" style="max-height:none;">' + hasDataItemsHtml + '</div>' +
-    filterSectionDividerHtml +
     '<div style="' + filterSectionLabelStyle + '">Detail</div>' +
     '<div class="entry-meta-popover-list" style="max-height:none;">' + detailItemsHtml + '</div>' +
     filterSectionDividerHtml +
@@ -3863,7 +3851,7 @@ function mantisRenderBreakdownDashboard(container, table){
     '</div>' +
   '</div>';
 
-  const filterActive = !!filterLine || hasDataOnly || (filterDetail !== 'duration');
+  const filterActive = !!filterLine || (filterDetail !== 'duration');
   const dateFilterActive = !!(filterFrom || filterTo);
   const activeIconAttrs = ' fill="rgba(245,166,35,0.18)" style="stroke:var(--accent);"';
 
