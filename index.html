@@ -1480,10 +1480,6 @@ textarea.entry-input{
       <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 3a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2zm10 -4a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 -8a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2z"/></svg>
       <span class="nav-label">Dashboard</span>
     </div>
-    <div class="nav-item" data-page="breakdown" id="navItemBreakdown" onclick="showPage('breakdown')" style="display:none;">
-      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4 4m0 1a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1z"/><path d="M4 13m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z"/><path d="M13 13m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z"/></svg>
-      <span>Breakdowns</span>
-    </div>
     <div class="nav-group" id="navGroupActivities">
       <div class="group-label" onclick="toggleGroup(this)">
         <svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 2a1 1 0 0 1 1 1v17h17a1 1 0 0 1 .993 .883l.007 .117a1 1 0 0 1 -1 1h-18a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1z"/><path d="M19 4a3 3 0 1 1 -.651 5.93l-2.002 3.202a3 3 0 1 1 -4.927 .337l-1.378 -1.655a3 3 0 1 1 1.538 -1.282l1.378 1.654a2.994 2.994 0 0 1 1.693 -.115l2.002 -3.203a3 3 0 0 1 2.347 -4.868z"/></svg>
@@ -1513,6 +1509,10 @@ textarea.entry-input{
     <div class="nav-item" data-page="po" onclick="showPage('po')">
       <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l.117 .007a1 1 0 0 1 .876 .876l.007 .117v4l.005 .15a2 2 0 0 0 1.838 1.844l.157 .006h4l.117 .007a1 1 0 0 1 .876 .876l.007 .117v9a3 3 0 0 1 -2.824 2.995l-.176 .005h-10a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-14a3 3 0 0 1 2.824 -2.995l.176 -.005zm3 14h-6a1 1 0 0 0 0 2h6a1 1 0 0 0 0 -2m0 -4h-6a1 1 0 0 0 0 2h6a1 1 0 0 0 0 -2m-5 -4h-1a1 1 0 1 0 0 2h1a1 1 0 0 0 0 -2"/><path d="M19 7h-4l-.001 -4.001z"/></svg>
       <span>Orders</span>
+    </div>
+    <div class="nav-item" data-page="breakdown" id="navItemBreakdown" onclick="showPage('breakdown')" style="display:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4 4m0 1a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1z"/><path d="M4 13m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z"/><path d="M13 13m0 1a1 1 0 0 1 1 -1h5a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-5a1 1 0 0 1 -1 -1z"/></svg>
+      <span>Breakdowns</span>
     </div>
 
     <!-- Bottom group: Settings, Support, Account -->
@@ -2435,7 +2435,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.11';
+const MANTIS_APP_VERSION = '1.12';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
