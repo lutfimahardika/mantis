@@ -2435,7 +2435,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.14';
+const MANTIS_APP_VERSION = '1.15';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -6244,10 +6244,12 @@ function mantisSplitActionLines(action){
 function mantisBuildWhatsAppMessage(){
   const queue = mantisGetPendingActions();
   const dateLabel = mantisFormatWaDate(document.getElementById('entryTanggal').value.trim());
+  const shiftLabel = document.getElementById('entryShift').value.trim();
+  const headerLabel = shiftLabel ? [dateLabel, shiftLabel].filter(Boolean).join(', ') : dateLabel;
 
   const lines = [];
-  if(dateLabel){
-    lines.push(dateLabel);
+  if(headerLabel){
+    lines.push(headerLabel);
     lines.push('');
   }
 
