@@ -2435,7 +2435,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.16';
+const MANTIS_APP_VERSION = '1.17';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -4001,17 +4001,34 @@ function renderGvizTableRows(containerId){
 
   const colOrder = mantisOrderedVisibleColIndexes(containerId, table);
 
+  // Records-only leading "#" column: a small photo icon when the row has an
+  // uploaded action photo (any of the Link/Link 2/Link 3/Link 4 columns
+  // filled), so a photo can be spotted without opening the row. Not part of
+  // the customizable colOrder/Settings > Table system - it's a synthetic
+  // indicator, not a real sheet column.
+  const isRecordsTable = (containerId === 'activity-records-container');
+  const photoColIndexes = isRecordsTable
+    ? MANTIS_ACTION_PHOTO_FIELD_KEYS.map(function(key){ return mantisFindColIndex(table, key); }).filter(function(ci){ return ci !== -1; })
+    : [];
+  const photoIconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-3);"><path d="M15 8h.01"/><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12z"/><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"/><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"/></svg>';
+
   let html = '<div class="table-wrap">' + tableOpenTag + colgroupHtml + '<thead><tr>';
+  if(isRecordsTable) html += '<th style="width:36px;text-align:center;">#</th>';
   colOrder.forEach(function(ci){
     const c = table.cols[ci];
     html += '<th>' + mantisEscapeHtml(c.label || c.id || '') + '</th>';
   });
   html += '</tr></thead><tbody>';
   if(rowsToShow.length === 0){
-    html += '<tr><td colspan="' + colOrder.length + '" style="text-align:center;color:var(--ink-3);padding:32px 20px;">Tidak ada data yang cocok.</td></tr>';
+    html += '<tr><td colspan="' + (colOrder.length + (isRecordsTable ? 1 : 0)) + '" style="text-align:center;color:var(--ink-3);padding:32px 20px;">Tidak ada data yang cocok.</td></tr>';
   }
   rowsToShow.forEach(function(item){
     html += '<tr class="table-row-clickable" onclick="mantisShowRowDetail(\'' + containerId + '\', ' + item.index + ')">';
+    if(isRecordsTable){
+      const rowCells = item.row.c || [];
+      const hasPhoto = photoColIndexes.some(function(ci){ return mantisCellText(rowCells[ci]).trim() !== ''; });
+      html += '<td style="text-align:center;">' + (hasPhoto ? photoIconSvg : '') + '</td>';
+    }
     colOrder.forEach(function(ci){
       const cell = (item.row.c || [])[ci];
       let val = '';
