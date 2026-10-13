@@ -43,40 +43,10 @@ function doGet(e) {
       return handleTeknisiList(e);
     }
 
-    if (action === 'bufferMeta') {
-      return handleBufferMeta(e);
-    }
-
     return jsonResponse({ success: false, error: 'Unknown action' });
   } catch (err) {
     return jsonResponse({ success: false, error: err.message });
   }
-}
-
-/**
- * Returns when a "User_<username>" buffer tab (see handleSyncBuffer) was last
- * pushed, so a client can decide whether ITS local queue or the cloud buffer
- * is more current before doing a full gviz read - cheap enough to call on
- * every Entries page visit without re-fetching the whole buffer table each
- * time. Stored in Script Properties (not a sheet cell) since it has nothing
- * to do with the buffer tab's own row/column layout, and needs to read back
- * even when the tab currently holds zero rows (an empty queue is a valid,
- * meaningfully-timestamped state, not "no info").
- */
-function handleBufferMeta(e) {
-  var expectedToken = PropertiesService.getScriptProperties().getProperty('MANTIS_WRITE_TOKEN');
-  var token = e.parameter && e.parameter.token;
-  if (!expectedToken || token !== expectedToken) {
-    return jsonResponse({ success: false, error: 'Unauthorized' });
-  }
-
-  var sheetName = (e.parameter && e.parameter.sheet || '').toString().trim();
-  if (!/^User_/.test(sheetName)) {
-    return jsonResponse({ success: false, error: 'Buffer sheet name must start with "User_"' });
-  }
-
-  var raw = PropertiesService.getScriptProperties().getProperty('bufferUpdatedAt_' + sheetName);
-  return jsonResponse({ success: true, updatedAt: raw ? Number(raw) : 0 });
 }
 
 /**
@@ -324,20 +294,6 @@ function handleSyncBuffer(body) {
     return jsonResponse({ success: false, error: 'Buffer sheet name must start with "User_"' });
   }
 
-  // Client sends the timestamp of the local change that triggered this push
-  // (not "now" - a slow/retried request can arrive late). If an older-timestamped
-  // push shows up after a newer one already landed (out-of-order delivery),
-  // skip it rather than regressing the buffer back to stale data - the device
-  // that sent it still has its own locally-queued edit and will catch up
-  // (and re-push) once bufferMeta tells it the cloud has moved ahead.
-  var propKey = 'bufferUpdatedAt_' + sheetName;
-  var props = PropertiesService.getScriptProperties();
-  var incomingUpdatedAt = Number(body.updatedAt) || Date.now();
-  var storedUpdatedAt = Number(props.getProperty(propKey)) || 0;
-  if (storedUpdatedAt && incomingUpdatedAt < storedUpdatedAt) {
-    return jsonResponse({ success: true, skipped: true, reason: 'stale', updatedAt: storedUpdatedAt });
-  }
-
   var rows = Array.isArray(body.values) ? body.values : [];
 
   var ss = SpreadsheetApp.openById(SHEET_ID);
@@ -372,9 +328,7 @@ function handleSyncBuffer(body) {
     sheet.getRange(2, 1, matrix.length, headers.length).setValues(matrix);
   }
 
-  props.setProperty(propKey, String(incomingUpdatedAt));
-
-  return jsonResponse({ success: true, count: rows.length, updatedAt: incomingUpdatedAt });
+  return jsonResponse({ success: true, count: rows.length });
 }
 
 function handleSetMeterReading(body) {
