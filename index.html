@@ -2435,7 +2435,7 @@ const MANTIS_DRIVE_UPLOAD_TOKEN = '3f015fe08cfa0d6aee3f5bf89b9c532c';
 
 /* Bump on every change that ships (X.01 -> X.02, ...), shown in
    Settings > Aplikasi. */
-const MANTIS_APP_VERSION = '1.19';
+const MANTIS_APP_VERSION = '1.20';
 
 const mantisLoadedPages = {};
 const mantisPageTitles = {
@@ -2512,7 +2512,7 @@ function showActivitiesTab(name){
   if(name === 'newlog'){
     mantisInitEntryForm();
     mantisRenderProblemActionTable();
-    mantisTryRestorePendingActionsFromBuffer();
+    mantisSyncPendingActionsFromBuffer();
   }
 
   if((name === 'records' || name === 'newlog') && !mantisLoadedPages.activities){
@@ -5664,6 +5664,11 @@ const MANTIS_EDIT_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 /* ---------- Problem & Action: local queue (published to the sheet at end of shift) ---------- */
 const MANTIS_PENDING_ACTIONS_KEY = 'mantisPendingActions';
+// Timestamp of the last LOCAL change to the queue - stamped on every save,
+// and compared against the cloud buffer's own timestamp (mantisGetBufferSheetName
+// section below) to decide whether a device's local queue or the shared
+// buffer is more current, without needing to diff their contents.
+const MANTIS_PENDING_ACTIONS_UPDATED_KEY = 'mantisPendingActionsUpdatedAt';
 
 function mantisGetPendingActions(){
   try{
@@ -5672,10 +5677,15 @@ function mantisGetPendingActions(){
   }catch(e){ return []; }
 }
 
+function mantisGetPendingActionsUpdatedAt(){
+  try{ return Number(localStorage.getItem(MANTIS_PENDING_ACTIONS_UPDATED_KEY)) || 0; }catch(e){ return 0; }
+}
+
 function mantisSavePendingActions(list){
   const json = JSON.stringify(list);
   try{
     localStorage.setItem(MANTIS_PENDING_ACTIONS_KEY, json);
+    localStorage.setItem(MANTIS_PENDING_ACTIONS_UPDATED_KEY, String(Date.now()));
     // Verify the write actually stuck - some browsers (private/incognito mode,
     // storage quota exceeded, storage disabled by policy) accept setItem()
     // without throwing but silently discard the value, which otherwise looks
@@ -5715,16 +5725,23 @@ function mantisUpdatePendingAction(id, fields){
   return mantisSavePendingActions(list);
 }
 
-/* ---------- Problem & Action: cloud buffer (per-account sheet tab, cross-device backup) ----------
-   localStorage stays the primary, instant-save copy - this just mirrors it in
-   the background to a "User_<username>" sheet tab (pre-created per account),
-   so the queue survives a cleared browser or can be picked up on another
-   device. It's a buffer, not a sync: each push wholesale-replaces that tab's
-   rows with whatever the local queue currently is (last write wins), and a
-   restore only ever happens automatically when the local queue is empty -
-   if two devices both have local items, they're never auto-merged. */
+/* ---------- Problem & Action: cloud buffer (per-account sheet tab, cross-device sync) ----------
+   localStorage stays the primary, instant-save copy - this mirrors it to a
+   "User_<username>" sheet tab (pre-created per account) so the same account
+   sees the same queue across devices. The whole queue (not individual items)
+   carries one "updatedAt" timestamp, compared against the cloud buffer's own
+   timestamp (handleBufferMeta/handleSyncBuffer in Code.gs) to decide which
+   side is current - whichever was touched more recently wins outright and
+   replaces the other side wholesale. This is deliberately NOT an item-level
+   merge: merging by id would resurrect something deleted on one device the
+   moment another device (which never saw the delete) pushes again. The
+   tradeoff is that two devices editing at almost the same moment, before
+   either has synced with the other, can still have one's changes overwritten
+   by the other's - acceptable for a shift-log buffer, not for true
+   concurrent editing. */
 const MANTIS_BUFFER_PUSH_DEBOUNCE_MS = 1500;
 let mantisBufferPushTimer = null;
+let mantisBufferSyncInFlight = false;
 
 function mantisGetBufferSheetName(){
   const user = mantisGetAuthUser();
@@ -5753,12 +5770,13 @@ function mantisPushPendingActionsToBuffer(){
     token: MANTIS_METER_WRITE_TOKEN,
     action: 'syncBuffer',
     sheet: sheetName,
-    values: values
+    values: values,
+    updatedAt: mantisGetPendingActionsUpdatedAt()
   });
 
-  // Best-effort backup - failures (offline, token issue, etc.) shouldn't
-  // interrupt the technician's work, so this never surfaces an error to the
-  // UI, just a console note for debugging.
+  // Best-effort - failures (offline, token issue, etc.) shouldn't interrupt
+  // the technician's work, so this never surfaces an error to the UI, just a
+  // console note for debugging.
   fetch(MANTIS_METER_WRITE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -5769,25 +5787,36 @@ function mantisPushPendingActionsToBuffer(){
   });
 }
 
-/* Pulls the account's buffer tab down into the local queue, but only when
-   the local queue is empty - a new device/browser (or one that just lost
-   its localStorage) picks up whatever was last pushed elsewhere, without
-   ever silently overwriting local work already in progress. Called once per
-   Entries page visit (mantisBufferRestoreAttempted guards against refetching
-   every time the tab is revisited in the same session). */
-let mantisBufferRestoreAttempted = false;
-
-function mantisTryRestorePendingActionsFromBuffer(){
-  if(mantisBufferRestoreAttempted) return;
-  mantisBufferRestoreAttempted = true;
-
-  if(mantisGetPendingActions().length) return;
+/* Checks whether the cloud buffer is newer than this device's local queue
+   and, only if so, pulls it down and replaces the local queue wholesale.
+   Cheap enough (one small GET) to call every time the Entries page is
+   shown - that's the actual "sync point" between devices, not a timer. */
+function mantisSyncPendingActionsFromBuffer(){
+  if(mantisBufferSyncInFlight) return;
   const sheetName = mantisGetBufferSheetName();
-  if(!sheetName) return;
+  if(!MANTIS_METER_WRITE_URL || !sheetName) return;
+  mantisBufferSyncInFlight = true;
 
+  const metaUrl = MANTIS_METER_WRITE_URL + '?action=bufferMeta&sheet=' + encodeURIComponent(sheetName) + '&token=' + encodeURIComponent(MANTIS_METER_WRITE_TOKEN);
+  fetch(metaUrl).then(function(res){ return res.json(); }).then(function(data){
+    const cloudUpdatedAt = (data && data.success) ? Number(data.updatedAt) || 0 : 0;
+    if(!cloudUpdatedAt || cloudUpdatedAt <= mantisGetPendingActionsUpdatedAt()){
+      mantisBufferSyncInFlight = false;
+      return;
+    }
+    mantisPullPendingActionsFromBuffer(sheetName, cloudUpdatedAt);
+  }).catch(function(err){
+    mantisBufferSyncInFlight = false;
+    console.warn('Gagal cek status buffer action:', err.message);
+  });
+}
+
+function mantisPullPendingActionsFromBuffer(sheetName, cloudUpdatedAt){
   window.mantisHandleBufferRestore = function(res){
+    mantisBufferSyncInFlight = false;
     if(!res || res.status === 'error' || !res.table) return;
-    if(mantisGetPendingActions().length) return; // user may have added something while this was in flight
+    // Re-check: local may have changed while this round trip was in flight.
+    if(cloudUpdatedAt <= mantisGetPendingActionsUpdatedAt()) return;
 
     const table = res.table;
     const idCol = mantisFindColIndex(table, 'EntryID');
@@ -5797,7 +5826,7 @@ function mantisTryRestorePendingActionsFromBuffer(){
     const issueCol = mantisFindColIndex(table, 'Issue');
     const actionCol = mantisFindColIndex(table, 'Action');
 
-    const restored = [];
+    const pulled = [];
     table.rows.forEach(function(row){
       const c = row.c || [];
       const id = mantisCellText(c[idCol]).trim();
@@ -5813,16 +5842,18 @@ function mantisTryRestorePendingActionsFromBuffer(){
         const ci = mantisFindColIndex(table, key);
         item[key] = ci !== -1 ? mantisCellText(c[ci]) : '';
       });
-      restored.push(item);
+      pulled.push(item);
     });
 
-    if(!restored.length) return;
     // Writes straight to localStorage rather than through
-    // mantisSavePendingActions() - this data just came FROM the buffer, so
-    // immediately scheduling a push back to it would be a pointless round trip.
-    localStorage.setItem(MANTIS_PENDING_ACTIONS_KEY, JSON.stringify(restored));
+    // mantisSavePendingActions() - this data just came FROM the buffer at
+    // cloudUpdatedAt, so re-stamping "now" (and re-scheduling a push) would
+    // make this device look newer than it actually is and could later
+    // overwrite a genuinely newer edit made elsewhere.
+    localStorage.setItem(MANTIS_PENDING_ACTIONS_KEY, JSON.stringify(pulled));
+    localStorage.setItem(MANTIS_PENDING_ACTIONS_UPDATED_KEY, String(cloudUpdatedAt));
     mantisRenderProblemActionTable();
-    mantisShowActionsMessage(restored.length + ' action dipulihkan dari cadangan cloud.', false);
+    if(pulled.length) mantisShowActionsMessage(pulled.length + ' action disinkron dari device lain.', false);
   };
 
   const tqx = 'out:json;responseHandler:mantisHandleBufferRestore';
@@ -5830,7 +5861,7 @@ function mantisTryRestorePendingActionsFromBuffer(){
   const script = document.createElement('script');
   script.src = url;
   script.onload = function(){ script.remove(); };
-  script.onerror = function(){ script.remove(); }; // no buffer tab yet, or offline - silently skip, this is best-effort
+  script.onerror = function(){ mantisBufferSyncInFlight = false; script.remove(); };
   document.body.appendChild(script);
 }
 
