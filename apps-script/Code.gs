@@ -111,6 +111,10 @@ function doPost(e) {
       return handleAppendRow(body);
     }
 
+    if (body.action === 'syncBuffer') {
+      return handleSyncBuffer(body);
+    }
+
     return handleSetMeterReading(body);
   } catch (err) {
     return jsonResponse({ success: false, error: err.message });
@@ -265,6 +269,66 @@ function parseAppendValue(value) {
     return Number(value);
   }
   return value;
+}
+
+var BUFFER_SHEET_HEADERS = ['EntryID', 'Area', 'Mesin', 'Issue', 'Action', 'Link', 'Link 2', 'Link 3', 'Link 4'];
+
+/**
+ * Mirrors a technician's local "Problem & Action" queue (index.html's
+ * localStorage mantisPendingActions) into their own per-account sheet tab -
+ * e.g. "User_Hariyanto" - as a cross-device backup. This is a buffer, not a
+ * log: every call replaces that tab's data rows wholesale with body.values
+ * (whatever the client's current local queue is right now), rather than
+ * appending/upserting like handleAppendRow does for Records.
+ *
+ * sheet must start with "User_" - this endpoint wipes and rewrites whatever
+ * sheet it's given, so without this check a client bug (or anyone else with
+ * the write token) could pass "Records" or "Downtime" and blank out real
+ * data. The buffer tabs are expected to already exist (created ahead of
+ * time per account) but are auto-created with headers if missing, so a new
+ * account's first sync doesn't fail.
+ */
+function handleSyncBuffer(body) {
+  var sheetName = (body.sheet || '').toString().trim();
+  if (!/^User_/.test(sheetName)) {
+    return jsonResponse({ success: false, error: 'Buffer sheet name must start with "User_"' });
+  }
+
+  var rows = Array.isArray(body.values) ? body.values : [];
+
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = ss.getSheetByName(sheetName);
+  var headers = BUFFER_SHEET_HEADERS;
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  } else {
+    var lastCol = Math.max(sheet.getLastColumn(), 1);
+    var existingHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    if (existingHeaders[0]) {
+      headers = existingHeaders.map(function (h) { return String(h); });
+    } else {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    }
+  }
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
+  }
+
+  if (rows.length) {
+    var matrix = rows.map(function (entryValues) {
+      return headers.map(function (header) {
+        var key = String(header).trim();
+        if (!key || !entryValues || typeof entryValues !== 'object' || !(key in entryValues)) return '';
+        return entryValues[key];
+      });
+    });
+    sheet.getRange(2, 1, matrix.length, headers.length).setValues(matrix);
+  }
+
+  return jsonResponse({ success: true, count: rows.length });
 }
 
 function handleSetMeterReading(body) {
